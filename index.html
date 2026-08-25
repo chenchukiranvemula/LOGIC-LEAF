@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>QTM AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">QTM <span>AI</span></div>
+
+  <button class="new-chat" id="newChat">＋ New chat</button>
+
+  <div class="side-title">Chats</div>
+  <div id="chatList" class="chat-list"></div>
+
+  <div class="sidebar-bottom">
+    <button id="settingsBtn">⚙ Settings</button>
+  </div>
+</aside>
+
+<main class="app">
+
+  <header class="topbar">
+    <button class="icon-btn" id="menuBtn">☰</button>
+
+    <div class="model-name">
+      QTM AI <small>V1</small>
+    </div>
+
+    <button class="icon-btn" id="clearBtn">⌫</button>
+  </header>
+
+  <section id="messages" class="messages">
+
+    <div class="welcome">
+
+      <div class="logo-orb">Q</div>
+
+      <h1>How can I help you?</h1>
+
+      <p>
+        Welcome to QTM AI.
+        Ask questions, study, create and explore.
+      </p>
+
+      <div class="quick">
+
+        <button data-prompt="Explain this topic simply">
+          📚 Explain a topic
+        </button>
+
+        <button data-prompt="Help me study for an exam">
+          🎓 Study help
+        </button>
+
+        <button data-prompt="Give me ideas for a project">
+          💡 Project ideas
+        </button>
+
+        <button data-prompt="Create a PDF about renewable energy">
+          📄 Create a PDF
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <div class="composer-wrap">
+
+    <div class="tools">
+
+      <button id="attachBtn">📎 Attach</button>
+      <button id="imageBtn">🖼 Image</button>
+      <button id="pdfBtn">📄 PDF</button>
+
+      <input
+        id="fileInput"
+        type="file"
+        hidden
+        accept=".txt,.md,.pdf,.json,.csv">
+
+    </div>
+
+    <form id="composer" class="composer">
+
+      <textarea
+        id="prompt"
+        rows="1"
+        placeholder="Message QTM AI..."
+        autocomplete="off"></textarea>
+
+      <button id="sendBtn" type="submit">➤</button>
+
+    </form>
+
+    <div class="notice">
+      QTM AI can make mistakes. Check important information.
+    </div>
+
+  </div>
+
+</main>
+
+<script src="app.js"></script>
+
+</body>
+    </html>
