@@ -1,0 +1,12 @@
+name = "qtm-ai"
+
+main = "worker.js"
+
+compatibility_date = "2026-08-25"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "QTM_KEYS"
+id = "YOUR_KV_NAMESPACE_ID"
