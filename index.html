@@ -1,310 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="theme-color"
-    content="#020504"
-  >
-
-  <meta
-    name="description"
-    content="QTM AI — Your intelligent AI assistant"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QTM AI</title>
-
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
+  <link rel="stylesheet" href="style.css">
 </head>
-
 
 <body>
 
-  <!-- =========================================
-       SINGLE CINEMATIC LEAF
-       ========================================= -->
-
-  <div
-    class="qtm-leaf"
-    aria-hidden="true"
-  >
-    <div class="leaf-vein"></div>
-    <div class="leaf-glow"></div>
+  <div class="background">
+    <div class="glow glow1"></div>
+    <div class="glow glow2"></div>
+    <div class="leaf"></div>
   </div>
 
+  <div class="app">
 
-  <!-- =========================================
-       SIDEBAR
-       ========================================= -->
+    <aside class="sidebar" id="sidebar">
 
-  <aside
-    class="sidebar"
-    id="sidebar"
-  >
+      <div class="brand">
+        <div class="brand-logo">Q</div>
+        <div>
+          <h1>QTM AI</h1>
+          <p>Intelligence, simplified.</p>
+        </div>
+      </div>
 
-    <div class="brand">
-      QTM <span>AI</span>
-    </div>
-
-
-    <button
-      class="new-chat"
-      id="newChat"
-      type="button"
-    >
-      ＋ New chat
-    </button>
-
-
-    <div class="side-title">
-      Chats
-    </div>
-
-
-    <div
-      id="chatList"
-      class="chat-list"
-    ></div>
-
-
-    <div class="sidebar-bottom">
-
-      <button
-        id="settingsBtn"
-        type="button"
-      >
-        ⚙ Settings
+      <button class="new-chat" id="newChatBtn">
+        <span>＋</span>
+        New chat
       </button>
 
-    </div>
+      <div class="history-title">YOUR CHATS</div>
 
-  </aside>
+      <div class="chat-history" id="chatHistory"></div>
 
+      <div class="sidebar-bottom">
 
-  <!-- =========================================
-       MAIN APPLICATION
-       ========================================= -->
+        <button class="side-btn" id="settingsBtn">
+          ⚙️ <span>Settings</span>
+        </button>
 
-  <main class="app">
-
-
-    <!-- TOP BAR -->
-
-    <header class="topbar">
-
-      <button
-        class="icon-btn"
-        id="menuBtn"
-        type="button"
-        aria-label="Open menu"
-      >
-        ☰
-      </button>
-
-
-      <div class="model-name">
-
-        QTM AI
-
-        <small>
-          V2
-        </small>
+        <small>QTM AI V1</small>
 
       </div>
 
+    </aside>
 
-      <button
-        class="icon-btn"
-        id="clearBtn"
-        type="button"
-        aria-label="Clear chat"
-      >
-        ⌫
-      </button>
+    <main class="main">
 
-    </header>
+      <header class="topbar">
 
+        <button class="mobile-menu" id="mobileMenu">
+          ☰
+        </button>
 
-    <!-- =======================================
-         MESSAGE AREA
-         ======================================= -->
-
-    <section
-      id="messages"
-      class="messages"
-    >
-
-
-      <!-- WELCOME -->
-
-      <div class="welcome">
-
-        <div
-          class="logo-orb"
-          aria-hidden="true"
-        >
-          Q
+        <div class="online">
+          <span></span>
+          QTM AI online
         </div>
 
+        <button class="clear-btn" id="clearBtn">
+          Clear
+        </button>
 
-        <h1>
-          How can I help you?
-        </h1>
+      </header>
 
+      <section class="chat-area" id="chatArea">
 
-        <p>
-          Welcome to QTM AI.
-          Ask questions, study,
-          create and explore.
+        <div class="welcome" id="welcome">
+
+          <div class="welcome-logo">
+            Q
+          </div>
+
+          <div class="eyebrow">
+            WELCOME TO QTM AI
+          </div>
+
+          <h2>
+            Think deeper.<br>
+            <span>Create more.</span>
+          </h2>
+
+          <p class="welcome-text">
+            Ask questions, learn new things, solve problems,
+            generate ideas, and explore with QTM AI.
+          </p>
+
+          <div class="suggestions">
+
+            <button data-prompt="Explain quantum physics in a simple way">
+              ✦ Explain something
+            </button>
+
+            <button data-prompt="Help me create a study plan">
+              ◈ Create a study plan
+            </button>
+
+            <button data-prompt="Give me some creative project ideas">
+              ✧ Brainstorm ideas
+            </button>
+
+          </div>
+
+        </div>
+
+        <div class="messages" id="chatMessages"></div>
+
+      </section>
+
+      <div class="composer-area">
+
+        <form class="composer" id="chatForm">
+
+          <textarea
+            id="messageInput"
+            rows="1"
+            placeholder="Message QTM AI..."
+            autocomplete="off"
+          ></textarea>
+
+          <button id="sendBtn" type="submit">
+            ↑
+          </button>
+
+        </form>
+
+        <p class="disclaimer">
+          QTM AI can make mistakes. Check important information.
         </p>
 
-
-        <!-- QUICK ACTIONS -->
-
-        <div class="quick">
-
-
-          <button
-            type="button"
-            data-prompt="Explain this topic simply"
-          >
-            📚 Explain a topic
-          </button>
-
-
-          <button
-            type="button"
-            data-prompt="Help me study for an exam"
-          >
-            🎓 Study help
-          </button>
-
-
-          <button
-            type="button"
-            data-prompt="Give me ideas for a project"
-          >
-            💡 Project ideas
-          </button>
-
-
-          <button
-            type="button"
-            data-prompt="Create a PDF about renewable energy"
-          >
-            📄 Create a PDF
-          </button>
-
-
-        </div>
-
       </div>
 
-    </section>
+    </main>
 
+  </div>
 
-    <!-- =======================================
-         COMPOSER
-         ======================================= -->
+  <div class="modal hidden" id="settingsModal">
 
-    <div class="composer-wrap">
+    <div class="modal-box">
 
+      <button class="close-modal" id="closeSettings">
+        ×
+      </button>
 
-      <!-- TOOLS -->
+      <div class="eyebrow">SETTINGS</div>
 
-      <div class="tools">
+      <h2>QTM AI</h2>
 
-
-        <button
-          id="attachBtn"
-          type="button"
-        >
-          📎 Attach
-        </button>
-
-
-        <button
-          id="imageBtn"
-          type="button"
-        >
-          🖼 Image
-        </button>
-
-
-        <button
-          id="pdfBtn"
-          type="button"
-        >
-          📄 PDF
-        </button>
-
-
-        <input
-          id="fileInput"
-          type="file"
-          hidden
-          accept=".txt,.md,.pdf,.json,.csv"
-        >
-
+      <div class="setting">
+        <strong>AI Backend</strong>
+        <span>Cloudflare Workers AI</span>
       </div>
 
-
-      <!-- MESSAGE INPUT -->
-
-      <form
-        id="composer"
-        class="composer"
-      >
-
-
-        <textarea
-          id="prompt"
-          rows="1"
-          placeholder="Message QTM AI..."
-          autocomplete="off"
-          aria-label="Message QTM AI"
-        ></textarea>
-
-
-        <button
-          id="sendBtn"
-          type="submit"
-          aria-label="Send message"
-        >
-          ➤
-        </button>
-
-
-      </form>
-
-
-      <div class="notice">
-        QTM AI can make mistakes.
-        Check important information.
+      <div class="setting">
+        <strong>Status</strong>
+        <span class="connected">Connected</span>
       </div>
 
+      <div class="setting">
+        <strong>Version</strong>
+        <span>QTM AI V1</span>
+      </div>
 
     </div>
 
-  </main>
-
-
-  <!-- =========================================
-       JAVASCRIPT
-       ========================================= -->
+  </div>
 
   <script src="app.js"></script>
 
 </body>
-
-          </html>
+</html>
