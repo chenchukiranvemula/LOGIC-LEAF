@@ -3,261 +3,273 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171717">
+
   <title>QTM AI</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="background">
-  <div class="leaf">🌿</div>
-  <div class="glow glow1"></div>
-  <div class="glow glow2"></div>
-</div>
+  <div class="app">
 
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
 
-<div class="app">
+      <div class="sidebar-top">
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar" id="sidebar">
-
-    <div class="brand">
-      <div class="brand-icon">🌿</div>
-
-      <div>
-        <h2>QTM AI</h2>
-        <small>AI Assistant</small>
-      </div>
-    </div>
-
-    <button id="newChatBtn" class="new-chat">
-      ＋ New Chat
-    </button>
-
-    <div class="sidebar-title">
-      CHATS
-    </div>
-
-    <div id="chatHistory" class="chat-history">
-      <div class="empty-history">
-        No conversations yet
-      </div>
-    </div>
-
-    <div class="sidebar-bottom">
-
-      <button class="sidebar-button">
-        ⚙️ Settings
-      </button>
-
-      <button
-        class="sidebar-button"
-        id="googleLoginBtn"
-      >
-        👤 Google Login
-      </button>
-
-    </div>
-
-  </aside>
-
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <!-- TOP BAR -->
-    <header class="topbar">
-
-      <button
-        id="menuBtn"
-        class="menu-button"
-      >
-        ☰
-      </button>
-
-      <div class="topbar-title">
-        <span>🌿</span>
-
-        <div>
-          <strong>QTM AI</strong>
-          <small>AI Assistant</small>
+        <div class="brand">
+          <div class="brand-name">QTM AI</div>
         </div>
-      </div>
-
-      <div class="online-status">
-        <i></i>
-        Online
-      </div>
-
-    </header>
-
-
-    <!-- CHAT -->
-    <section
-      id="chatMessages"
-      class="chat-area"
-    >
-
-      <div
-        id="welcome"
-        class="welcome"
-      >
-
-        <div class="welcome-logo">
-          🌿
-        </div>
-
-        <h1>
-          What can I help you with?
-        </h1>
-
-        <p>
-          Ask QTM AI anything.
-        </p>
-
-
-        <div class="suggestions">
-
-          <button
-            onclick="useSuggestion('Explain this topic simply')"
-          >
-            🧠 Explain
-          </button>
-
-          <button
-            onclick="useSuggestion('Help me solve this problem step by step')"
-          >
-            🧮 Solve
-          </button>
-
-          <button
-            onclick="useSuggestion('Write code for me')"
-          >
-            💻 Code
-          </button>
-
-          <button
-            onclick="useSuggestion('Help me study for JEE')"
-          >
-            📚 Study
-          </button>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- ================================= -->
-    <!-- COMPACT ASK BAR -->
-    <!-- ================================= -->
-
-    <div class="composer-container">
-
-      <div class="composer">
 
         <button
-          class="attach-button"
+          id="newChatBtn"
+          class="new-chat"
           type="button"
         >
-          ＋
+          <span>+</span>
+          New chat
         </button>
 
-
-        <textarea
-          id="chatInput"
-          placeholder="Ask QTM AI..."
-          rows="1"
-        ></textarea>
-
-
-        <!-- CLEAR SEND BUTTON -->
-
         <button
-          id="sendBtn"
-          class="send-button"
+          id="searchBtn"
+          class="sidebar-action"
           type="button"
         >
-          SEND
+          <span>⌕</span>
+          Search chats
+        </button>
+
+        <div class="section-title">
+          Chats
+        </div>
+
+        <div
+          id="chatHistory"
+          class="chat-history"
+        ></div>
+
+      </div>
+
+
+      <div class="sidebar-bottom">
+
+        <button
+          id="settingsBtn"
+          class="sidebar-action"
+          type="button"
+        >
+          <span>⚙</span>
+          Settings
+        </button>
+
+        <button
+          id="googleLoginBtn"
+          class="account"
+          type="button"
+        >
+          <div class="account-avatar">
+            G
+          </div>
+
+          <div class="account-info">
+            <strong>Sign in</strong>
+            <small>Google account</small>
+          </div>
         </button>
 
       </div>
 
+    </aside>
 
-      <div class="composer-note">
-        QTM AI may make mistakes.
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- HEADER -->
+      <header class="header">
+
+        <button
+          id="menuBtn"
+          class="menu-button"
+          type="button"
+        >
+          ☰
+        </button>
+
+        <button
+          id="modelButton"
+          class="model-button"
+          type="button"
+        >
+          QTM AI
+          <span>⌄</span>
+        </button>
+
+      </header>
+
+
+      <!-- CHAT -->
+      <section
+        id="chatMessages"
+        class="chat-area"
+      >
+
+        <!-- Welcome -->
+
+        <div
+          id="welcome"
+          class="welcome"
+        >
+
+          <h1>
+            How can I help you?
+          </h1>
+
+          <p>
+            Ask QTM AI anything.
+          </p>
+
+          <div class="suggestions">
+
+            <button
+              type="button"
+              onclick="useSuggestion('Explain this topic simply')"
+            >
+              Explain something
+            </button>
+
+            <button
+              type="button"
+              onclick="useSuggestion('Help me solve this problem step by step')"
+            >
+              Solve a problem
+            </button>
+
+            <button
+              type="button"
+              onclick="useSuggestion('Write code for me')"
+            >
+              Write code
+            </button>
+
+            <button
+              type="button"
+              onclick="useSuggestion('Help me create a study plan')"
+            >
+              Study with me
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- COMPOSER -->
+      <div class="composer-area">
+
+        <div class="composer">
+
+          <button
+            id="attachBtn"
+            class="attach-button"
+            type="button"
+            title="Attach"
+          >
+            +
+          </button>
+
+
+          <textarea
+            id="chatInput"
+            placeholder="Message QTM AI"
+            rows="1"
+            autocomplete="off"
+          ></textarea>
+
+
+          <button
+            id="sendBtn"
+            class="send-button"
+            type="button"
+          >
+            Send
+          </button>
+
+        </div>
+
+        <div class="composer-note">
+          QTM AI can make mistakes. Check important information.
+        </div>
+
       </div>
 
-    </div>
+    </main>
 
-  </main>
-
-</div>
+  </div>
 
 
-<script src="app.js"></script>
+  <script src="app.js"></script>
 
 
-<script>
+  <script>
 
-function useSuggestion(text) {
+    function useSuggestion(text) {
 
-  const input =
-    document.getElementById("chatInput");
+      const input =
+        document.getElementById("chatInput");
 
-  if (!input) return;
+      input.value = text;
 
-  input.value = text;
+      input.focus();
 
-  input.focus();
-
-}
-
-
-const menuBtn =
-  document.getElementById("menuBtn");
-
-const sidebar =
-  document.getElementById("sidebar");
-
-
-if (menuBtn && sidebar) {
-
-  menuBtn.addEventListener(
-    "click",
-    () => {
-      sidebar.classList.toggle("open");
-    }
-  );
-
-}
-
-
-const chatInput =
-  document.getElementById("chatInput");
-
-
-if (chatInput) {
-
-  chatInput.addEventListener(
-    "input",
-    function () {
-
-      this.style.height = "auto";
-
-      this.style.height =
-        Math.min(
-          this.scrollHeight,
-          110
-        ) + "px";
+      input.dispatchEvent(
+        new Event("input")
+      );
 
     }
-  );
 
-}
 
-</script>
+    const menuBtn =
+      document.getElementById("menuBtn");
+
+    const sidebar =
+      document.getElementById("sidebar");
+
+
+    menuBtn.addEventListener(
+      "click",
+      function () {
+
+        sidebar.classList.toggle("open");
+
+      }
+    );
+
+
+    const input =
+      document.getElementById("chatInput");
+
+
+    input.addEventListener(
+      "input",
+      function () {
+
+        this.style.height = "auto";
+
+        this.style.height =
+          Math.min(
+            this.scrollHeight,
+            120
+          ) + "px";
+
+      }
+    );
+
+  </script>
 
 </body>
 </html>
