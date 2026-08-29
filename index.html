@@ -1,269 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="theme-color"
-    content="#171717"
-  >
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>QTM AI</title>
-
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
-
-
 <body>
-
-  <div class="app">
-
-
-    <!-- SIDEBAR -->
-
-    <aside
-      class="sidebar"
-      id="sidebar"
-    >
-
-      <div>
-
-        <div class="brand">
-          <div class="brand-name">
-            QTM AI
-          </div>
+  <div class="chat-container">
+    <header class="chat-header">
+      <div class="header-info">
+        <div class="avatar">⚡</div>
+        <div>
+          <h1>QTM AI</h1>
+          <p class="subtitle">Llama 3.1 8B Instruct</p>
         </div>
-
-
-        <button
-          id="newChatBtn"
-          class="new-chat"
-          type="button"
-        >
-          <span>+</span>
-          New chat
-        </button>
-
-
-        <button
-          id="searchBtn"
-          class="sidebar-action"
-          type="button"
-        >
-          <span>⌕</span>
-          Search chats
-        </button>
-
-
-        <div class="section-title">
-          Chats
-        </div>
-
-
-        <div
-          id="chatHistory"
-          class="chat-history"
-        ></div>
-
       </div>
-
-
-      <div class="sidebar-bottom">
-
-        <button
-          id="settingsBtn"
-          class="sidebar-action"
-          type="button"
-        >
-          <span>Settings</span>
-        </button>
-
-
-        <button
-          id="googleLoginBtn"
-          class="account"
-          type="button"
-        >
-
-          <div class="account-avatar">
-            G
-          </div>
-
-          <div class="account-info">
-
-            <strong>
-              Sign in
-            </strong>
-
-            <small>
-              Google account
-            </small>
-
-          </div>
-
-        </button>
-
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot"></span>
+        <span id="statusText">Connecting...</span>
       </div>
+    </header>
 
-    </aside>
-
-
-    <!-- MAIN -->
-
-    <main class="main">
-
-
-      <!-- HEADER -->
-
-      <header class="header">
-
-        <button
-          id="menuBtn"
-          class="menu-button"
-          type="button"
-          aria-label="Open menu"
-        >
-          ☰
-        </button>
-
-
-        <button
-          id="modelButton"
-          class="model-button"
-          type="button"
-        >
-          QTM AI
-          <span>⌄</span>
-        </button>
-
-      </header>
-
-
-      <!-- CHAT -->
-
-      <section
-        id="chatMessages"
-        class="chat-area"
-      >
-
-
-        <!-- WELCOME -->
-
-        <div
-          id="welcome"
-          class="welcome"
-        >
-
-          <h1>
-            How can I help you?
-          </h1>
-
-          <p>
-            Ask QTM AI anything.
-          </p>
-
-
-          <div class="suggestions">
-
-
-            <button
-              type="button"
-              onclick="useSuggestion('Explain this topic simply')"
-            >
-              Explain something
-            </button>
-
-
-            <button
-              type="button"
-              onclick="useSuggestion('Help me solve this problem step by step')"
-            >
-              Solve a problem
-            </button>
-
-
-            <button
-              type="button"
-              onclick="useSuggestion('Write code for me')"
-            >
-              Write code
-            </button>
-
-
-            <button
-              type="button"
-              onclick="useSuggestion('Help me create a study plan')"
-            >
-              Study with me
-            </button>
-
-          </div>
-
+    <main class="chat-messages" id="chatMessages">
+      <div class="message system">
+        <div class="bubble">
+          👋 Hello! I am <strong>QTM AI</strong>. How can I help you today with programming, science, reasoning, or math?
         </div>
-
-      </section>
-
-
-      <!-- MESSAGE BOX -->
-
-      <div class="composer-area">
-
-        <div class="composer">
-
-
-          <button
-            id="attachBtn"
-            class="attach-button"
-            type="button"
-            aria-label="Attach"
-          >
-            +
-          </button>
-
-
-          <textarea
-            id="chatInput"
-            placeholder="Message QTM AI"
-            rows="1"
-            autocomplete="off"
-            spellcheck="true"
-          ></textarea>
-
-
-          <button
-            id="sendBtn"
-            class="send-button"
-            type="button"
-          >
-            Send
-          </button>
-
-
-        </div>
-
-
-        <div class="composer-note">
-          QTM AI can make mistakes. Check important information.
-        </div>
-
       </div>
-
-
     </main>
 
+    <footer class="chat-input-area">
+      <form id="chatForm">
+        <textarea
+          id="messageInput"
+          placeholder="Ask QTM AI something..."
+          rows="1"
+          required
+        ></textarea>
+        <button type="submit" id="sendBtn" aria-label="Send Message">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+          </svg>
+        </button>
+      </form>
+    </footer>
   </div>
 
-
-  <!-- JAVASCRIPT FILE -->
-
   <script src="app.js"></script>
-
 </body>
-
-  </html>
+</html>
