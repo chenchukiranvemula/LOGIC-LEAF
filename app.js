@@ -1,433 +1,255 @@
-/*
-==================================================
-QTM AI V2
-FRONTEND
-Cloudflare Worker + API Key + Chat
-==================================================
-*/
-
 const API_URL =
-  "https://qtm-ai.qtmkiller6.workers.dev";
+  "https://qtm-ai-new.qtmkiller6.workers.dev";
 
+const chatForm =
+  document.getElementById("chatForm");
 
-/* =================================================
-   ELEMENTS
-================================================= */
+const messageInput =
+  document.getElementById("messageInput");
 
-const messages =
-  document.getElementById("messages");
+const chatMessages =
+  document.getElementById("chatMessages");
 
-const promptBox =
-  document.getElementById("prompt");
-
-const composer =
-  document.getElementById("composer");
-
-const chatList =
-  document.getElementById("chatList");
+const welcome =
+  document.getElementById("welcome");
 
 const sendBtn =
   document.getElementById("sendBtn");
 
-const fileInput =
-  document.getElementById("fileInput");
+const newChatBtn =
+  document.getElementById("newChatBtn");
+
+const clearBtn =
+  document.getElementById("clearBtn");
+
+const settingsBtn =
+  document.getElementById("settingsBtn");
+
+const settingsModal =
+  document.getElementById("settingsModal");
+
+const closeSettings =
+  document.getElementById("closeSettings");
+
+const mobileMenu =
+  document.getElementById("mobileMenu");
+
+const sidebar =
+  document.getElementById("sidebar");
+
+const chatHistory =
+  document.getElementById("chatHistory");
+
+let chats = [];
 
 
-/* =================================================
-   STATE
-================================================= */
-
-let history = [];
-
-let qtmApiKey =
-  localStorage.getItem("qtm_api_key") || "";
-
-
-/* =================================================
-   JSON RESPONSE READER
-================================================= */
-
-async function getJSON(response) {
-
-  const text =
-    await response.text();
-
-  console.log(
-    "QTM SERVER:",
-    response.status,
-    response.url,
-    text
-  );
-
-  try {
-
-    return JSON.parse(text);
-
-  } catch (error) {
-
-    throw new Error(
-      "Cloudflare Worker returned HTML instead of JSON."
-    );
-
-  }
-}
-
-
-/* =================================================
-   CREATE API KEY
-================================================= */
-
-async function createApiKey() {
-
-  const response =
-    await fetch(
-      API_URL + "/api/keys/create",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-        cache: "no-store"
-      }
-    );
-
-
-  const data =
-    await getJSON(response);
-
-
-  if (!response.ok) {
-
-    throw new Error(
-      data.error ||
-      "Could not create QTM API key."
-    );
-
-  }
-
-
-  if (!data.api_key) {
-
-    throw new Error(
-      "QTM Worker did not return an API key."
-    );
-
-  }
-
-
-  qtmApiKey =
-    data.api_key;
-
-
-  localStorage.setItem(
-    "qtm_api_key",
-    qtmApiKey
-  );
-
-
-  return qtmApiKey;
-}
-
-
-/* =================================================
-   GET API KEY
-================================================= */
-
-async function getApiKey() {
-
-  if (qtmApiKey) {
-
-    return qtmApiKey;
-
-  }
-
-
-  return await createApiKey();
-}
-
-
-/* =================================================
+/* =========================
    ADD MESSAGE
-================================================= */
+========================= */
 
-function addMessage(
-  role,
-  text
-) {
+function addMessage(text, role) {
 
-  const welcome =
-    messages.querySelector(".welcome");
-
-
-  if (welcome) {
-
-    welcome.remove();
-
-  }
-
+  welcome.style.display = "none";
 
   const row =
     document.createElement("div");
 
-
   row.className =
-    "message " + role;
+    `message-row ${role}`;
 
+  const wrapper =
+    document.createElement("div");
+
+  const label =
+    document.createElement("div");
+
+  label.className =
+    "message-label";
+
+  label.textContent =
+    role === "user"
+      ? "YOU"
+      : "QTM AI";
 
   const bubble =
     document.createElement("div");
-
 
   bubble.className =
-    "bubble";
+    "message";
 
+  bubble.textContent = text;
 
-  bubble.textContent =
-    text;
+  wrapper.appendChild(label);
 
+  wrapper.appendChild(bubble);
 
-  row.appendChild(
-    bubble
-  );
+  row.appendChild(wrapper);
 
+  chatMessages.appendChild(row);
 
-  messages.appendChild(
-    row
-  );
-
-
-  messages.scrollTop =
-    messages.scrollHeight;
-
-
-  return bubble;
+  scrollChat();
 }
 
 
-/* =================================================
-   SAVE CHAT TITLE
-================================================= */
+/* =========================
+   SCROLL
+========================= */
 
-function saveChatTitle(text) {
+function scrollChat() {
 
-  if (
-    chatList.children.length > 0
-  ) {
+  const chatArea =
+    document.getElementById("chatArea");
 
-    return;
+  chatArea.scrollTop =
+    chatArea.scrollHeight;
+}
 
-  }
+
+/* =========================
+   SEND MESSAGE
+========================= */
+
+async function sendMessage(text) {
+
+  if (!text.trim()) return;
+
+  addMessage(text, "user");
+
+  messageInput.value = "";
+
+  messageInput.style.height =
+    "auto";
+
+  sendBtn.disabled = true;
 
 
-  const item =
+  /* Loading */
+
+  const loading =
     document.createElement("div");
 
+  loading.className =
+    "message-row ai";
 
-  item.className =
-    "chat-item";
+  loading.innerHTML = `
+    <div>
+      <div class="message-label">QTM AI</div>
+      <div class="message">Thinking...</div>
+    </div>
+  `;
 
+  chatMessages.appendChild(loading);
 
-  item.textContent =
-    text.substring(
-      0,
-      40
-    );
-
-
-  chatList.appendChild(
-    item
-  );
-}
-
-
-/* =================================================
-   ASK QTM AI
-================================================= */
-
-async function askQTM(text) {
-
-  history.push({
-    role: "user",
-    content: text
-  });
-
-
-  addMessage(
-    "user",
-    text
-  );
-
-
-  const bubble =
-    addMessage(
-      "assistant",
-      "Thinking..."
-    );
-
-
-  if (sendBtn) {
-
-    sendBtn.disabled = true;
-
-  }
+  scrollChat();
 
 
   try {
 
-    /* Get API key */
-
-    const key =
-      await getApiKey();
-
-
-    /* Send chat request */
-
     const response =
       await fetch(
-        API_URL + "/v1/chat",
+        `${API_URL}/api/chat`,
         {
           method: "POST",
 
           headers: {
             "Content-Type":
-              "application/json",
-
-            "X-QTM-Key":
-              key
+              "application/json"
           },
 
           body: JSON.stringify({
-            messages:
-              history
-          }),
-
-          cache: "no-store"
+            message: text
+          })
         }
       );
-
-
-    const data =
-      await getJSON(response);
 
 
     if (!response.ok) {
 
       throw new Error(
-        data.error ||
-        "Chat request failed: HTTP " +
-        response.status
+        `Server error: ${response.status}`
       );
 
     }
 
 
-    const answer =
-      data.answer ||
-      "QTM AI returned no answer.";
+    const data =
+      await response.json();
 
 
-    bubble.textContent =
-      answer;
+    loading.remove();
 
 
-    history.push({
-      role: "assistant",
-      content: answer
-    });
+    if (
+      data.success &&
+      data.response
+    ) {
+
+      addMessage(
+        data.response,
+        "ai"
+      );
+
+      addHistory(text);
+
+    } else {
+
+      addMessage(
+        data.error ||
+        "QTM AI could not respond.",
+        "ai"
+      );
+
+    }
 
 
   } catch (error) {
 
-    console.error(
-      "QTM AI ERROR:",
-      error
+    console.error(error);
+
+    loading.remove();
+
+    addMessage(
+      "Unable to connect to QTM AI. Please try again.",
+      "ai"
     );
 
-
-    bubble.textContent =
-      "QTM AI couldn't respond.\n\n" +
-      error.message;
-
-
-    /*
-      If the key is invalid,
-      remove it so another key
-      can be created later.
-    */
-
-    if (
-      error.message
-        .toLowerCase()
-        .includes("invalid qtm api key")
-    ) {
-
-      localStorage.removeItem(
-        "qtm_api_key"
-      );
-
-      qtmApiKey = "";
-
-    }
-
   }
 
 
-  if (sendBtn) {
+  sendBtn.disabled = false;
 
-    sendBtn.disabled = false;
-
-  }
-
-
-  promptBox.focus();
+  messageInput.focus();
 }
 
 
-/* =================================================
-   SEND MESSAGE
-================================================= */
+/* =========================
+   FORM
+========================= */
 
-composer.addEventListener(
+chatForm.addEventListener(
   "submit",
   function(event) {
 
     event.preventDefault();
 
-
     const text =
-      promptBox.value.trim();
+      messageInput.value.trim();
 
+    if (text) {
 
-    if (!text) {
-
-      return;
+      sendMessage(text);
 
     }
-
-
-    promptBox.value =
-      "";
-
-
-    saveChatTitle(
-      text
-    );
-
-
-    askQTM(
-      text
-    );
 
   }
 );
 
 
-/* =================================================
+/* =========================
    ENTER TO SEND
-================================================= */
+========================= */
 
-promptBox.addEventListener(
+messageInput.addEventListener(
   "keydown",
   function(event) {
 
@@ -438,7 +260,7 @@ promptBox.addEventListener(
 
       event.preventDefault();
 
-      composer.requestSubmit();
+      chatForm.requestSubmit();
 
     }
 
@@ -446,274 +268,189 @@ promptBox.addEventListener(
 );
 
 
-/* =================================================
-   QUICK BUTTONS
-================================================= */
+/* =========================
+   AUTO RESIZE
+========================= */
 
-function setupQuickButtons() {
+messageInput.addEventListener(
+  "input",
+  function() {
 
-  document
-    .querySelectorAll(
-      ".quick button"
-    )
-    .forEach(button => {
+    this.style.height =
+      "auto";
 
-      button.addEventListener(
-        "click",
-        function() {
+    this.style.height =
+      Math.min(
+        this.scrollHeight,
+        150
+      ) + "px";
 
-          promptBox.value =
-            button.dataset.prompt;
+  }
+);
 
-          composer.requestSubmit();
 
-        }
-      );
+/* =========================
+   SUGGESTIONS
+========================= */
 
-    });
+document
+  .querySelectorAll(
+    ".suggestions button"
+  )
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        sendMessage(
+          button.dataset.prompt
+        );
+
+      }
+    );
+
+  });
+
+
+/* =========================
+   NEW CHAT
+========================= */
+
+function newChat() {
+
+  chatMessages.innerHTML = "";
+
+  welcome.style.display =
+    "block";
+
+  messageInput.value = "";
+
+  messageInput.style.height =
+    "auto";
+
+  messageInput.focus();
+
+}
+
+newChatBtn.addEventListener(
+  "click",
+  newChat
+);
+
+clearBtn.addEventListener(
+  "click",
+  newChat
+);
+
+
+/* =========================
+   CHAT HISTORY
+========================= */
+
+function addHistory(text) {
+
+  const item =
+    document.createElement("div");
+
+  item.className =
+    "history-item";
+
+  item.textContent = text;
+
+  chatHistory.prepend(item);
+
+  chats.push(text);
 
 }
 
 
-setupQuickButtons();
+/* =========================
+   SETTINGS
+========================= */
 
+settingsBtn.addEventListener(
+  "click",
+  () => {
 
-/* =================================================
-   NEW CHAT
-================================================= */
+    settingsModal.classList
+      .remove("hidden");
 
-document
-  .getElementById("newChat")
-  .addEventListener(
-    "click",
-    function() {
+  }
+);
 
-      history = [];
+closeSettings.addEventListener(
+  "click",
+  () => {
 
+    settingsModal.classList
+      .add("hidden");
 
-      messages.innerHTML = `
-        <div class="welcome">
+  }
+);
 
-          <div class="logo-orb">
-            Q
-          </div>
-
-          <h1>
-            How can I help you?
-          </h1>
-
-          <p>
-            Welcome to QTM AI.
-            Ask questions, study,
-            create and explore.
-          </p>
-
-          <div class="quick">
-
-            <button
-              data-prompt="Explain this topic simply">
-              📚 Explain a topic
-            </button>
-
-            <button
-              data-prompt="Help me study for an exam">
-              🎓 Study help
-            </button>
-
-            <button
-              data-prompt="Give me ideas for a project">
-              💡 Project ideas
-            </button>
-
-            <button
-              data-prompt="Create a PDF about renewable energy">
-              📄 Create a PDF
-            </button>
-
-          </div>
-
-        </div>
-      `;
-
-
-      setupQuickButtons();
-
-
-      promptBox.focus();
-
-    }
-  );
-
-
-/* =================================================
-   CLEAR CHAT
-================================================= */
-
-document
-  .getElementById("clearBtn")
-  .addEventListener(
-    "click",
-    function() {
-
-      history = [];
-
-
-      messages.innerHTML = `
-        <div class="welcome">
-
-          <div class="logo-orb">
-            Q
-          </div>
-
-          <h1>
-            How can I help you?
-          </h1>
-
-          <p>
-            Welcome to QTM AI.
-            Ask questions, study,
-            create and explore.
-          </p>
-
-        </div>
-      `;
-
-
-      promptBox.focus();
-
-    }
-  );
-
-
-/* =================================================
-   MOBILE MENU
-================================================= */
-
-document
-  .getElementById("menuBtn")
-  .addEventListener(
-    "click",
-    function() {
-
-      document
-        .getElementById("sidebar")
-        .classList.toggle(
-          "open"
-        );
-
-    }
-  );
-
-
-/* =================================================
-   ATTACH FILE
-================================================= */
-
-document
-  .getElementById("attachBtn")
-  .addEventListener(
-    "click",
-    function() {
-
-      fileInput.click();
-
-    }
-  );
-
-
-/* =================================================
-   FILE SELECT
-================================================= */
-
-fileInput.addEventListener(
-  "change",
-  function() {
+settingsModal.addEventListener(
+  "click",
+  event => {
 
     if (
-      !this.files.length
+      event.target ===
+      settingsModal
     ) {
 
-      return;
+      settingsModal.classList
+        .add("hidden");
 
     }
-
-
-    const file =
-      this.files[0];
-
-
-    addMessage(
-      "user",
-      "📎 Attached: " +
-      file.name
-    );
-
-
-    addMessage(
-      "assistant",
-      "📎 File received. Full file analysis will be connected in a future QTM AI version."
-    );
-
-
-    this.value = "";
 
   }
 );
 
 
-/* =================================================
-   IMAGE BUTTON
-================================================= */
+/* =========================
+   MOBILE MENU
+========================= */
 
-document
-  .getElementById("imageBtn")
-  .addEventListener(
-    "click",
-    function() {
+mobileMenu.addEventListener(
+  "click",
+  () => {
 
-      addMessage(
-        "assistant",
-        "🖼 Image generation will be connected in the next QTM AI upgrade."
-      );
+    sidebar.classList.toggle(
+      "open"
+    );
 
-    }
-  );
+  }
+);
 
 
-/* =================================================
-   PDF BUTTON
-================================================= */
+/* =========================
+   WORKER TEST
+========================= */
 
-document
-  .getElementById("pdfBtn")
-  .addEventListener(
-    "click",
-    function() {
+async function checkWorker() {
 
-      addMessage(
-        "assistant",
-        "📄 PDF generation will be connected in the next QTM AI upgrade."
-      );
+  try {
 
-    }
-  );
+    const response =
+      await fetch(API_URL);
 
+    const data =
+      await response.json();
 
-/* =================================================
-   SETTINGS
-================================================= */
+    console.log(
+      "QTM AI Worker:",
+      data
+    );
 
-document
-  .getElementById("settingsBtn")
-  .addEventListener(
-    "click",
-    function() {
+  } catch (error) {
 
-      alert(
-        "QTM AI Worker\n\n" +
-        API_URL +
-        "\n\nV2 API is connected."
-      );
+    console.error(
+      "Worker connection failed:",
+      error
+    );
 
-    }
-  );
+  }
+
+}
+
+checkWorker();
