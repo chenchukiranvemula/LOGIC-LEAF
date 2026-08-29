@@ -1,566 +1,82 @@
-/* =========================================
-   QTM AI
-   Firebase + Google Authentication
-========================================= */
+// ==========================================
+// QTM AI - APP.JS
+// ==========================================
 
-
-/* FIREBASE */
-
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-
-
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-
-
-/* =========================================
-   FIREBASE CONFIG
-========================================= */
-
-const firebaseConfig = {
-
-  apiKey:
-    "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
-
-  authDomain:
-    "logic-leaf.firebaseapp.com",
-
-  projectId:
-    "logic-leaf",
-
-  storageBucket:
-    "logic-leaf.firebasestorage.app",
-
-  messagingSenderId:
-    "288673697563",
-
-  appId:
-    "1:288673697563:web:c14d08452b01568d1c8dbe",
-
-  measurementId:
-    "G-Z30K3K85LX"
-
-};
-
-
-/* =========================================
-   INITIALIZE FIREBASE
-========================================= */
-
-const firebaseApp =
-  initializeApp(firebaseConfig);
-
-
-const auth =
-  getAuth(firebaseApp);
-
-
-const googleProvider =
-  new GoogleAuthProvider();
-
-
-/* =========================================
-   QTM AI WORKER
-========================================= */
-
-const API_URL =
+const WORKER_URL =
   "https://qtm-ai-new.qtmkiller6.workers.dev";
 
 
-/* =========================================
-   ELEMENTS
-========================================= */
+// ==========================================
+// ELEMENTS
+// ==========================================
 
-const welcome =
-  document.getElementById("welcome");
+const chatInput =
+  document.getElementById("chatInput");
 
-const messages =
-  document.getElementById("messages");
+const sendBtn =
+  document.getElementById("sendBtn");
 
-const chatArea =
-  document.getElementById("chatArea");
-
-const messageInput =
-  document.getElementById("messageInput");
-
-const heroMessage =
-  document.getElementById("heroMessage");
-
-const chatForm =
-  document.getElementById("chatForm");
-
-const heroForm =
-  document.getElementById("heroForm");
-
-const sendButton =
-  document.getElementById("sendButton");
-
-const heroSend =
-  document.getElementById("heroSend");
-
-const newChatBtn =
-  document.getElementById("newChatBtn");
-
-const chatHistory =
-  document.getElementById("chatHistory");
-
-const chatSearch =
-  document.getElementById("chatSearch");
-
-const sidebar =
-  document.getElementById("sidebar");
-
-const mobileMenu =
-  document.getElementById("mobileMenu");
-
-const loginBtn =
-  document.getElementById("loginBtn");
-
-const loginText =
-  document.getElementById("loginText");
-
-const account =
-  document.getElementById("account");
-
-const googleButton =
-  document.getElementById("googleButton");
-
-const loginModal =
-  document.getElementById("loginModal");
-
-const closeLogin =
-  document.getElementById("closeLogin");
-
-const loginStatus =
-  document.getElementById("loginStatus");
-
-const settingsBtn =
-  document.getElementById("settingsBtn");
-
-const settingsModal =
-  document.getElementById("settingsModal");
-
-const closeSettings =
-  document.getElementById("closeSettings");
-
-const settingsAccount =
-  document.getElementById("settingsAccount");
+const chatMessages =
+  document.getElementById("chatMessages");
 
 
-/* =========================================
-   USER
-========================================= */
+// ==========================================
+// SEND MESSAGE
+// ==========================================
 
-let currentUser = null;
+async function sendMessage() {
 
-
-/* =========================================
-   LOCAL CHAT HISTORY
-========================================= */
-
-let chats =
-  JSON.parse(
-    localStorage.getItem("qtm_ai_chats") || "[]"
-  );
-
-
-/* =========================================
-   GOOGLE LOGIN
-========================================= */
-
-async function googleLogin() {
-
-  loginStatus.textContent =
-    "Connecting to Google...";
-
-
-  try {
-
-    const result =
-      await signInWithPopup(
-        auth,
-        googleProvider
-      );
-
-
-    currentUser =
-      result.user;
-
-
-    loginStatus.textContent =
-      `Welcome, ${currentUser.displayName || "QTM AI user"}`;
-
-
-    setTimeout(() => {
-
-      loginModal.classList.add(
-        "hidden"
-      );
-
-    }, 800);
-
-
-  } catch (error) {
-
+  if (!chatInput || !chatMessages) {
     console.error(
-      "Google login error:",
-      error
+      "QTM AI: Chat elements not found."
     );
 
-
-    if (
-      error.code ===
-      "auth/popup-closed-by-user"
-    ) {
-
-      loginStatus.textContent =
-        "Login window was closed.";
-
-    } else {
-
-      loginStatus.textContent =
-        "Google sign-in failed. Check Firebase Authentication settings.";
-
-    }
-
+    return;
   }
 
-}
+
+  const message =
+    chatInput.value.trim();
 
 
-/* =========================================
-   SIGN OUT
-========================================= */
-
-async function logout() {
-
-  try {
-
-    await signOut(auth);
-
-    currentUser = null;
-
-  } catch (error) {
-
-    console.error(
-      "Logout error:",
-      error
-    );
-
+  if (!message) {
+    return;
   }
 
-}
 
-
-/* =========================================
-   AUTH STATE
-========================================= */
-
-onAuthStateChanged(
-  auth,
-  user => {
-
-    currentUser =
-      user;
-
-
-    if (user) {
-
-      loginText.textContent =
-        "Sign out";
-
-
-      account.textContent =
-        `${user.displayName || "QTM AI user"}`;
-
-
-      settingsAccount.textContent =
-        user.email || "Google account";
-
-    } else {
-
-      loginText.textContent =
-        "Sign in with Google";
-
-
-      account.textContent =
-        "Guest mode";
-
-
-      settingsAccount.textContent =
-        "Guest";
-
-    }
-
-  }
-);
-
-
-/* =========================================
-   LOGIN BUTTON
-========================================= */
-
-loginBtn.addEventListener(
-  "click",
-  async () => {
-
-    if (currentUser) {
-
-      await logout();
-
-    } else {
-
-      loginModal.classList.remove(
-        "hidden"
-      );
-
-    }
-
-  }
-);
-
-
-googleButton.addEventListener(
-  "click",
-  googleLogin
-);
-
-
-closeLogin.addEventListener(
-  "click",
-  () => {
-
-    loginModal.classList.add(
-      "hidden"
-    );
-
-  }
-);
-
-
-/* =========================================
-   SETTINGS
-========================================= */
-
-settingsBtn.addEventListener(
-  "click",
-  () => {
-
-    settingsModal.classList.remove(
-      "hidden"
-    );
-
-  }
-);
-
-
-closeSettings.addEventListener(
-  "click",
-  () => {
-
-    settingsModal.classList.add(
-      "hidden"
-    );
-
-  }
-);
-
-
-/* =========================================
-   MODAL OUTSIDE CLICK
-========================================= */
-
-document
-  .querySelectorAll(".modal")
-  .forEach(modal => {
-
-    modal.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target === modal
-        ) {
-
-          modal.classList.add(
-            "hidden"
-          );
-
-        }
-
-      }
-    );
-
-  });
-
-
-/* =========================================
-   ADD MESSAGE
-========================================= */
-
-function addMessage(
-  text,
-  role
-) {
-
-  welcome.style.display =
-    "none";
-
-
-  const row =
-    document.createElement("div");
-
-
-  row.className =
-    `message-row ${role}`;
-
-
-  const wrapper =
-    document.createElement("div");
-
-
-  wrapper.className =
-    "message-wrapper";
-
-
-  const label =
-    document.createElement("div");
-
-
-  label.className =
-    "message-label";
-
-
-  label.textContent =
-    role === "user"
-      ? "YOU"
-      : "QTM AI";
-
-
-  const bubble =
-    document.createElement("div");
-
-
-  bubble.className =
-    "message";
-
-
-  bubble.textContent =
-    text;
-
-
-  wrapper.appendChild(label);
-
-  wrapper.appendChild(bubble);
-
-  row.appendChild(wrapper);
-
-  messages.appendChild(row);
-
-
-  scrollBottom();
-
-}
-
-
-/* =========================================
-   SCROLL
-========================================= */
-
-function scrollBottom() {
-
-  chatArea.scrollTop =
-    chatArea.scrollHeight;
-
-}
-
-
-/* =========================================
-   ASK AI
-========================================= */
-
-async function askAI(text) {
-
-  text =
-    String(text || "").trim();
-
-
-  if (!text) return;
-
+  // Show user message
 
   addMessage(
-    text,
+    message,
     "user"
   );
 
 
-  saveChat(text);
+  chatInput.value = "";
 
 
-  messageInput.value =
-    "";
+  // Disable button
 
-  heroMessage.value =
-    "";
-
-
-  messageInput.style.height =
-    "auto";
-
-  heroMessage.style.height =
-    "auto";
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Thinking...";
+  }
 
 
-  sendButton.disabled =
-    true;
-
-  heroSend.disabled =
-    true;
-
+  // Show AI loading message
 
   const loading =
-    document.createElement("div");
-
-
-  loading.className =
-    "message-row ai";
-
-
-  loading.innerHTML = `
-    <div class="message-wrapper">
-
-      <div class="message-label">
-        QTM AI
-      </div>
-
-      <div class="message">
-        Thinking...
-      </div>
-
-    </div>
-  `;
-
-
-  messages.appendChild(
-    loading
-  );
-
-
-  scrollBottom();
+    addMessage(
+      "QTM AI is thinking...",
+      "ai loading"
+    );
 
 
   try {
 
     const response =
       await fetch(
-        `${API_URL}/api/chat`,
+        `${WORKER_URL}/api/chat`,
         {
           method: "POST",
 
@@ -569,137 +85,154 @@ async function askAI(text) {
               "application/json"
           },
 
-          body:
-            JSON.stringify({
-              message: text
-            })
+          body: JSON.stringify({
+            message: message
+          })
         }
       );
 
 
-    const raw =
-      await response.text();
+    // Read response
+
+    const data =
+      await response.json();
 
 
-    let data;
+    // Remove loading message
 
-
-    try {
-
-      data =
-        JSON.parse(raw);
-
-    } catch {
-
-      throw new Error(
-        "Worker did not return JSON."
-      );
-
+    if (loading) {
+      loading.remove();
     }
 
 
-    loading.remove();
+    // Server error
 
+    if (!response.ok || !data.ok) {
 
-    if (
-      response.ok &&
-      data.response
-    ) {
-
-      addMessage(
-        data.response,
-        "ai"
-      );
-
-    } else {
-
-      addMessage(
+      const errorText =
+        data.detail ||
         data.error ||
-        "QTM AI couldn't answer.",
-        "ai"
+        `Server error (${response.status})`;
+
+      addMessage(
+        `⚠️ ${errorText}`,
+        "ai error"
       );
 
+      return;
     }
+
+
+    // AI response
+
+    addMessage(
+      data.response,
+      "ai"
+    );
+
 
   } catch (error) {
 
     console.error(
-      "QTM AI error:",
+      "QTM AI connection error:",
       error
     );
 
 
-    loading.remove();
+    if (loading) {
+      loading.remove();
+    }
 
 
     addMessage(
-      "Unable to connect to QTM AI. Please check your Cloudflare Worker.",
-      "ai"
+      "⚠️ Unable to connect to QTM AI.",
+      "ai error"
     );
 
+  } finally {
+
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Send";
+    }
+
+    chatInput.focus();
   }
+}
 
 
-  sendButton.disabled =
-    false;
+// ==========================================
+// ADD MESSAGE
+// ==========================================
 
-  heroSend.disabled =
-    false;
+function addMessage(
+  text,
+  type
+) {
+
+  const message =
+    document.createElement("div");
 
 
-  messageInput.focus();
+  message.className =
+    `message ${type}`;
+
+
+  const content =
+    document.createElement("div");
+
+
+  content.className =
+    "message-content";
+
+
+  content.textContent =
+    text;
+
+
+  message.appendChild(
+    content
+  );
+
+
+  chatMessages.appendChild(
+    message
+  );
+
+
+  // Scroll to newest message
+
+  chatMessages.scrollTop =
+    chatMessages.scrollHeight;
+
+
+  return message;
+}
+
+
+// ==========================================
+// SEND BUTTON
+// ==========================================
+
+if (sendBtn) {
+
+  sendBtn.addEventListener(
+    "click",
+    sendMessage
+  );
 
 }
 
 
-/* =========================================
-   CHAT FORM
-========================================= */
+// ==========================================
+// ENTER KEY
+// ==========================================
 
-chatForm.addEventListener(
-  "submit",
-  event => {
+if (chatInput) {
 
-    event.preventDefault();
-
-    askAI(
-      messageInput.value
-    );
-
-  }
-);
-
-
-/* =========================================
-   HERO FORM
-========================================= */
-
-heroForm.addEventListener(
-  "submit",
-  event => {
-
-    event.preventDefault();
-
-    askAI(
-      heroMessage.value
-    );
-
-  }
-);
-
-
-/* =========================================
-   ENTER TO SEND
-========================================= */
-
-function setupEnter(
-  input,
-  form
-) {
-
-  input.addEventListener(
+  chatInput.addEventListener(
     "keydown",
-    event => {
+    function(event) {
 
       if (
         event.key === "Enter" &&
@@ -708,7 +241,7 @@ function setupEnter(
 
         event.preventDefault();
 
-        form.requestSubmit();
+        sendMessage();
 
       }
 
@@ -718,300 +251,17 @@ function setupEnter(
 }
 
 
-setupEnter(
-  messageInput,
-  chatForm
-);
-
-
-setupEnter(
-  heroMessage,
-  heroForm
-);
-
-
-/* =========================================
-   AUTO RESIZE
-========================================= */
-
-function autoResize(
-  input
-) {
-
-  input.addEventListener(
-    "input",
-    () => {
-
-      input.style.height =
-        "auto";
-
-
-      input.style.height =
-        Math.min(
-          input.scrollHeight,
-          150
-        ) + "px";
-
-    }
-  );
-
-}
-
-
-autoResize(
-  messageInput
-);
-
-autoResize(
-  heroMessage
-);
-
-
-/* =========================================
-   QUICK ACTIONS
-========================================= */
-
-document
-  .querySelectorAll(
-    ".quick-actions button"
-  )
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        askAI(
-          button.dataset.prompt
-        );
-
-      }
-    );
-
-  });
-
-
-/* =========================================
-   NEW CHAT
-========================================= */
-
-newChatBtn.addEventListener(
-  "click",
-  () => {
-
-    messages.innerHTML =
-      "";
-
-    welcome.style.display =
-      "block";
-
-    messageInput.value =
-      "";
-
-    heroMessage.value =
-      "";
-
-    messageInput.style.height =
-      "auto";
-
-    heroMessage.style.height =
-      "auto";
-
-    sidebar.classList.remove(
-      "open"
-    );
-
-  }
-);
-
-
-/* =========================================
-   SAVE CHAT
-========================================= */
-
-function saveChat(text) {
-
-  chats.unshift({
-
-    id:
-      Date.now(),
-
-    text:
-      text,
-
-    created:
-      new Date().toISOString()
-
-  });
-
-
-  chats =
-    chats.slice(
-      0,
-      100
-    );
-
-
-  localStorage.setItem(
-    "qtm_ai_chats",
-    JSON.stringify(chats)
-  );
-
-
-  renderHistory();
-
-}
-
-
-/* =========================================
-   RENDER HISTORY
-========================================= */
-
-function renderHistory(
-  search = ""
-) {
-
-  chatHistory.innerHTML =
-    "";
-
-
-  const query =
-    search
-      .toLowerCase()
-      .trim();
-
-
-  const results =
-    chats.filter(
-      chat =>
-        chat.text
-          .toLowerCase()
-          .includes(query)
-    );
-
-
-  if (!results.length) {
-
-    const empty =
-      document.createElement(
-        "div"
-      );
-
-
-    empty.className =
-      "history-item";
-
-
-    empty.textContent =
-      query
-        ? "No matching conversations"
-        : "No conversations yet";
-
-
-    chatHistory.appendChild(
-      empty
-    );
-
-
-    return;
-
-  }
-
-
-  results.forEach(
-    chat => {
-
-      const item =
-        document.createElement(
-          "div"
-        );
-
-
-      item.className =
-        "history-item";
-
-
-      item.textContent =
-        chat.text;
-
-
-      item.title =
-        chat.text;
-
-
-      item.addEventListener(
-        "click",
-        () => {
-
-          messageInput.value =
-            chat.text;
-
-          messageInput.focus();
-
-          sidebar.classList.remove(
-            "open"
-          );
-
-        }
-      );
-
-
-      chatHistory.appendChild(
-        item
-      );
-
-    }
-  );
-
-}
-
-
-renderHistory();
-
-
-/* =========================================
-   SEARCH
-========================================= */
-
-chatSearch.addEventListener(
-  "input",
-  () => {
-
-    renderHistory(
-      chatSearch.value
-    );
-
-  }
-);
-
-
-/* =========================================
-   MOBILE MENU
-========================================= */
-
-mobileMenu.addEventListener(
-  "click",
-  () => {
-
-    sidebar.classList.toggle(
-      "open"
-    );
-
-  }
-);
-
-
-/* =========================================
-   WORKER HEALTH
-========================================= */
-
-async function checkWorker() {
+// ==========================================
+// CONNECTION TEST
+// ==========================================
+
+async function checkQTM() {
 
   try {
 
     const response =
       await fetch(
-        `${API_URL}/api/health`
+        `${WORKER_URL}/api/health`
       );
 
 
@@ -1020,14 +270,15 @@ async function checkWorker() {
 
 
     console.log(
-      "QTM AI Worker:",
+      "QTM AI:",
       data
     );
 
+
   } catch (error) {
 
-    console.warn(
-      "Worker health check failed:",
+    console.error(
+      "QTM AI health check failed:",
       error
     );
 
@@ -1036,4 +287,4 @@ async function checkWorker() {
 }
 
 
-checkWorker();
+checkQTM();
