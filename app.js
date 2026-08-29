@@ -1,369 +1,122 @@
-// ==========================================
-// QTM AI APP
-// ==========================================
+// Change this to your Cloudflare Worker URL if running the frontend separately
+const API_BASE_URL = "";
 
-const WORKER_URL =
-  "https://qtm-ai-new.qtmkiller6.workers.dev";
+const chatMessages = document.getElementById("chatMessages");
+const chatForm = document.getElementById("chatForm");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const statusBadge = document.getElementById("statusBadge");
+const statusText = document.getElementById("statusText");
 
+// Check health endpoint on load
+async function checkHealth() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/health`);
+    const data = await res.json();
 
-// Elements
-
-const input =
-  document.getElementById("chatInput");
-
-const sendBtn =
-  document.getElementById("sendBtn");
-
-const chatArea =
-  document.getElementById("chatMessages");
-
-const welcome =
-  document.getElementById("welcome");
-
-const newChatBtn =
-  document.getElementById("newChatBtn");
-
-const history =
-  document.getElementById("chatHistory");
-
-
-// ==========================================
-// SEND
-// ==========================================
-
-async function sendMessage() {
-
-  const text =
-    input.value.trim();
-
-  if (!text) return;
-
-
-  // Hide welcome
-
-  if (welcome) {
-    welcome.style.display = "none";
+    if (data.ok && data.ai_binding) {
+      statusBadge.classList.add("online");
+      statusText.textContent = "Online";
+    } else {
+      statusText.textContent = "AI Binding Missing";
+    }
+  } catch (err) {
+    statusText.textContent = "Offline";
   }
+}
 
+// Append message bubbles to chat UI
+function appendMessage(text, sender = "ai", isError = false) {
+  const messageDiv = document.createElement("div");
+  messageDiv.className = `message ${sender}${isError ? " error" : ""}`;
 
-  // Add user message
+  const bubbleDiv = document.createElement("div");
+  bubbleDiv.className = "bubble";
+  bubbleDiv.textContent = text;
 
-  addMessage(
-    text,
-    "user"
-  );
+  messageDiv.appendChild(bubbleDiv);
+  chatMessages.appendChild(messageDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
 
+  return messageDiv;
+}
 
-  // Clear
+// Display temporary typing indicator
+function showTypingIndicator() {
+  const messageDiv = document.createElement("div");
+  messageDiv.className = "message ai";
+  messageDiv.id = "typingIndicator";
 
-  input.value = "";
+  const bubbleDiv = document.createElement("div");
+  bubbleDiv.className = "bubble typing-dots";
+  bubbleDiv.innerHTML = "<span></span><span></span><span></span>";
 
-  input.style.height = "auto";
+  messageDiv.appendChild(bubbleDiv);
+  chatMessages.appendChild(messageDiv);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
+function removeTypingIndicator() {
+  const indicator = document.getElementById("typingIndicator");
+  if (indicator) indicator.remove();
+}
 
-  // Disable
+// Handle Form Submission
+chatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
+  const query = messageInput.value.trim();
+  if (!query) return;
+
+  // Render User Message
+  appendMessage(query, "user");
+  messageInput.value = "";
+  messageInput.style.height = "auto";
+  
+  // UI Loading State
   sendBtn.disabled = true;
-
-  sendBtn.textContent =
-    "...";
-
-
-  // Loading message
-
-  const loading =
-    addMessage(
-      "Thinking...",
-      "ai"
-    );
-
+  messageInput.disabled = true;
+  showTypingIndicator();
 
   try {
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ message: query })
+    });
 
-    const response =
-      await fetch(
-        `${WORKER_URL}/api/chat`,
-        {
-          method: "POST",
+    const data = await response.json();
+    removeTypingIndicator();
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            message: text
-          })
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    // Remove loading
-
-    loading.remove();
-
-
-    if (
-      !response.ok ||
-      !data.ok
-    ) {
-
-      addMessage(
-        data.error ||
-        data.detail ||
-        "QTM AI server error.",
-        "ai error"
-      );
-
-      return;
+    if (response.ok && data.ok) {
+      appendMessage(data.response, "ai");
+    } else {
+      appendMessage(data.error || "Failed to fetch response.", "ai", true);
     }
-
-
-    // AI response
-
-    addMessage(
-      data.response ||
-      data.message ||
-      "No response received.",
-      "ai"
-    );
-
-
-    // Add history
-
-    addHistory(text);
-
-
   } catch (error) {
-
-    console.error(
-      "QTM AI:",
-      error
-    );
-
-
-    loading.remove();
-
-
-    addMessage(
-      "Unable to connect to QTM AI.",
-      "ai error"
-    );
-
-
+    removeTypingIndicator();
+    appendMessage("Network error: Could not reach the server.", "ai", true);
   } finally {
-
     sendBtn.disabled = false;
-
-    sendBtn.textContent =
-      "Send";
-
-    input.focus();
-
+    messageInput.disabled = false;
+    messageInput.focus();
   }
+});
 
-}
+// Auto-expand textarea on typing & submit on Shift+Enter
+messageInput.addEventListener("input", function () {
+  this.style.height = "auto";
+  this.style.height = Math.min(this.scrollHeight, 120) + "px";
+});
 
-
-// ==========================================
-// ADD MESSAGE
-// ==========================================
-
-function addMessage(
-  text,
-  type
-) {
-
-  const wrapper =
-    document.createElement("div");
-
-  wrapper.className =
-    `message ${type}`;
-
-
-  const content =
-    document.createElement("div");
-
-  content.className =
-    "message-content";
-
-  content.textContent =
-    text;
-
-
-  wrapper.appendChild(
-    content
-  );
-
-  chatArea.appendChild(
-    wrapper
-  );
-
-
-  chatArea.scrollTop =
-    chatArea.scrollHeight;
-
-
-  return wrapper;
-}
-
-
-// ==========================================
-// SEND BUTTON
-// ==========================================
-
-sendBtn.addEventListener(
-  "click",
-  sendMessage
-);
-
-
-// ==========================================
-// ENTER
-// ==========================================
-
-input.addEventListener(
-  "keydown",
-  function(event) {
-
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-
-      event.preventDefault();
-
-      sendMessage();
-
-    }
-
+messageInput.addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    chatForm.dispatchEvent(new Event("submit"));
   }
-);
+});
 
-
-// ==========================================
-// NEW CHAT
-// ==========================================
-
-newChatBtn.addEventListener(
-  "click",
-  function() {
-
-    chatArea.innerHTML = "";
-
-    const newWelcome =
-      document.createElement("div");
-
-    newWelcome.className =
-      "welcome";
-
-    newWelcome.innerHTML = `
-
-      <h1>
-        How can I help you?
-      </h1>
-
-      <p>
-        Ask QTM AI anything.
-      </p>
-
-    `;
-
-    chatArea.appendChild(
-      newWelcome
-    );
-
-    input.value = "";
-
-    input.focus();
-
-  }
-);
-
-
-// ==========================================
-// HISTORY
-// ==========================================
-
-function addHistory(text) {
-
-  if (
-    history.textContent
-      .includes("No conversations")
-  ) {
-
-    history.innerHTML = "";
-
-  }
-
-
-  const item =
-    document.createElement("button");
-
-  item.className =
-    "sidebar-action";
-
-  item.textContent =
-    text.length > 32
-      ? text.substring(0, 32) + "..."
-      : text;
-
-
-  item.addEventListener(
-    "click",
-    function() {
-
-      input.value = text;
-
-      input.focus();
-
-    }
-  );
-
-
-  history.prepend(item);
-
-}
-
-
-// ==========================================
-// WORKER HEALTH CHECK
-// ==========================================
-
-async function checkWorker() {
-
-  try {
-
-    const response =
-      await fetch(
-        `${WORKER_URL}/api/health`
-      );
-
-
-    const data =
-      await response.json();
-
-
-    console.log(
-      "QTM AI Worker:",
-      data
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Worker unavailable:",
-      error
-    );
-
-  }
-
-}
-
-
-checkWorker();
+// Initialize
+checkHealth();
