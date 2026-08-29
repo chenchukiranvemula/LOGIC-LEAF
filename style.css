@@ -1,458 +1,371 @@
-/* ==================================================
-   QTM AI — DARK LEAF CINEMATIC THEME
-   ================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 * {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
-html,
+:root {
+  --background: #030504;
+  --panel: rgba(8, 12, 10, 0.82);
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #eef3ef;
+  --muted: #7e8982;
+  --green: #8ee6a7;
+}
+
 body {
   width: 100%;
-  height: 100%;
-  margin: 0;
-}
-
-body {
+  height: 100vh;
   overflow: hidden;
-  position: relative;
 
-  font-family: Arial, sans-serif;
+  background: var(--background);
+  color: var(--text);
 
-  color: #f4f7f5;
-
-  background:
-    radial-gradient(
-      ellipse at 50% 45%,
-      #102019 0%,
-      #07100c 30%,
-      #030706 65%,
-      #010202 100%
-    );
+  font-family: "Inter", sans-serif;
 }
 
+/* BACKGROUND */
 
-/* ==================================================
-   SINGLE LEAF
-   ================================================== */
-
-.qtm-leaf {
+.background {
   position: fixed;
-
-  width: min(48vw, 560px);
-  height: min(72vh, 720px);
-
-  left: 50%;
-  top: 48%;
-
-  transform:
-    translate(-50%, -50%)
-    rotate(-17deg);
-
-  z-index: 0;
+  inset: 0;
+  overflow: hidden;
 
   pointer-events: none;
-
-  opacity: 0.82;
-
-  filter:
-    drop-shadow(0 0 35px rgba(50, 150, 92, 0.18))
-    drop-shadow(0 0 90px rgba(20, 100, 55, 0.12));
-
-  animation: leafBreath 7s ease-in-out infinite;
 }
 
-
-/* Leaf body */
-
-.qtm-leaf::before {
+.background::after {
   content: "";
 
   position: absolute;
-
-  width: 72%;
-  height: 86%;
-
-  left: 14%;
-  top: 7%;
-
-  border-radius:
-    100% 0 100% 0;
-
-  transform:
-    rotate(45deg);
+  inset: 0;
 
   background:
-    linear-gradient(
-      145deg,
-      rgba(55, 115, 73, 0.52),
-      rgba(15, 48, 30, 0.48) 42%,
-      rgba(3, 12, 8, 0.78) 78%,
-      rgba(1, 5, 3, 0.95)
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(85, 160, 105, 0.10),
+      transparent 45%
     );
-
-  border:
-    1px solid rgba(103, 176, 120, 0.18);
-
-  box-shadow:
-    inset 15px 10px 35px rgba(100, 190, 120, 0.08),
-    inset -30px -25px 50px rgba(0, 0, 0, 0.7);
-
-  animation: leafLight 6s ease-in-out infinite;
 }
 
-
-/* ==================================================
-   LEAF MAIN VEIN
-   ================================================== */
-
-.leaf-vein {
+.glow {
   position: absolute;
 
-  width: 2px;
-  height: 78%;
-
-  left: 49%;
-  top: 11%;
-
-  transform:
-    rotate(45deg);
-
-  transform-origin: center;
-
-  background:
-    linear-gradient(
-      to bottom,
-      transparent,
-      rgba(135, 210, 145, 0.08),
-      rgba(120, 205, 137, 0.55),
-      rgba(70, 150, 92, 0.18),
-      transparent
-    );
-
-  box-shadow:
-    0 0 8px rgba(80, 180, 105, 0.35);
-
-  animation:
-    veinPulse 4s ease-in-out infinite;
-}
-
-
-/* ==================================================
-   LEAF GLOW
-   ================================================== */
-
-.leaf-glow {
-  position: absolute;
-
-  width: 75%;
-  height: 75%;
-
-  left: 12%;
-  top: 12%;
+  width: 450px;
+  height: 450px;
 
   border-radius: 50%;
 
-  background:
-    radial-gradient(
-      ellipse,
-      rgba(65, 170, 95, 0.10),
-      transparent 65%
-    );
+  filter: blur(130px);
 
-  filter: blur(35px);
-
-  animation:
-    glowPulse 5s ease-in-out infinite;
+  opacity: 0.12;
 }
 
+.glow1 {
+  background: #55bd73;
 
-/* ==================================================
-   CINEMATIC LIGHT PASS
-   ================================================== */
+  left: -180px;
+  top: -180px;
 
-.qtm-leaf::after {
+  animation: glow1 12s infinite alternate;
+}
+
+.glow2 {
+  background: #7de49c;
+
+  right: -220px;
+  bottom: -220px;
+
+  animation: glow2 15s infinite alternate;
+}
+
+@keyframes glow1 {
+  to {
+    transform: translate(180px, 140px);
+  }
+}
+
+@keyframes glow2 {
+  to {
+    transform: translate(-150px, -120px);
+  }
+}
+
+/* SINGLE LEAF */
+
+.leaf {
+  position: absolute;
+
+  width: 520px;
+  height: 760px;
+
+  right: -180px;
+  top: 50%;
+
+  transform:
+    translateY(-50%)
+    rotate(30deg);
+
+  border-radius: 100% 0 100% 0;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(80, 170, 105, 0.11),
+      rgba(10, 30, 18, 0.015)
+    );
+
+  border: 1px solid rgba(142, 230, 167, 0.06);
+
+  animation: leafFloat 9s ease-in-out infinite;
+}
+
+.leaf::before {
   content: "";
 
   position: absolute;
 
-  width: 18%;
-  height: 110%;
+  width: 2px;
+  height: 90%;
 
-  left: -35%;
-  top: -5%;
-
-  transform:
-    rotate(20deg);
+  left: 50%;
+  top: 5%;
 
   background:
     linear-gradient(
-      90deg,
       transparent,
-      rgba(180, 255, 190, 0.20),
+      rgba(142, 230, 167, 0.2),
       transparent
     );
 
-  filter: blur(12px);
-
-  animation:
-    lightSweep 8s ease-in-out infinite;
+  transform: rotate(-35deg);
 }
 
+.leaf::after {
+  content: "";
 
-/* ==================================================
-   ANIMATIONS
-   ================================================== */
+  position: absolute;
 
-@keyframes leafBreath {
+  width: 65%;
+  height: 1px;
+
+  left: 25%;
+  top: 48%;
+
+  background: rgba(142, 230, 167, 0.10);
+
+  transform: rotate(-35deg);
+}
+
+@keyframes leafFloat {
 
   0%,
   100% {
     transform:
-      translate(-50%, -50%)
-      rotate(-17deg)
-      scale(0.97);
+      translateY(-50%)
+      rotate(30deg);
   }
 
   50% {
     transform:
-      translate(-50%, -50%)
-      rotate(-14deg)
-      scale(1.025);
+      translateY(calc(-50% - 20px))
+      rotate(32deg);
   }
 }
 
+/* APP */
 
-@keyframes leafLight {
+.app {
+  position: relative;
+  z-index: 2;
 
-  0%,
-  100% {
-    filter:
-      brightness(0.75)
-      saturate(0.8);
-  }
+  display: flex;
 
-  50% {
-    filter:
-      brightness(1.12)
-      saturate(1.15);
-  }
+  width: 100%;
+  height: 100vh;
 }
 
-
-@keyframes veinPulse {
-
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-
-  50% {
-    opacity: 0.85;
-  }
-}
-
-
-@keyframes glowPulse {
-
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(0.9);
-  }
-
-  50% {
-    opacity: 0.85;
-    transform: scale(1.12);
-  }
-}
-
-
-@keyframes lightSweep {
-
-  0% {
-    left: -35%;
-    opacity: 0;
-  }
-
-  20% {
-    opacity: 0.8;
-  }
-
-  55% {
-    left: 115%;
-    opacity: 0;
-  }
-
-  100% {
-    left: 115%;
-    opacity: 0;
-  }
-}
-
-
-/* ==================================================
-   SIDEBAR
-   ================================================== */
+/* SIDEBAR */
 
 .sidebar {
-  position: relative;
-  z-index: 10;
-
   width: 270px;
-  min-width: 270px;
 
-  height: 100vh;
+  height: 100%;
 
-  padding: 20px 16px;
+  padding: 24px 18px;
 
   display: flex;
   flex-direction: column;
 
-  background:
-    rgba(3, 8, 6, 0.82);
+  background: rgba(4, 7, 5, 0.78);
 
-  border-right:
-    1px solid rgba(100, 170, 115, 0.12);
+  border-right: 1px solid var(--border);
 
-  backdrop-filter:
-    blur(24px);
-
-  box-shadow:
-    10px 0 50px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(25px);
 }
-
 
 .brand {
-  margin: 5px 8px 24px;
+  display: flex;
 
-  font-size: 26px;
+  align-items: center;
 
-  font-weight: 800;
+  gap: 12px;
 
-  letter-spacing: 1px;
+  margin-bottom: 30px;
 }
 
-.brand span {
-  font-weight: 400;
+.brand-logo {
+  width: 42px;
+  height: 42px;
 
-  color: #7ecf91;
-}
-
-
-.new-chat {
-  padding: 13px 15px;
+  display: grid;
+  place-items: center;
 
   border-radius: 13px;
 
-  border:
-    1px solid rgba(110, 180, 125, 0.15);
+  color: var(--green);
 
-  background:
-    rgba(255, 255, 255, 0.035);
+  background: rgba(142, 230, 167, 0.08);
 
-  color: white;
+  border: 1px solid rgba(142, 230, 167, 0.14);
+
+  font-weight: 700;
+}
+
+.brand h1 {
+  font-size: 16px;
+}
+
+.brand p {
+  margin-top: 3px;
+
+  color: #68736d;
+
+  font-size: 10px;
+}
+
+/* NEW CHAT */
+
+.new-chat {
+  width: 100%;
+
+  padding: 13px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 12px;
+
+  background: rgba(255,255,255,0.035);
+
+  color: var(--text);
 
   cursor: pointer;
 
-  text-align: left;
-
-  transition: 0.3s ease;
+  font-family: inherit;
 }
 
 .new-chat:hover {
-  background:
-    rgba(70, 160, 90, 0.12);
-
-  border-color:
-    rgba(110, 200, 130, 0.35);
-
-  box-shadow:
-    0 0 25px rgba(50, 150, 80, 0.10);
+  background: rgba(142,230,167,0.07);
 }
 
+.new-chat span {
+  color: var(--green);
 
-.side-title {
-  color: #68736c;
+  font-size: 18px;
+}
 
-  font-size: 11px;
+/* HISTORY */
 
-  margin:
-    27px 8px 9px;
+.history-title {
+  margin: 30px 8px 12px;
+
+  color: #56605a;
+
+  font-size: 9px;
 
   letter-spacing: 1.5px;
-
-  text-transform: uppercase;
 }
 
-
-.chat-list {
+.chat-history {
   flex: 1;
 
   overflow-y: auto;
 }
 
+.history-item {
+  padding: 10px 12px;
 
-.chat-item {
-  padding: 11px 12px;
+  border-radius: 9px;
 
-  margin-bottom: 4px;
+  color: #8c9690;
 
-  border-radius: 10px;
+  font-size: 12px;
 
-  color: #b8c0bb;
+  overflow: hidden;
 
-  font-size: 13px;
+  white-space: nowrap;
 
-  cursor: pointer;
-
-  transition: 0.25s ease;
+  text-overflow: ellipsis;
 }
 
-.chat-item:hover {
-  background:
-    rgba(100, 180, 120, 0.08);
+.history-item:hover {
+  background: rgba(255,255,255,0.04);
 
   color: white;
 }
 
+.sidebar-bottom {
+  padding-top: 14px;
 
-.sidebar-bottom button {
+  border-top: 1px solid var(--border);
+}
+
+.side-btn {
   width: 100%;
 
-  padding: 12px;
+  padding: 11px;
 
-  border: none;
-
-  border-radius: 10px;
+  border: 0;
 
   background: transparent;
 
-  color: #858f89;
+  color: #929c96;
 
   text-align: left;
 
+  border-radius: 9px;
+
   cursor: pointer;
 
-  transition: 0.25s ease;
+  font-family: inherit;
 }
 
-.sidebar-bottom button:hover {
-  background:
-    rgba(255, 255, 255, 0.05);
+.side-btn:hover {
+  background: rgba(255,255,255,0.04);
 
   color: white;
 }
 
+.sidebar-bottom small {
+  display: block;
 
-/* ==================================================
-   APP
-   ================================================== */
+  padding: 15px 11px 0;
 
-.app {
-  position: relative;
-  z-index: 5;
+  color: #4f5853;
 
+  font-size: 9px;
+}
+
+/* MAIN */
+
+.main {
   flex: 1;
 
   min-width: 0;
@@ -460,20 +373,12 @@ body {
   display: flex;
 
   flex-direction: column;
-
-  background:
-    rgba(0, 0, 0, 0.18);
 }
 
-
-/* ==================================================
-   TOPBAR
-   ================================================== */
+/* TOPBAR */
 
 .topbar {
-  height: 62px;
-
-  flex-shrink: 0;
+  height: 68px;
 
   display: flex;
 
@@ -481,626 +386,537 @@ body {
 
   justify-content: space-between;
 
-  padding: 0 20px;
+  padding: 0 28px;
 
-  background:
-    rgba(2, 7, 5, 0.65);
+  border-bottom: 1px solid var(--border);
 
-  border-bottom:
-    1px solid rgba(120, 190, 130, 0.08);
+  background: rgba(3,5,4,0.45);
 
-  backdrop-filter:
-    blur(20px);
+  backdrop-filter: blur(20px);
 }
 
+.online {
+  display: flex;
 
-.model-name {
-  font-weight: 700;
+  align-items: center;
 
-  font-size: 14px;
+  gap: 8px;
+
+  color: #7d8881;
+
+  font-size: 11px;
 }
 
+.online span {
+  width: 7px;
+  height: 7px;
 
-.model-name small {
-  margin-left: 5px;
+  border-radius: 50%;
 
-  color: #83c891;
+  background: var(--green);
 
-  font-size: 9px;
+  box-shadow: 0 0 12px rgba(142,230,167,0.7);
+
+  animation: pulse 2s infinite;
 }
 
+@keyframes pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
 
-.icon-btn {
-  width: 38px;
-  height: 38px;
-
-  border: none;
-
-  border-radius: 10px;
+.clear-btn {
+  border: 0;
 
   background: transparent;
 
-  color: #aeb7b1;
-
-  font-size: 18px;
+  color: #657069;
 
   cursor: pointer;
 
-  transition: 0.25s ease;
+  font-family: inherit;
+
+  font-size: 11px;
 }
 
-.icon-btn:hover {
-  background:
-    rgba(100, 180, 120, 0.10);
-
+.clear-btn:hover {
   color: white;
 }
 
+.mobile-menu {
+  display: none;
+}
 
-/* ==================================================
-   MESSAGES
-   ================================================== */
+/* CHAT */
 
-.messages {
+.chat-area {
   flex: 1;
 
   overflow-y: auto;
 
-  padding:
-    35px 18px 190px;
-
-  position: relative;
+  padding: 40px 20px 20px;
 }
 
-
 .welcome {
-  max-width: 800px;
+  max-width: 720px;
 
-  margin:
-    8vh auto 0;
+  margin: 7vh auto 40px;
 
   text-align: center;
 
-  animation:
-    welcomeIn 1.2s ease forwards;
+  animation: welcome 0.8s ease;
 }
 
-
-@keyframes welcomeIn {
-
+@keyframes welcome {
   from {
     opacity: 0;
-
-    transform:
-      translateY(25px);
+    transform: translateY(20px);
   }
 
   to {
     opacity: 1;
-
-    transform:
-      translateY(0);
+    transform: translateY(0);
   }
 }
 
+.welcome-logo {
+  width: 65px;
+  height: 65px;
 
-/* ==================================================
-   Q LOGO
-   ================================================== */
+  margin: auto auto 24px;
 
-.logo-orb {
-  width: 74px;
-  height: 74px;
+  display: grid;
+  place-items: center;
+
+  border-radius: 21px;
+
+  background: rgba(142,230,167,0.07);
+
+  border: 1px solid rgba(142,230,167,0.12);
+
+  color: var(--green);
+
+  font-size: 27px;
+
+  font-weight: 700;
+}
+
+.eyebrow {
+  margin-bottom: 13px;
+
+  color: #68736c;
+
+  font-size: 9px;
+
+  letter-spacing: 2px;
+}
+
+.welcome h2 {
+  font-size: clamp(38px, 5vw, 65px);
+
+  line-height: 0.98;
+
+  letter-spacing: -3px;
+}
+
+.welcome h2 span {
+  color: var(--green);
+}
+
+.welcome-text {
+  max-width: 500px;
+
+  margin: 22px auto 30px;
+
+  color: #7b867f;
+
+  font-size: 13px;
+
+  line-height: 1.7;
+}
+
+.suggestions {
+  display: flex;
+
+  justify-content: center;
+
+  flex-wrap: wrap;
+
+  gap: 9px;
+}
+
+.suggestions button {
+  padding: 10px 14px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 20px;
+
+  background: rgba(255,255,255,0.025);
+
+  color: #939d97;
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  font-size: 11px;
+
+  transition: 0.25s;
+}
+
+.suggestions button:hover {
+  color: white;
+
+  background: rgba(142,230,167,0.06);
+
+  border-color: rgba(142,230,167,0.2);
+
+  transform: translateY(-2px);
+}
+
+/* MESSAGES */
+
+.messages {
+  max-width: 850px;
 
   margin: auto;
+}
+
+.message-row {
+  display: flex;
+
+  margin-bottom: 25px;
+
+  animation: messageIn 0.3s ease;
+}
+
+.message-row.user {
+  justify-content: flex-end;
+}
+
+@keyframes messageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-label {
+  margin-bottom: 6px;
+
+  color: #68736c;
+
+  font-size: 9px;
+}
+
+.message {
+  max-width: min(720px, 85%);
+
+  padding: 13px 16px;
+
+  border-radius: 15px;
+
+  color: #d8ded9;
+
+  font-size: 13px;
+
+  line-height: 1.7;
+
+  white-space: pre-wrap;
+}
+
+.message-row.user .message {
+  background: rgba(142,230,167,0.10);
+
+  border: 1px solid rgba(142,230,167,0.10);
+
+  border-bottom-right-radius: 4px;
+}
+
+.message-row.ai .message {
+  background: rgba(255,255,255,0.035);
+
+  border: 1px solid var(--border);
+
+  border-bottom-left-radius: 4px;
+}
+
+/* COMPOSER */
+
+.composer-area {
+  width: min(850px, calc(100% - 40px));
+
+  margin: 0 auto 20px;
+}
+
+.composer {
+  display: flex;
+
+  align-items: flex-end;
+
+  padding: 8px;
+
+  border: 1px solid rgba(255,255,255,0.10);
+
+  border-radius: 17px;
+
+  background: rgba(12,16,14,0.90);
+
+  backdrop-filter: blur(20px);
+}
+
+.composer:focus-within {
+  border-color: rgba(142,230,167,0.25);
+}
+
+.composer textarea {
+  flex: 1;
+
+  max-height: 150px;
+
+  resize: none;
+
+  padding: 11px 12px;
+
+  border: 0;
+
+  outline: 0;
+
+  background: transparent;
+
+  color: white;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+.composer textarea::placeholder {
+  color: #5e6862;
+}
+
+.composer button {
+  width: 38px;
+  height: 38px;
+
+  border: 0;
+
+  border-radius: 11px;
+
+  background: var(--green);
+
+  color: #061009;
+
+  cursor: pointer;
+
+  font-size: 20px;
+}
+
+.composer button:disabled {
+  opacity: 0.35;
+}
+
+.disclaimer {
+  margin-top: 8px;
+
+  text-align: center;
+
+  color: #4c5550;
+
+  font-size: 9px;
+}
+
+/* MODAL */
+
+.modal {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 50;
 
   display: grid;
 
   place-items: center;
 
-  border-radius: 24px;
+  background: rgba(0,0,0,0.65);
 
-  background:
-    linear-gradient(
-      145deg,
-      #15241b,
-      #050806
-    );
-
-  border:
-    1px solid rgba(115, 200, 130, 0.22);
-
-  color: #dff8e3;
-
-  font-size: 31px;
-
-  font-weight: 800;
-
-  box-shadow:
-    0 0 35px rgba(50, 160, 80, 0.18),
-    inset 0 0 25px rgba(100, 200, 120, 0.06);
-
-  animation:
-    logoFloat 4s ease-in-out infinite;
+  backdrop-filter: blur(10px);
 }
 
-
-@keyframes logoFloat {
-
-  0%,
-  100% {
-    transform:
-      translateY(0)
-      rotate(0deg);
-  }
-
-  50% {
-    transform:
-      translateY(-7px)
-      rotate(2deg);
-  }
+.modal.hidden {
+  display: none;
 }
 
+.modal-box {
+  position: relative;
 
-.welcome h1 {
-  margin:
-    24px 0 10px;
+  width: min(420px, calc(100% - 35px));
 
-  font-size: 38px;
+  padding: 30px;
 
-  letter-spacing: -1px;
+  border: 1px solid var(--border);
 
-  background:
-    linear-gradient(
-      90deg,
-      #ffffff,
-      #a5d9af,
-      #eaffed,
-      #ffffff
-    );
+  border-radius: 20px;
 
-  background-size: 250% auto;
+  background: #0b0f0d;
 
-  -webkit-background-clip: text;
-  background-clip: text;
-
-  color: transparent;
-
-  animation:
-    titleShine 6s linear infinite;
+  animation: modalIn 0.25s ease;
 }
 
-
-@keyframes titleShine {
-  to {
-    background-position:
-      250% center;
-  }
-}
-
-
-.welcome p {
-  max-width: 550px;
-
-  margin: auto;
-
-  color: #7f8a83;
-
-  line-height: 1.7;
-
-  font-size: 14px;
-}
-
-
-/* ==================================================
-   QUICK CARDS
-   ================================================== */
-
-.quick {
-  display: grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
-  gap: 12px;
-
-  margin-top: 34px;
-}
-
-
-.quick button {
-  padding: 16px;
-
-  border:
-    1px solid rgba(120, 190, 135, 0.12);
-
-  border-radius: 15px;
-
-  background:
-    rgba(255, 255, 255, 0.035);
-
-  color: #cbd2cd;
-
-  text-align: left;
-
-  cursor: pointer;
-
-  backdrop-filter:
-    blur(12px);
-
-  transition:
-    transform 0.3s ease,
-    border 0.3s ease,
-    background 0.3s ease;
-}
-
-
-.quick button:hover {
-  transform:
-    translateY(-4px);
-
-  background:
-    rgba(70, 160, 90, 0.10);
-
-  border-color:
-    rgba(110, 200, 130, 0.30);
-}
-
-
-/* ==================================================
-   CHAT BUBBLES
-   ================================================== */
-
-.message {
-  max-width: 850px;
-
-  margin:
-    0 auto 18px;
-
-  display: flex;
-
-  animation:
-    messageIn 0.35s ease;
-}
-
-
-@keyframes messageIn {
-
+@keyframes modalIn {
   from {
     opacity: 0;
-
-    transform:
-      translateY(10px);
+    transform: scale(0.96);
   }
 
   to {
     opacity: 1;
-
-    transform:
-      translateY(0);
+    transform: scale(1);
   }
 }
 
-
-.message.user {
-  justify-content: flex-end;
+.modal-box h2 {
+  margin-bottom: 20px;
 }
 
+.close-modal {
+  position: absolute;
 
-.bubble {
-  max-width: 78%;
+  right: 18px;
+  top: 15px;
 
-  padding:
-    13px 17px;
-
-  border-radius: 17px;
-
-  line-height: 1.6;
-
-  white-space: pre-wrap;
-
-  font-size: 14px;
-}
-
-
-.message.assistant .bubble {
-  background:
-    rgba(255, 255, 255, 0.045);
-
-  border:
-    1px solid rgba(120, 190, 135, 0.10);
-
-  color: #dce2de;
-
-  backdrop-filter:
-    blur(14px);
-}
-
-
-.message.user .bubble {
-  background:
-    linear-gradient(
-      135deg,
-      #1d4930,
-      #12331f
-    );
-
-  border:
-    1px solid rgba(120, 210, 140, 0.18);
-
-  color: white;
-
-  box-shadow:
-    0 8px 30px rgba(0, 0, 0, 0.25);
-}
-
-
-/* ==================================================
-   COMPOSER
-   ================================================== */
-
-.composer-wrap {
-  position: fixed;
-
-  z-index: 20;
-
-  bottom: 0;
-
-  left: 270px;
-
-  right: 0;
-
-  padding:
-    14px 18px 17px;
-
-  background:
-    linear-gradient(
-      to bottom,
-      transparent,
-      rgba(1, 5, 3, 0.92) 25%,
-      #020504 100%
-    );
-
-  backdrop-filter:
-    blur(12px);
-}
-
-
-.tools {
-  max-width: 850px;
-
-  margin:
-    0 auto 8px;
-
-  display: flex;
-
-  gap: 7px;
-}
-
-
-.tools button {
-  padding:
-    7px 11px;
-
-  border:
-    1px solid rgba(120, 190, 135, 0.12);
-
-  border-radius: 9px;
-
-  background:
-    rgba(255, 255, 255, 0.035);
-
-  color: #9fa9a2;
-
-  cursor: pointer;
-
-  transition: 0.25s ease;
-}
-
-
-.tools button:hover {
-  color: white;
-
-  background:
-    rgba(70, 160, 90, 0.10);
-}
-
-
-.composer {
-  max-width: 850px;
-
-  margin: auto;
-
-  display: flex;
-
-  align-items: flex-end;
-
-  padding: 7px;
-
-  border:
-    1px solid rgba(130, 190, 140, 0.15);
-
-  border-radius: 18px;
-
-  background:
-    rgba(12, 19, 15, 0.90);
-
-  box-shadow:
-    0 10px 45px rgba(0, 0, 0, 0.45);
-
-  backdrop-filter:
-    blur(25px);
-
-  transition: 0.3s ease;
-}
-
-
-.composer:focus-within {
-  border-color:
-    rgba(110, 205, 130, 0.35);
-
-  box-shadow:
-    0 0 30px rgba(50, 160, 80, 0.10);
-}
-
-
-.composer textarea {
-  flex: 1;
-
-  min-width: 0;
-
-  border: none;
-
-  outline: none;
-
-  resize: none;
-
-  padding:
-    10px 12px;
-
-  font-family: inherit;
-
-  font-size: 14px;
-
-  line-height: 1.5;
-
-  color: white;
+  border: 0;
 
   background: transparent;
 
-  max-height: 130px;
-}
+  color: #77817b;
 
-
-.composer textarea::placeholder {
-  color: #626b65;
-}
-
-
-.composer button {
-  width: 43px;
-  height: 43px;
-
-  flex-shrink: 0;
-
-  border: none;
-
-  border-radius: 13px;
-
-  background:
-    linear-gradient(
-      135deg,
-      #327b4b,
-      #1b4e2d
-    );
-
-  color: white;
+  font-size: 24px;
 
   cursor: pointer;
-
-  font-size: 17px;
-
-  box-shadow:
-    0 5px 20px rgba(40, 130, 65, 0.20);
-
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
 }
 
+.setting {
+  padding: 15px 0;
 
-.composer button:hover {
-  transform:
-    translateY(-2px)
-    scale(1.04);
-
-  box-shadow:
-    0 8px 28px rgba(50, 160, 80, 0.30);
+  border-top: 1px solid var(--border);
 }
 
+.setting strong {
+  display: block;
 
-.notice {
-  text-align: center;
+  font-size: 12px;
+}
 
-  color: #505951;
+.setting span {
+  display: block;
+
+  margin-top: 4px;
+
+  color: #69746d;
 
   font-size: 10px;
-
-  margin-top: 7px;
 }
 
+.setting .connected {
+  color: var(--green);
+}
 
-/* ==================================================
-   MOBILE
-   ================================================== */
+/* MOBILE */
 
-@media (max-width: 700px) {
+@media (max-width: 760px) {
 
   .sidebar {
     position: fixed;
 
-    z-index: 100;
+    z-index: 30;
 
     left: -280px;
 
-    top: 0;
-
-    bottom: 0;
-
-    transition:
-      left 0.3s ease;
+    transition: 0.3s;
   }
 
   .sidebar.open {
     left: 0;
   }
 
-  .composer-wrap {
-    left: 0;
+  .mobile-menu {
+    display: block;
 
-    padding:
-      10px 10px 12px;
+    border: 0;
+
+    background: transparent;
+
+    color: #a8b0ab;
+
+    font-size: 20px;
+
+    cursor: pointer;
   }
 
-  .messages {
-    padding:
-      25px 12px 180px;
+  .topbar {
+    padding: 0 16px;
   }
 
-  .quick {
-    grid-template-columns:
-      1fr;
+  .online {
+    margin-right: auto;
+
+    margin-left: 10px;
   }
 
-  .welcome h1 {
-    font-size: 29px;
-  }
-
-  .bubble {
-    max-width: 88%;
-  }
-
-  .qtm-leaf {
-    width: 340px;
+  .leaf {
+    width: 320px;
     height: 520px;
 
-    opacity: 0.55;
-  }
-}
-
-
-@media (max-width: 400px) {
-
-  .welcome h1 {
-    font-size: 25px;
+    right: -190px;
   }
 
-  .welcome p {
+  .welcome {
+    margin-top: 5vh;
+  }
+
+  .welcome h2 {
+    font-size: 42px;
+
+    letter-spacing: -2px;
+  }
+
+  .welcome-text {
     font-size: 12px;
+
+    padding: 0 15px;
   }
 
-  .qtm-leaf {
-    width: 280px;
-    height: 440px;
+  .suggestions {
+    padding: 0 15px;
   }
-                   }
+
+  .suggestions button {
+    width: 100%;
+  }
+
+  .chat-area {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .composer-area {
+    width: calc(100% - 20px);
+
+    margin-bottom: 12px;
+  }
+
+  .message {
+    max-width: 90%;
+  }
+     }
