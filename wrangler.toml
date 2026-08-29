@@ -1,8 +1,8 @@
-name = "qtm-ai"
+name = "qtm-ai-new"
 
 main = "worker.js"
 
-compatibility_date = "2026-08-25"
+compatibility_date = "2026-08-29"
 
 [ai]
 binding = "AI"
