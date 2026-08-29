@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#030504">
-  <meta name="description" content="QTM AI — Think deeper. Create more.">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#030504"
+  >
 
   <title>QTM AI</title>
 
@@ -13,15 +20,24 @@
 
 <body>
 
+  <!-- BACKGROUND -->
+
   <div class="background">
-    <div class="ambient ambient-1"></div>
-    <div class="ambient ambient-2"></div>
-    <div class="leaf"></div>
-    <div class="particles"></div>
+
+    <div class="glow glow-one"></div>
+    <div class="glow glow-two"></div>
+
+    <div class="single-leaf"></div>
+
+    <div class="grid"></div>
+
   </div>
 
 
+  <!-- APPLICATION -->
+
   <div class="app">
+
 
     <!-- SIDEBAR -->
 
@@ -29,57 +45,89 @@
 
       <div class="brand">
 
-        <div class="brand-mark">Q</div>
+        <div class="brand-icon">
+          Q
+        </div>
 
-        <div class="brand-text">
-          <strong>QTM AI</strong>
-          <span>Intelligence, evolved.</span>
+        <div>
+          <div class="brand-name">
+            QTM AI
+          </div>
+
+          <div class="brand-subtitle">
+            Intelligence, evolved.
+          </div>
         </div>
 
       </div>
 
 
-      <button class="new-chat" id="newChatBtn">
-        <span>＋</span>
+      <button
+        class="new-chat"
+        id="newChatBtn"
+      >
+        <span class="plus">＋</span>
         <span>New chat</span>
       </button>
 
 
-      <div class="search-box">
+      <!-- SEARCH -->
 
-        <span class="search-icon">⌕</span>
+      <div class="search-container">
+
+        <span class="search-icon">
+          ⌕
+        </span>
 
         <input
           id="chatSearch"
           type="search"
           placeholder="Search conversations..."
-          autocomplete="off"
         >
 
-        <kbd>⌘K</kbd>
-
       </div>
 
 
-      <div class="section-label">
-        CONVERSATIONS
+      <div class="history-title">
+        RECENT CHATS
       </div>
 
 
-      <div class="history" id="chatHistory"></div>
+      <div
+        class="history"
+        id="chatHistory"
+      ></div>
 
 
-      <div class="sidebar-footer">
+      <!-- SIDEBAR BOTTOM -->
 
-        <button class="sidebar-button" id="settingsBtn">
-          <span>⚙</span>
-          Settings
+      <div class="sidebar-bottom">
+
+        <button
+          class="sidebar-button"
+          id="settingsBtn"
+        >
+          ⚙
+          <span>Settings</span>
         </button>
 
-        <button class="sidebar-button" id="loginBtn">
-          <span>◉</span>
-          Sign in
+
+        <button
+          class="sidebar-button"
+          id="loginBtn"
+        >
+          ◉
+          <span id="loginText">
+            Sign in with Google
+          </span>
         </button>
+
+
+        <div
+          class="account"
+          id="account"
+        ></div>
+
 
         <div class="version">
           QTM AI V1 • ONLINE
@@ -94,40 +142,58 @@
 
     <main class="main">
 
+
+      <!-- TOP BAR -->
+
       <header class="topbar">
 
-        <button class="mobile-menu" id="mobileMenu">
+        <button
+          class="mobile-menu"
+          id="mobileMenu"
+        >
           ☰
         </button>
 
-        <div class="mobile-title">
+        <div class="top-title">
           QTM AI
         </div>
 
-        <div class="connection">
-          <i></i>
+        <div class="online">
+
+          <span></span>
+
           ONLINE
+
         </div>
 
       </header>
 
 
-      <section class="chat-area" id="chatArea">
+      <!-- CHAT -->
+
+      <section
+        class="chat-area"
+        id="chatArea"
+      >
+
 
         <!-- WELCOME -->
 
-        <div class="welcome" id="welcome">
+        <div
+          class="welcome"
+          id="welcome"
+        >
 
-          <div class="logo-orbit">
+          <div class="qtm-orbit">
 
-            <div class="logo-core">
+            <div class="qtm-core">
               Q
             </div>
 
           </div>
 
 
-          <div class="overline">
+          <div class="eyebrow">
             WELCOME TO QTM AI
           </div>
 
@@ -139,33 +205,39 @@
           </h1>
 
 
-          <p class="intro">
-            Learn, create, analyze, solve problems,
-            explore ideas and get intelligent assistance
-            whenever you need it.
+          <p>
+            Learn. Create. Solve. Explore.
+            <br>
+            Your intelligent workspace for whatever
+            comes next.
           </p>
 
 
-          <!-- MAIN ASK BAR -->
+          <!-- BIG ASK BAR -->
 
-          <form class="hero-composer" id="heroForm">
+          <form
+            class="hero-input"
+            id="heroForm"
+          >
 
             <textarea
-              id="heroInput"
+              id="heroMessage"
               rows="1"
               placeholder="Ask QTM AI anything..."
-              autocomplete="off"
             ></textarea>
 
-            <button type="submit" id="heroSend">
+            <button
+              type="submit"
+              id="heroSend"
+            >
               ↑
             </button>
 
           </form>
 
 
-          <div class="hint">
-            Enter to send • Shift + Enter for a new line
+          <div class="input-tip">
+            Enter to send • Shift + Enter for new line
           </div>
 
 
@@ -173,23 +245,34 @@
 
           <div class="quick-actions">
 
-            <button data-prompt="Explain a difficult concept to me in a simple way">
-              <b>✦</b>
+            <button
+              data-prompt="Explain this topic to me in a simple and easy-to-understand way."
+            >
+              <span>✦</span>
               Explain
             </button>
 
-            <button data-prompt="Help me study and make a useful study plan">
-              <b>◈</b>
+
+            <button
+              data-prompt="Help me create an effective study plan."
+            >
+              <span>◈</span>
               Study
             </button>
 
-            <button data-prompt="Help me solve this problem step by step">
-              <b>◇</b>
+
+            <button
+              data-prompt="Help me solve this problem step by step."
+            >
+              <span>◇</span>
               Solve
             </button>
 
-            <button data-prompt="Give me creative ideas for a project">
-              <b>✧</b>
+
+            <button
+              data-prompt="Give me creative ideas for a project."
+            >
+              <span>✧</span>
               Create
             </button>
 
@@ -202,37 +285,41 @@
 
         <div
           class="messages"
-          id="chatMessages"
+          id="messages"
         ></div>
+
 
       </section>
 
 
-      <!-- BOTTOM INPUT -->
+      <!-- BOTTOM ASK BAR -->
 
-      <div class="bottom-composer">
+      <div class="bottom-area">
 
-        <form class="composer" id="chatForm">
+        <form
+          class="bottom-input"
+          id="chatForm"
+        >
 
           <textarea
             id="messageInput"
             rows="1"
             placeholder="Ask QTM AI anything..."
-            autocomplete="off"
           ></textarea>
 
+
           <button
-            id="sendBtn"
             type="submit"
-            aria-label="Send"
+            id="sendButton"
           >
             ↑
           </button>
 
         </form>
 
+
         <div class="disclaimer">
-          QTM AI may make mistakes. Verify important information.
+          QTM AI can make mistakes. Verify important information.
         </div>
 
       </div>
@@ -242,87 +329,145 @@
   </div>
 
 
-  <!-- SETTINGS -->
+  <!-- SETTINGS MODAL -->
 
-  <div class="modal hidden" id="settingsModal">
+  <div
+    class="modal hidden"
+    id="settingsModal"
+  >
 
-    <div class="modal-card">
+    <div class="modal-box">
 
-      <button class="close" id="closeSettings">×</button>
+      <button
+        class="close-button"
+        id="closeSettings"
+      >
+        ×
+      </button>
 
-      <div class="overline">
+
+      <div class="eyebrow">
         SETTINGS
       </div>
 
-      <h2>QTM AI</h2>
 
-      <div class="setting-row">
-        <div>
-          <strong>AI Engine</strong>
-          <span>Cloudflare Workers AI</span>
-        </div>
+      <h2>
+        QTM AI
+      </h2>
 
-        <em>Connected</em>
+
+      <div class="setting">
+
+        <strong>
+          AI Engine
+        </strong>
+
+        <span>
+          Cloudflare Workers AI
+        </span>
+
       </div>
 
-      <div class="setting-row">
-        <div>
-          <strong>Worker</strong>
-          <span>qtm-ai-new</span>
-        </div>
+
+      <div class="setting">
+
+        <strong>
+          Worker
+        </strong>
+
+        <span>
+          qtm-ai-new
+        </span>
+
       </div>
 
-      <div class="setting-row">
-        <div>
-          <strong>Version</strong>
-          <span>QTM AI V1</span>
-        </div>
+
+      <div class="setting">
+
+        <strong>
+          Account
+        </strong>
+
+        <span id="settingsAccount">
+          Guest
+        </span>
+
       </div>
+
 
     </div>
 
   </div>
 
 
-  <!-- LOGIN -->
+  <!-- LOGIN MODAL -->
 
-  <div class="modal hidden" id="loginModal">
+  <div
+    class="modal hidden"
+    id="loginModal"
+  >
 
-    <div class="modal-card login-card">
+    <div class="modal-box login-box">
 
-      <button class="close" id="closeLogin">×</button>
+      <button
+        class="close-button"
+        id="closeLogin"
+      >
+        ×
+      </button>
 
-      <div class="login-mark">
+
+      <div class="login-logo">
         Q
       </div>
 
-      <div class="overline">
+
+      <div class="eyebrow">
         QTM AI ACCOUNT
       </div>
 
-      <h2>Your AI, your history.</h2>
+
+      <h2>
+        Your AI.
+        <br>
+        Your history.
+      </h2>
+
 
       <p>
-        Sign in to keep your conversations connected
-        to your QTM AI account.
+        Sign in with Google to connect your
+        QTM AI account.
       </p>
 
-      <button class="google-button" id="googleBtn">
-        <span>G</span>
+
+      <button
+        class="google-button"
+        id="googleButton"
+      >
+
+        <span class="google-g">
+          G
+        </span>
+
         Continue with Google
+
       </button>
 
-      <small>
-        Google authentication will be connected
-        when the authentication backend is configured.
-      </small>
+
+      <div
+        class="login-status"
+        id="loginStatus"
+      ></div>
+
 
     </div>
 
   </div>
 
 
-  <script src="app.js"></script>
+  <!-- FIREBASE -->
+
+  <script type="module" src="app.js"></script>
 
 </body>
   </html>
