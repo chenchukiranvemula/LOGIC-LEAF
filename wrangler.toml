@@ -9,5 +9,4 @@ binding = "AI"
 
 [[kv_namespaces]]
 binding = "QTM_KEYS"
-id = 8c76e2538038405c941c6a9cdb2dfc02
-
+id = "8c76e2538038405c941c6a9cdb2dfc02"
