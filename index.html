@@ -1,52 +1,266 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b0b0c">
   <title>QTM AI</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <div class="chat-container">
-    <header class="chat-header">
-      <div class="header-info">
-        <div class="avatar">⚡</div>
+
+<div class="app">
+
+  <div id="overlay" class="overlay"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
+
+    <div class="sidebar-top">
+
+      <div class="brand">
+        <div class="brand-symbol">Q</div>
         <div>
-          <h1>QTM AI</h1>
-          <p class="subtitle">Llama 3.1 8B Instruct</p>
+          <div class="brand-title">QTM AI</div>
+          <div class="brand-version">Intelligence workspace</div>
         </div>
       </div>
-      <div class="status-badge" id="statusBadge">
-        <span class="status-dot"></span>
-        <span id="statusText">Connecting...</span>
+
+      <button id="newChatBtn" class="new-chat">
+        <span class="plus">+</span>
+        <span>New chat</span>
+      </button>
+
+      <button id="searchBtn" class="side-btn">
+        <span class="side-icon">⌕</span>
+        <span>Search chats</span>
+        <kbd>/</kbd>
+      </button>
+
+      <div class="section-label">Recent</div>
+
+      <div id="chatHistory" class="chat-history">
+        <div class="history-empty">
+          Your conversations will appear here.
+        </div>
       </div>
+
+    </div>
+
+    <div class="sidebar-bottom">
+
+      <button id="settingsBtn" class="side-btn">
+        <span class="side-icon">⚙</span>
+        <span>Settings</span>
+      </button>
+
+      <button id="googleLoginBtn" class="account">
+        <div id="accountAvatar" class="account-avatar">G</div>
+
+        <div class="account-text">
+          <strong id="accountName">Sign in</strong>
+          <small id="accountEmail">Google account</small>
+        </div>
+
+        <span class="account-more">•••</span>
+      </button>
+
+    </div>
+
+  </aside>
+
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <header class="topbar">
+
+      <button id="menuBtn" class="mobile-menu">
+        ☰
+      </button>
+
+      <button id="modelButton" class="model-button">
+        <span>QTM AI</span>
+        <span class="arrow">⌄</span>
+      </button>
+
+      <div class="top-actions">
+        <button id="shareBtn" class="top-btn">Share</button>
+      </div>
+
     </header>
 
-    <main class="chat-messages" id="chatMessages">
-      <div class="message system">
-        <div class="bubble">
-          👋 Hello! I am <strong>QTM AI</strong>. How can I help you today with programming, science, reasoning, or math?
-        </div>
-      </div>
-    </main>
 
-    <footer class="chat-input-area">
-      <form id="chatForm">
-        <textarea
-          id="messageInput"
-          placeholder="Ask QTM AI something..."
-          rows="1"
-          required
-        ></textarea>
-        <button type="submit" id="sendBtn" aria-label="Send Message">
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-          </svg>
+    <!-- CHAT -->
+    <section id="chatMessages" class="chat-area">
+
+      <div id="welcome" class="welcome">
+
+        <div class="welcome-orb">
+          <div class="orb-core">Q</div>
+        </div>
+
+        <h1>How can I help you?</h1>
+
+        <p>
+          Ask QTM AI anything. Learn, create, solve and explore.
+        </p>
+
+        <div class="suggestions">
+
+          <button onclick="useSuggestion('Explain this topic simply')">
+            <span class="card-title">Explain</span>
+            <span class="card-text">Understand difficult topics clearly.</span>
+          </button>
+
+          <button onclick="useSuggestion('Help me solve this problem step by step')">
+            <span class="card-title">Solve</span>
+            <span class="card-text">Work through a problem step by step.</span>
+          </button>
+
+          <button onclick="useSuggestion('Write code for me and explain it')">
+            <span class="card-title">Code</span>
+            <span class="card-text">Build and understand software.</span>
+          </button>
+
+          <button onclick="useSuggestion('Create a study plan for me')">
+            <span class="card-title">Study</span>
+            <span class="card-text">Create a focused learning plan.</span>
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- COMPOSER -->
+    <div class="composer-wrapper">
+
+      <div id="filePreview" class="file-preview"></div>
+
+      <form id="composer" class="composer">
+
+        <button
+          id="attachBtn"
+          class="attach-btn"
+          type="button"
+          title="Attach file"
+        >
+          +
         </button>
+
+        <input
+          id="fileInput"
+          type="file"
+          hidden
+          multiple
+        >
+
+        <textarea
+          id="chatInput"
+          rows="1"
+          maxlength="12000"
+          placeholder="Message QTM AI"
+          autocomplete="off"
+        ></textarea>
+
+        <button
+          id="sendBtn"
+          class="send-btn"
+          type="submit"
+        >
+          <span id="sendText">Send</span>
+        </button>
+
       </form>
-    </footer>
+
+      <div class="composer-note">
+        QTM AI can make mistakes. Verify important information.
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- SEARCH -->
+  <div id="searchPanel" class="modal hidden">
+
+    <div class="modal-box">
+
+      <div class="modal-header">
+        <strong>Search chats</strong>
+
+        <button id="closeSearchBtn">×</button>
+      </div>
+
+      <div class="search-input-wrap">
+        <span>⌕</span>
+
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search conversations..."
+        >
+      </div>
+
+      <div id="searchResults" class="search-results">
+        No conversations yet.
+      </div>
+
+    </div>
+
   </div>
 
-  <script src="app.js"></script>
+
+  <!-- SETTINGS -->
+  <div id="settingsPanel" class="modal hidden">
+
+    <div class="modal-box settings-box">
+
+      <div class="modal-header">
+        <strong>Settings</strong>
+
+        <button id="closeSettingsBtn">×</button>
+      </div>
+
+      <div class="setting">
+
+        <div>
+          <strong>Account</strong>
+          <p>Connect your Google account.</p>
+        </div>
+
+        <button id="settingsGoogleBtn" class="google-btn">
+          Continue with Google
+        </button>
+
+      </div>
+
+      <div class="setting">
+
+        <div>
+          <strong>Conversation data</strong>
+          <p>Clear the current conversation.</p>
+        </div>
+
+        <button id="clearBtn" class="danger-btn">
+          Clear
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+</div>
+
+<script src="app.js"></script>
+
 </body>
-</html>
+              </html>
