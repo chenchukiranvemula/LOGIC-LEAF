@@ -11,110 +11,215 @@
 
 <body>
 
+  <!-- Background -->
   <div class="background">
     <div class="leaf">🌿</div>
     <div class="glow glow1"></div>
     <div class="glow glow2"></div>
   </div>
 
+
+  <!-- App -->
   <div class="app">
 
+
+    <!-- ============================= -->
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <!-- ============================= -->
 
-      <div class="logo">
-        <div class="logo-icon">🌿</div>
+    <aside class="sidebar" id="sidebar">
 
-        <div>
-          <strong>QTM AI</strong>
-          <small>AI Assistant</small>
+      <div class="brand">
+
+        <div class="brand-icon">
+          🌿
         </div>
+
+        <div class="brand-text">
+          <h2>QTM AI</h2>
+          <span>Intelligent Assistant</span>
+        </div>
+
       </div>
 
-      <button id="newChatBtn" class="new-chat">
-        ＋ New Chat
+
+      <button
+        id="newChatBtn"
+        class="new-chat"
+        type="button"
+      >
+        <span>＋</span>
+        New Chat
       </button>
 
-      <div class="history-title">
+
+      <div class="sidebar-title">
         CHATS
       </div>
 
-      <div id="chatHistory" class="history">
-        <span>No chats yet</span>
+
+      <div
+        id="chatHistory"
+        class="chat-history"
+      >
+        <div class="empty-history">
+          Your conversations will appear here.
+        </div>
       </div>
 
+
       <div class="sidebar-bottom">
-        <button>⚙️ Settings</button>
-        <button>👤 Google Login</button>
+
+        <button
+          class="sidebar-button"
+          type="button"
+        >
+          ⚙️
+          <span>Settings</span>
+        </button>
+
+        <button
+          class="sidebar-button"
+          id="googleLoginBtn"
+          type="button"
+        >
+          👤
+          <span>Sign in with Google</span>
+        </button>
+
       </div>
 
     </aside>
 
 
+    <!-- ============================= -->
     <!-- MAIN -->
+    <!-- ============================= -->
+
     <main class="main">
 
-      <!-- HEADER -->
-      <header class="header">
 
-        <button id="menuBtn" class="menu">
+      <!-- Header -->
+
+      <header class="topbar">
+
+        <button
+          id="menuBtn"
+          class="menu-button"
+          type="button"
+        >
           ☰
         </button>
 
-        <div>
-          <strong>QTM AI</strong>
-          <small>Intelligent Assistant</small>
+
+        <div class="topbar-title">
+
+          <div class="mini-leaf">
+            🌿
+          </div>
+
+          <div>
+            <strong>QTM AI</strong>
+            <span>AI Assistant</span>
+          </div>
+
         </div>
 
-        <div class="status">
+
+        <div class="online-status">
+
           <span></span>
+
           Online
+
         </div>
 
       </header>
 
 
-      <!-- CHAT -->
+      <!-- ============================= -->
+      <!-- CHAT AREA -->
+      <!-- ============================= -->
+
       <section
         id="chatMessages"
-        class="chat"
+        class="chat-area"
       >
 
-        <div id="welcome" class="welcome">
+        <!-- Welcome screen -->
 
-          <div class="welcome-icon">
+        <div
+          id="welcome"
+          class="welcome"
+        >
+
+          <div class="welcome-logo">
             🌿
           </div>
+
 
           <h1>
             What can I help you with?
           </h1>
 
+
           <p>
             Ask QTM AI anything.
           </p>
 
-          <div class="cards">
 
-            <button onclick="useSuggestion('Explain quantum physics simply')">
-              🧠
-              <span>Explain something</span>
+          <!-- Suggestion cards -->
+
+          <div class="suggestions">
+
+
+            <button
+              type="button"
+              onclick="useSuggestion('Explain quantum physics in simple words')"
+            >
+              <span>🧠</span>
+              <div>
+                <strong>Explain something</strong>
+                <small>Learn a difficult topic</small>
+              </div>
             </button>
 
-            <button onclick="useSuggestion('Help me solve a mathematics problem')">
-              🧮
-              <span>Solve a problem</span>
+
+            <button
+              type="button"
+              onclick="useSuggestion('Help me solve this mathematics problem step by step')"
+            >
+              <span>🧮</span>
+              <div>
+                <strong>Solve a problem</strong>
+                <small>Get step-by-step help</small>
+              </div>
             </button>
 
-            <button onclick="useSuggestion('Write a Python program for me')">
-              💻
-              <span>Write code</span>
+
+            <button
+              type="button"
+              onclick="useSuggestion('Write a Python program for me')"
+            >
+              <span>💻</span>
+              <div>
+                <strong>Write code</strong>
+                <small>Build something with code</small>
+              </div>
             </button>
 
-            <button onclick="useSuggestion('Give me a JEE study plan')">
-              📚
-              <span>Study with me</span>
+
+            <button
+              type="button"
+              onclick="useSuggestion('Create a useful study plan for JEE')"
+            >
+              <span>📚</span>
+              <div>
+                <strong>Study with me</strong>
+                <small>Plan your learning</small>
+              </div>
             </button>
+
 
           </div>
 
@@ -123,49 +228,74 @@
       </section>
 
 
-      <!-- ================================= -->
-      <!-- TYPING / ASK BAR -->
-      <!-- ================================= -->
+      <!-- ============================= -->
+      <!-- ASK / TYPING BAR -->
+      <!-- ============================= -->
 
-      <div class="ask-container">
+      <div class="composer-container">
 
-        <div class="ask-bar">
+        <div class="composer">
+
+
+          <!-- Attach -->
 
           <button
-            class="attach"
+            class="attach-button"
+            type="button"
             title="Attach"
           >
             ＋
           </button>
 
+
+          <!-- REAL TYPING BOX -->
+
           <textarea
             id="chatInput"
+            name="message"
             placeholder="Ask QTM AI anything..."
             rows="1"
+            autocomplete="off"
+            spellcheck="true"
           ></textarea>
+
+
+          <!-- SEND -->
 
           <button
             id="sendBtn"
-            class="send"
+            class="send-button"
+            type="button"
+            aria-label="Send message"
           >
             ↑
           </button>
 
         </div>
 
-        <div class="ask-info">
+
+        <div class="composer-note">
           QTM AI can make mistakes. Check important information.
         </div>
 
       </div>
+
 
     </main>
 
   </div>
 
 
+  <!-- ============================= -->
+  <!-- APP JS -->
+  <!-- ============================= -->
+
   <script src="app.js"></script>
 
+
+  <!-- ============================= -->
+  <!-- UI HELPERS -->
+  <!-- ============================= -->
 
   <script>
 
@@ -174,6 +304,8 @@
       const input =
         document.getElementById("chatInput");
 
+      if (!input) return;
+
       input.value = text;
 
       input.focus();
@@ -181,21 +313,110 @@
     }
 
 
+    // Mobile sidebar
+
     const menuBtn =
       document.getElementById("menuBtn");
 
     const sidebar =
-      document.querySelector(".sidebar");
+      document.getElementById("sidebar");
 
 
-    menuBtn.addEventListener(
-      "click",
-      () => {
+    if (menuBtn && sidebar) {
 
-        sidebar.classList.toggle("open");
+      menuBtn.addEventListener(
+        "click",
+        function () {
 
-      }
-    );
+          sidebar.classList.toggle("open");
+
+        }
+      );
+
+    }
+
+
+    // New chat
+
+    const newChatBtn =
+      document.getElementById("newChatBtn");
+
+
+    if (newChatBtn) {
+
+      newChatBtn.addEventListener(
+        "click",
+        function () {
+
+          const chat =
+            document.getElementById("chatMessages");
+
+          const input =
+            document.getElementById("chatInput");
+
+
+          if (input) {
+            input.value = "";
+          }
+
+
+          if (chat) {
+
+            chat.innerHTML = `
+
+              <div
+                id="welcome"
+                class="welcome"
+              >
+
+                <div class="welcome-logo">
+                  🌿
+                </div>
+
+                <h1>
+                  What can I help you with?
+                </h1>
+
+                <p>
+                  Ask QTM AI anything.
+                </p>
+
+              </div>
+
+            `;
+
+          }
+
+        }
+      );
+
+    }
+
+
+    // Automatically grow typing box
+
+    const chatInput =
+      document.getElementById("chatInput");
+
+
+    if (chatInput) {
+
+      chatInput.addEventListener(
+        "input",
+        function () {
+
+          this.style.height = "auto";
+
+          this.style.height =
+            Math.min(
+              this.scrollHeight,
+              150
+            ) + "px";
+
+        }
+      );
+
+    }
 
   </script>
 
