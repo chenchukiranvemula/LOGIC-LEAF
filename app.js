@@ -1,74 +1,80 @@
 // ==========================================
-// QTM AI - APP.JS
+// QTM AI APP
 // ==========================================
 
 const WORKER_URL =
   "https://qtm-ai-new.qtmkiller6.workers.dev";
 
 
-// ==========================================
-// ELEMENTS
-// ==========================================
+// Elements
 
-const chatInput =
+const input =
   document.getElementById("chatInput");
 
 const sendBtn =
   document.getElementById("sendBtn");
 
-const chatMessages =
+const chatArea =
   document.getElementById("chatMessages");
+
+const welcome =
+  document.getElementById("welcome");
+
+const newChatBtn =
+  document.getElementById("newChatBtn");
+
+const history =
+  document.getElementById("chatHistory");
 
 
 // ==========================================
-// SEND MESSAGE
+// SEND
 // ==========================================
 
 async function sendMessage() {
 
-  if (!chatInput || !chatMessages) {
-    console.error(
-      "QTM AI: Chat elements not found."
-    );
+  const text =
+    input.value.trim();
 
-    return;
+  if (!text) return;
+
+
+  // Hide welcome
+
+  if (welcome) {
+    welcome.style.display = "none";
   }
 
 
-  const message =
-    chatInput.value.trim();
-
-
-  if (!message) {
-    return;
-  }
-
-
-  // Show user message
+  // Add user message
 
   addMessage(
-    message,
+    text,
     "user"
   );
 
 
-  chatInput.value = "";
+  // Clear
+
+  input.value = "";
+
+  input.style.height = "auto";
 
 
-  // Disable button
+  // Disable
 
-  if (sendBtn) {
-    sendBtn.disabled = true;
-    sendBtn.textContent = "Thinking...";
-  }
+  sendBtn.disabled = true;
+
+  sendBtn.textContent =
+    "...";
 
 
-  // Show AI loading message
+  // Loading message
 
   const loading =
     addMessage(
-      "QTM AI is thinking...",
-      "ai loading"
+      "Thinking...",
+      "ai"
     );
 
 
@@ -86,36 +92,30 @@ async function sendMessage() {
           },
 
           body: JSON.stringify({
-            message: message
+            message: text
           })
         }
       );
 
 
-    // Read response
-
     const data =
       await response.json();
 
 
-    // Remove loading message
+    // Remove loading
 
-    if (loading) {
-      loading.remove();
-    }
+    loading.remove();
 
 
-    // Server error
-
-    if (!response.ok || !data.ok) {
-
-      const errorText =
-        data.detail ||
-        data.error ||
-        `Server error (${response.status})`;
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
 
       addMessage(
-        `⚠️ ${errorText}`,
+        data.error ||
+        data.detail ||
+        "QTM AI server error.",
         "ai error"
       );
 
@@ -126,38 +126,46 @@ async function sendMessage() {
     // AI response
 
     addMessage(
-      data.response,
+      data.response ||
+      data.message ||
+      "No response received.",
       "ai"
     );
+
+
+    // Add history
+
+    addHistory(text);
 
 
   } catch (error) {
 
     console.error(
-      "QTM AI connection error:",
+      "QTM AI:",
       error
     );
 
 
-    if (loading) {
-      loading.remove();
-    }
+    loading.remove();
 
 
     addMessage(
-      "⚠️ Unable to connect to QTM AI.",
+      "Unable to connect to QTM AI.",
       "ai error"
     );
 
+
   } finally {
 
-    if (sendBtn) {
-      sendBtn.disabled = false;
-      sendBtn.textContent = "Send";
-    }
+    sendBtn.disabled = false;
 
-    chatInput.focus();
+    sendBtn.textContent =
+      "Send";
+
+    input.focus();
+
   }
+
 }
 
 
@@ -170,43 +178,37 @@ function addMessage(
   type
 ) {
 
-  const message =
+  const wrapper =
     document.createElement("div");
 
-
-  message.className =
+  wrapper.className =
     `message ${type}`;
 
 
   const content =
     document.createElement("div");
 
-
   content.className =
     "message-content";
-
 
   content.textContent =
     text;
 
 
-  message.appendChild(
+  wrapper.appendChild(
     content
   );
 
-
-  chatMessages.appendChild(
-    message
+  chatArea.appendChild(
+    wrapper
   );
 
 
-  // Scroll to newest message
-
-  chatMessages.scrollTop =
-    chatMessages.scrollHeight;
+  chatArea.scrollTop =
+    chatArea.scrollHeight;
 
 
-  return message;
+  return wrapper;
 }
 
 
@@ -214,48 +216,125 @@ function addMessage(
 // SEND BUTTON
 // ==========================================
 
-if (sendBtn) {
+sendBtn.addEventListener(
+  "click",
+  sendMessage
+);
 
-  sendBtn.addEventListener(
+
+// ==========================================
+// ENTER
+// ==========================================
+
+input.addEventListener(
+  "keydown",
+  function(event) {
+
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
+
+      event.preventDefault();
+
+      sendMessage();
+
+    }
+
+  }
+);
+
+
+// ==========================================
+// NEW CHAT
+// ==========================================
+
+newChatBtn.addEventListener(
+  "click",
+  function() {
+
+    chatArea.innerHTML = "";
+
+    const newWelcome =
+      document.createElement("div");
+
+    newWelcome.className =
+      "welcome";
+
+    newWelcome.innerHTML = `
+
+      <h1>
+        How can I help you?
+      </h1>
+
+      <p>
+        Ask QTM AI anything.
+      </p>
+
+    `;
+
+    chatArea.appendChild(
+      newWelcome
+    );
+
+    input.value = "";
+
+    input.focus();
+
+  }
+);
+
+
+// ==========================================
+// HISTORY
+// ==========================================
+
+function addHistory(text) {
+
+  if (
+    history.textContent
+      .includes("No conversations")
+  ) {
+
+    history.innerHTML = "";
+
+  }
+
+
+  const item =
+    document.createElement("button");
+
+  item.className =
+    "sidebar-action";
+
+  item.textContent =
+    text.length > 32
+      ? text.substring(0, 32) + "..."
+      : text;
+
+
+  item.addEventListener(
     "click",
-    sendMessage
-  );
+    function() {
 
-}
+      input.value = text;
 
-
-// ==========================================
-// ENTER KEY
-// ==========================================
-
-if (chatInput) {
-
-  chatInput.addEventListener(
-    "keydown",
-    function(event) {
-
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-
-        event.preventDefault();
-
-        sendMessage();
-
-      }
+      input.focus();
 
     }
   );
 
+
+  history.prepend(item);
+
 }
 
 
 // ==========================================
-// CONNECTION TEST
+// WORKER HEALTH CHECK
 // ==========================================
 
-async function checkQTM() {
+async function checkWorker() {
 
   try {
 
@@ -270,7 +349,7 @@ async function checkQTM() {
 
 
     console.log(
-      "QTM AI:",
+      "QTM AI Worker:",
       data
     );
 
@@ -278,7 +357,7 @@ async function checkQTM() {
   } catch (error) {
 
     console.error(
-      "QTM AI health check failed:",
+      "Worker unavailable:",
       error
     );
 
@@ -287,4 +366,4 @@ async function checkQTM() {
 }
 
 
-checkQTM();
+checkWorker();
