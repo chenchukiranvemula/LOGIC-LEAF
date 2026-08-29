@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
 
@@ -13,227 +14,98 @@
     content="#171717"
   >
 
-  <meta
-    name="description"
-    content="QTM AI — intelligent AI assistant"
-  >
-
   <title>QTM AI</title>
 
   <link rel="stylesheet" href="style.css">
 </head>
 
+
 <body>
 
-  <!-- ==================================================
-       APP
-  =================================================== -->
-
-  <div class="app-shell">
+  <div class="app">
 
 
-    <!-- ==================================================
-         MOBILE OVERLAY
-    =================================================== -->
-
-    <div
-      id="sidebarOverlay"
-      class="sidebar-overlay"
-      aria-hidden="true"
-    ></div>
-
-
-    <!-- ==================================================
-         SIDEBAR
-    =================================================== -->
+    <!-- SIDEBAR -->
 
     <aside
-      id="sidebar"
       class="sidebar"
-      aria-label="QTM AI sidebar"
+      id="sidebar"
     >
 
-      <!-- Sidebar header -->
+      <div>
 
-      <div class="sidebar-header">
-
-        <button
-          id="brandButton"
-          class="brand-button"
-          type="button"
-        >
-
-          <span class="brand-name">
+        <div class="brand">
+          <div class="brand-name">
             QTM AI
-          </span>
+          </div>
+        </div>
 
+
+        <button
+          id="newChatBtn"
+          class="new-chat"
+          type="button"
+        >
+          <span>+</span>
+          New chat
         </button>
 
 
         <button
-          id="closeSidebarButton"
-          class="icon-button mobile-only"
-          type="button"
-          aria-label="Close sidebar"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <!-- New chat -->
-
-      <div class="sidebar-actions">
-
-        <button
-          id="newChatButton"
-          class="new-chat-button"
+          id="searchBtn"
+          class="sidebar-action"
           type="button"
         >
-
-          <span class="plus-icon">+</span>
-
-          <span>
-            New chat
-          </span>
-
+          <span>⌕</span>
+          Search chats
         </button>
 
 
-        <!-- Search -->
-
-        <button
-          id="openSearchButton"
-          class="sidebar-button"
-          type="button"
-        >
-
-          <span class="sidebar-icon">
-            ⌕
-          </span>
-
-          <span>
-            Search
-          </span>
-
-          <kbd>
-            /
-          </kbd>
-
-        </button>
-
-      </div>
-
-
-      <!-- Chat history -->
-
-      <div class="history-container">
-
-        <div class="history-heading">
-
-          <span>
-            Your chats
-          </span>
-
+        <div class="section-title">
+          Chats
         </div>
 
 
         <div
           id="chatHistory"
           class="chat-history"
-          role="list"
-        >
-
-          <!-- JavaScript inserts conversations here -->
-
-          <div
-            id="emptyHistory"
-            class="empty-history"
-          >
-            Your conversations will appear here.
-          </div>
-
-        </div>
+        ></div>
 
       </div>
 
 
-      <!-- Sidebar footer -->
-
-      <div class="sidebar-footer">
-
-
-        <!-- Upgrade / future feature -->
+      <div class="sidebar-bottom">
 
         <button
-          id="upgradeButton"
-          class="sidebar-button"
+          id="settingsBtn"
+          class="sidebar-action"
           type="button"
         >
-
-          <span class="sidebar-icon">
-            +
-          </span>
-
-          <span>
-            QTM AI
-          </span>
-
+          <span>Settings</span>
         </button>
 
 
-        <!-- Settings -->
-
         <button
-          id="settingsButton"
-          class="sidebar-button"
+          id="googleLoginBtn"
+          class="account"
           type="button"
         >
 
-          <span class="sidebar-icon">
-            ⚙
-          </span>
-
-          <span>
-            Settings
-          </span>
-
-        </button>
-
-
-        <!-- Account -->
-
-        <button
-          id="accountButton"
-          class="account-button"
-          type="button"
-        >
-
-          <span
-            id="accountAvatar"
-            class="account-avatar"
-          >
+          <div class="account-avatar">
             G
-          </span>
+          </div>
 
+          <div class="account-info">
 
-          <span class="account-details">
-
-            <strong id="accountName">
+            <strong>
               Sign in
             </strong>
 
-            <small id="accountEmail">
+            <small>
               Google account
             </small>
 
-          </span>
-
-
-          <span class="account-menu">
-            ...
-          </span>
+          </div>
 
         </button>
 
@@ -242,533 +114,156 @@
     </aside>
 
 
-    <!-- ==================================================
-         MAIN WORKSPACE
-    =================================================== -->
+    <!-- MAIN -->
 
-    <main class="workspace">
+    <main class="main">
 
 
-      <!-- ==================================================
-           TOP BAR
-      =================================================== -->
+      <!-- HEADER -->
 
-      <header class="topbar">
+      <header class="header">
 
-
-        <div class="topbar-left">
-
-          <button
-            id="openSidebarButton"
-            class="icon-button mobile-only"
-            type="button"
-            aria-label="Open sidebar"
-          >
-            ☰
-          </button>
+        <button
+          id="menuBtn"
+          class="menu-button"
+          type="button"
+          aria-label="Open menu"
+        >
+          ☰
+        </button>
 
 
-          <!-- Model selector -->
-
-          <button
-            id="modelSelector"
-            class="model-selector"
-            type="button"
-            aria-haspopup="listbox"
-          >
-
-            <span
-              id="currentModel"
-              class="model-name"
-            >
-              QTM AI
-            </span>
-
-            <span class="model-arrow">
-              ▾
-            </span>
-
-          </button>
-
-        </div>
-
-
-        <div class="topbar-right">
-
-          <button
-            id="shareButton"
-            class="topbar-button"
-            type="button"
-          >
-            Share
-          </button>
-
-
-          <button
-            id="topAccountButton"
-            class="top-avatar"
-            type="button"
-          >
-            G
-          </button>
-
-        </div>
+        <button
+          id="modelButton"
+          class="model-button"
+          type="button"
+        >
+          QTM AI
+          <span>⌄</span>
+        </button>
 
       </header>
 
 
-      <!-- ==================================================
-           MODEL MENU
-      =================================================== -->
-
-      <div
-        id="modelMenu"
-        class="floating-menu hidden"
-        role="listbox"
-      >
-
-        <button
-          class="model-option active"
-          type="button"
-          data-model="QTM AI"
-        >
-
-          <span>
-            QTM AI
-          </span>
-
-          <small>
-            Default
-          </small>
-
-        </button>
-
-
-        <button
-          class="model-option"
-          type="button"
-          data-model="QTM AI Fast"
-        >
-
-          <span>
-            QTM AI Fast
-          </span>
-
-          <small>
-            Faster responses
-          </small>
-
-        </button>
-
-      </div>
-
-
-      <!-- ==================================================
-           CONVERSATION
-      =================================================== -->
+      <!-- CHAT -->
 
       <section
-        id="conversation"
-        class="conversation"
-        aria-live="polite"
+        id="chatMessages"
+        class="chat-area"
       >
 
 
-        <!-- ==================================================
-             EMPTY / WELCOME STATE
-        =================================================== -->
+        <!-- WELCOME -->
 
         <div
-          id="welcomeScreen"
-          class="welcome-screen"
+          id="welcome"
+          class="welcome"
         >
 
-          <div class="welcome-content">
+          <h1>
+            How can I help you?
+          </h1>
 
-            <div class="welcome-mark">
-              Q
-            </div>
-
-
-            <h1>
-              How can I help you?
-            </h1>
+          <p>
+            Ask QTM AI anything.
+          </p>
 
 
-            <p>
-              Ask a question, solve a problem,
-              learn something new, or create something.
-            </p>
+          <div class="suggestions">
 
 
-            <!-- Suggested prompts -->
-
-            <div class="prompt-grid">
-
-
-              <button
-                class="prompt-card"
-                type="button"
-                data-prompt="Explain this topic in simple words."
-              >
-
-                <span class="prompt-title">
-                  Explain
-                </span>
-
-                <span class="prompt-description">
-                  Make a difficult topic easy to understand.
-                </span>
-
-              </button>
+            <button
+              type="button"
+              onclick="useSuggestion('Explain this topic simply')"
+            >
+              Explain something
+            </button>
 
 
-              <button
-                class="prompt-card"
-                type="button"
-                data-prompt="Help me solve this problem step by step."
-              >
-
-                <span class="prompt-title">
-                  Solve
-                </span>
-
-                <span class="prompt-description">
-                  Work through a problem carefully.
-                </span>
-
-              </button>
+            <button
+              type="button"
+              onclick="useSuggestion('Help me solve this problem step by step')"
+            >
+              Solve a problem
+            </button>
 
 
-              <button
-                class="prompt-card"
-                type="button"
-                data-prompt="Write and explain code for me."
-              >
-
-                <span class="prompt-title">
-                  Code
-                </span>
-
-                <span class="prompt-description">
-                  Build, explain, or debug code.
-                </span>
-
-              </button>
+            <button
+              type="button"
+              onclick="useSuggestion('Write code for me')"
+            >
+              Write code
+            </button>
 
 
-              <button
-                class="prompt-card"
-                type="button"
-                data-prompt="Help me create a study plan."
-              >
-
-                <span class="prompt-title">
-                  Study
-                </span>
-
-                <span class="prompt-description">
-                  Learn with a structured plan.
-                </span>
-
-              </button>
-
-            </div>
+            <button
+              type="button"
+              onclick="useSuggestion('Help me create a study plan')"
+            >
+              Study with me
+            </button>
 
           </div>
 
         </div>
 
-
-        <!-- ==================================================
-             MESSAGES
-        =================================================== -->
-
-        <div
-          id="messages"
-          class="messages"
-        >
-
-          <!-- JavaScript creates messages here -->
-
-        </div>
-
-
-        <!-- ==================================================
-             TYPING INDICATOR
-        =================================================== -->
-
-        <div
-          id="typingIndicator"
-          class="typing-indicator hidden"
-        >
-
-          <span class="typing-dot"></span>
-          <span class="typing-dot"></span>
-          <span class="typing-dot"></span>
-
-          <span>
-            QTM AI is thinking
-          </span>
-
-        </div>
-
       </section>
 
 
-      <!-- ==================================================
-           COMPOSER
-      =================================================== -->
+      <!-- MESSAGE BOX -->
 
-      <section
-        class="composer-section"
-        aria-label="Message composer"
-      >
+      <div class="composer-area">
 
-        <form
-          id="composerForm"
-          class="composer"
-        >
+        <div class="composer">
 
-
-          <!-- Attachment -->
 
           <button
-            id="attachButton"
-            class="composer-icon-button"
+            id="attachBtn"
+            class="attach-button"
             type="button"
-            aria-label="Attach file"
+            aria-label="Attach"
           >
             +
           </button>
 
 
-          <!-- Hidden file input -->
-
-          <input
-            id="fileInput"
-            type="file"
-            hidden
-            multiple
-          >
-
-
-          <!-- Input -->
-
           <textarea
             id="chatInput"
-            name="message"
-            rows="1"
-            maxlength="12000"
             placeholder="Message QTM AI"
+            rows="1"
             autocomplete="off"
             spellcheck="true"
-            aria-label="Message QTM AI"
           ></textarea>
 
 
-          <!-- Send / stop -->
-
           <button
-            id="sendButton"
+            id="sendBtn"
             class="send-button"
-            type="submit"
-            aria-label="Send message"
-          >
-
-            <span id="sendButtonText">
-              Send
-            </span>
-
-          </button>
-
-
-          <button
-            id="stopButton"
-            class="stop-button hidden"
             type="button"
-            aria-label="Stop generating"
           >
-            Stop
+            Send
           </button>
 
-
-        </form>
-
-
-        <div class="composer-disclaimer">
-
-          QTM AI can make mistakes. Verify important information.
 
         </div>
 
-      </section>
+
+        <div class="composer-note">
+          QTM AI can make mistakes. Check important information.
+        </div>
+
+      </div>
 
 
     </main>
 
-
-    <!-- ==================================================
-         SEARCH DIALOG
-    =================================================== -->
-
-    <dialog
-      id="searchDialog"
-      class="search-dialog"
-    >
-
-      <div class="dialog-header">
-
-        <strong>
-          Search chats
-        </strong>
-
-        <button
-          id="closeSearchButton"
-          class="icon-button"
-          type="button"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <div class="dialog-search">
-
-        <span>
-          ⌕
-        </span>
-
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Search your conversations..."
-          autocomplete="off"
-        >
-
-      </div>
-
-
-      <div
-        id="searchResults"
-        class="search-results"
-      >
-
-        <div class="search-empty">
-          Search your conversations.
-        </div>
-
-      </div>
-
-    </dialog>
-
-
-    <!-- ==================================================
-         SETTINGS PANEL
-    =================================================== -->
-
-    <dialog
-      id="settingsDialog"
-      class="settings-dialog"
-    >
-
-      <div class="dialog-header">
-
-        <strong>
-          Settings
-        </strong>
-
-        <button
-          id="closeSettingsButton"
-          class="icon-button"
-          type="button"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <div class="settings-content">
-
-
-        <section class="settings-section">
-
-          <h3>
-            Account
-          </h3>
-
-          <p>
-            Sign in with Google to sync your conversations
-            and account settings.
-          </p>
-
-          <button
-            id="googleLoginButton"
-            class="google-login-button"
-            type="button"
-          >
-            Continue with Google
-          </button>
-
-        </section>
-
-
-        <section class="settings-section">
-
-          <h3>
-            Appearance
-          </h3>
-
-          <button
-            id="darkModeButton"
-            class="setting-row"
-            type="button"
-          >
-
-            <span>
-              Dark interface
-            </span>
-
-            <span>
-              On
-            </span>
-
-          </button>
-
-        </section>
-
-
-        <section class="settings-section">
-
-          <h3>
-            Data
-          </h3>
-
-          <button
-            id="clearChatButton"
-            class="danger-button"
-            type="button"
-          >
-            Clear current chat
-          </button>
-
-        </section>
-
-      </div>
-
-    </dialog>
-
-
   </div>
 
 
-  <!-- ==================================================
-       JAVASCRIPT
-  =================================================== -->
+  <!-- JAVASCRIPT FILE -->
 
   <script src="app.js"></script>
 
 </body>
+
   </html>
