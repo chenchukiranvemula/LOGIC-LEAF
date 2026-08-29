@@ -2,8 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#171717">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#171717"
+  >
+
+  <meta
+    name="description"
+    content="QTM AI — intelligent AI assistant"
+  >
 
   <title>QTM AI</title>
 
@@ -12,71 +25,216 @@
 
 <body>
 
-  <div class="app">
+  <!-- ==================================================
+       APP
+  =================================================== -->
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
+  <div class="app-shell">
 
-      <div class="sidebar-top">
 
-        <div class="brand">
-          <div class="brand-name">QTM AI</div>
-        </div>
+    <!-- ==================================================
+         MOBILE OVERLAY
+    =================================================== -->
+
+    <div
+      id="sidebarOverlay"
+      class="sidebar-overlay"
+      aria-hidden="true"
+    ></div>
+
+
+    <!-- ==================================================
+         SIDEBAR
+    =================================================== -->
+
+    <aside
+      id="sidebar"
+      class="sidebar"
+      aria-label="QTM AI sidebar"
+    >
+
+      <!-- Sidebar header -->
+
+      <div class="sidebar-header">
 
         <button
-          id="newChatBtn"
-          class="new-chat"
+          id="brandButton"
+          class="brand-button"
           type="button"
         >
-          <span>+</span>
-          New chat
+
+          <span class="brand-name">
+            QTM AI
+          </span>
+
         </button>
+
 
         <button
-          id="searchBtn"
-          class="sidebar-action"
+          id="closeSidebarButton"
+          class="icon-button mobile-only"
           type="button"
+          aria-label="Close sidebar"
         >
-          <span>⌕</span>
-          Search chats
+          ×
         </button>
-
-        <div class="section-title">
-          Chats
-        </div>
-
-        <div
-          id="chatHistory"
-          class="chat-history"
-        ></div>
 
       </div>
 
 
-      <div class="sidebar-bottom">
+      <!-- New chat -->
+
+      <div class="sidebar-actions">
 
         <button
-          id="settingsBtn"
-          class="sidebar-action"
+          id="newChatButton"
+          class="new-chat-button"
           type="button"
         >
-          <span>⚙</span>
-          Settings
+
+          <span class="plus-icon">+</span>
+
+          <span>
+            New chat
+          </span>
+
         </button>
 
+
+        <!-- Search -->
+
         <button
-          id="googleLoginBtn"
-          class="account"
+          id="openSearchButton"
+          class="sidebar-button"
           type="button"
         >
-          <div class="account-avatar">
-            G
+
+          <span class="sidebar-icon">
+            ⌕
+          </span>
+
+          <span>
+            Search
+          </span>
+
+          <kbd>
+            /
+          </kbd>
+
+        </button>
+
+      </div>
+
+
+      <!-- Chat history -->
+
+      <div class="history-container">
+
+        <div class="history-heading">
+
+          <span>
+            Your chats
+          </span>
+
+        </div>
+
+
+        <div
+          id="chatHistory"
+          class="chat-history"
+          role="list"
+        >
+
+          <!-- JavaScript inserts conversations here -->
+
+          <div
+            id="emptyHistory"
+            class="empty-history"
+          >
+            Your conversations will appear here.
           </div>
 
-          <div class="account-info">
-            <strong>Sign in</strong>
-            <small>Google account</small>
-          </div>
+        </div>
+
+      </div>
+
+
+      <!-- Sidebar footer -->
+
+      <div class="sidebar-footer">
+
+
+        <!-- Upgrade / future feature -->
+
+        <button
+          id="upgradeButton"
+          class="sidebar-button"
+          type="button"
+        >
+
+          <span class="sidebar-icon">
+            +
+          </span>
+
+          <span>
+            QTM AI
+          </span>
+
+        </button>
+
+
+        <!-- Settings -->
+
+        <button
+          id="settingsButton"
+          class="sidebar-button"
+          type="button"
+        >
+
+          <span class="sidebar-icon">
+            ⚙
+          </span>
+
+          <span>
+            Settings
+          </span>
+
+        </button>
+
+
+        <!-- Account -->
+
+        <button
+          id="accountButton"
+          class="account-button"
+          type="button"
+        >
+
+          <span
+            id="accountAvatar"
+            class="account-avatar"
+          >
+            G
+          </span>
+
+
+          <span class="account-details">
+
+            <strong id="accountName">
+              Sign in
+            </strong>
+
+            <small id="accountEmail">
+              Google account
+            </small>
+
+          </span>
+
+
+          <span class="account-menu">
+            ...
+          </span>
+
         </button>
 
       </div>
@@ -84,192 +242,533 @@
     </aside>
 
 
-    <!-- MAIN -->
-    <main class="main">
+    <!-- ==================================================
+         MAIN WORKSPACE
+    =================================================== -->
 
-      <!-- HEADER -->
-      <header class="header">
+    <main class="workspace">
 
-        <button
-          id="menuBtn"
-          class="menu-button"
-          type="button"
-        >
-          ☰
-        </button>
 
-        <button
-          id="modelButton"
-          class="model-button"
-          type="button"
-        >
-          QTM AI
-          <span>⌄</span>
-        </button>
+      <!-- ==================================================
+           TOP BAR
+      =================================================== -->
+
+      <header class="topbar">
+
+
+        <div class="topbar-left">
+
+          <button
+            id="openSidebarButton"
+            class="icon-button mobile-only"
+            type="button"
+            aria-label="Open sidebar"
+          >
+            ☰
+          </button>
+
+
+          <!-- Model selector -->
+
+          <button
+            id="modelSelector"
+            class="model-selector"
+            type="button"
+            aria-haspopup="listbox"
+          >
+
+            <span
+              id="currentModel"
+              class="model-name"
+            >
+              QTM AI
+            </span>
+
+            <span class="model-arrow">
+              ▾
+            </span>
+
+          </button>
+
+        </div>
+
+
+        <div class="topbar-right">
+
+          <button
+            id="shareButton"
+            class="topbar-button"
+            type="button"
+          >
+            Share
+          </button>
+
+
+          <button
+            id="topAccountButton"
+            class="top-avatar"
+            type="button"
+          >
+            G
+          </button>
+
+        </div>
 
       </header>
 
 
-      <!-- CHAT -->
-      <section
-        id="chatMessages"
-        class="chat-area"
+      <!-- ==================================================
+           MODEL MENU
+      =================================================== -->
+
+      <div
+        id="modelMenu"
+        class="floating-menu hidden"
+        role="listbox"
       >
 
-        <!-- Welcome -->
-
-        <div
-          id="welcome"
-          class="welcome"
+        <button
+          class="model-option active"
+          type="button"
+          data-model="QTM AI"
         >
 
-          <h1>
-            How can I help you?
-          </h1>
+          <span>
+            QTM AI
+          </span>
 
-          <p>
-            Ask QTM AI anything.
-          </p>
+          <small>
+            Default
+          </small>
 
-          <div class="suggestions">
+        </button>
 
-            <button
-              type="button"
-              onclick="useSuggestion('Explain this topic simply')"
-            >
-              Explain something
-            </button>
 
-            <button
-              type="button"
-              onclick="useSuggestion('Help me solve this problem step by step')"
-            >
-              Solve a problem
-            </button>
+        <button
+          class="model-option"
+          type="button"
+          data-model="QTM AI Fast"
+        >
 
-            <button
-              type="button"
-              onclick="useSuggestion('Write code for me')"
-            >
-              Write code
-            </button>
+          <span>
+            QTM AI Fast
+          </span>
 
-            <button
-              type="button"
-              onclick="useSuggestion('Help me create a study plan')"
-            >
-              Study with me
-            </button>
+          <small>
+            Faster responses
+          </small>
+
+        </button>
+
+      </div>
+
+
+      <!-- ==================================================
+           CONVERSATION
+      =================================================== -->
+
+      <section
+        id="conversation"
+        class="conversation"
+        aria-live="polite"
+      >
+
+
+        <!-- ==================================================
+             EMPTY / WELCOME STATE
+        =================================================== -->
+
+        <div
+          id="welcomeScreen"
+          class="welcome-screen"
+        >
+
+          <div class="welcome-content">
+
+            <div class="welcome-mark">
+              Q
+            </div>
+
+
+            <h1>
+              How can I help you?
+            </h1>
+
+
+            <p>
+              Ask a question, solve a problem,
+              learn something new, or create something.
+            </p>
+
+
+            <!-- Suggested prompts -->
+
+            <div class="prompt-grid">
+
+
+              <button
+                class="prompt-card"
+                type="button"
+                data-prompt="Explain this topic in simple words."
+              >
+
+                <span class="prompt-title">
+                  Explain
+                </span>
+
+                <span class="prompt-description">
+                  Make a difficult topic easy to understand.
+                </span>
+
+              </button>
+
+
+              <button
+                class="prompt-card"
+                type="button"
+                data-prompt="Help me solve this problem step by step."
+              >
+
+                <span class="prompt-title">
+                  Solve
+                </span>
+
+                <span class="prompt-description">
+                  Work through a problem carefully.
+                </span>
+
+              </button>
+
+
+              <button
+                class="prompt-card"
+                type="button"
+                data-prompt="Write and explain code for me."
+              >
+
+                <span class="prompt-title">
+                  Code
+                </span>
+
+                <span class="prompt-description">
+                  Build, explain, or debug code.
+                </span>
+
+              </button>
+
+
+              <button
+                class="prompt-card"
+                type="button"
+                data-prompt="Help me create a study plan."
+              >
+
+                <span class="prompt-title">
+                  Study
+                </span>
+
+                <span class="prompt-description">
+                  Learn with a structured plan.
+                </span>
+
+              </button>
+
+            </div>
 
           </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             MESSAGES
+        =================================================== -->
+
+        <div
+          id="messages"
+          class="messages"
+        >
+
+          <!-- JavaScript creates messages here -->
+
+        </div>
+
+
+        <!-- ==================================================
+             TYPING INDICATOR
+        =================================================== -->
+
+        <div
+          id="typingIndicator"
+          class="typing-indicator hidden"
+        >
+
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+
+          <span>
+            QTM AI is thinking
+          </span>
 
         </div>
 
       </section>
 
 
-      <!-- COMPOSER -->
-      <div class="composer-area">
+      <!-- ==================================================
+           COMPOSER
+      =================================================== -->
 
-        <div class="composer">
+      <section
+        class="composer-section"
+        aria-label="Message composer"
+      >
+
+        <form
+          id="composerForm"
+          class="composer"
+        >
+
+
+          <!-- Attachment -->
 
           <button
-            id="attachBtn"
-            class="attach-button"
+            id="attachButton"
+            class="composer-icon-button"
             type="button"
-            title="Attach"
+            aria-label="Attach file"
           >
             +
           </button>
 
 
+          <!-- Hidden file input -->
+
+          <input
+            id="fileInput"
+            type="file"
+            hidden
+            multiple
+          >
+
+
+          <!-- Input -->
+
           <textarea
             id="chatInput"
-            placeholder="Message QTM AI"
+            name="message"
             rows="1"
+            maxlength="12000"
+            placeholder="Message QTM AI"
             autocomplete="off"
+            spellcheck="true"
+            aria-label="Message QTM AI"
           ></textarea>
 
 
+          <!-- Send / stop -->
+
           <button
-            id="sendBtn"
+            id="sendButton"
             class="send-button"
-            type="button"
+            type="submit"
+            aria-label="Send message"
           >
-            Send
+
+            <span id="sendButtonText">
+              Send
+            </span>
+
           </button>
+
+
+          <button
+            id="stopButton"
+            class="stop-button hidden"
+            type="button"
+            aria-label="Stop generating"
+          >
+            Stop
+          </button>
+
+
+        </form>
+
+
+        <div class="composer-disclaimer">
+
+          QTM AI can make mistakes. Verify important information.
 
         </div>
 
-        <div class="composer-note">
-          QTM AI can make mistakes. Check important information.
+      </section>
+
+
+    </main>
+
+
+    <!-- ==================================================
+         SEARCH DIALOG
+    =================================================== -->
+
+    <dialog
+      id="searchDialog"
+      class="search-dialog"
+    >
+
+      <div class="dialog-header">
+
+        <strong>
+          Search chats
+        </strong>
+
+        <button
+          id="closeSearchButton"
+          class="icon-button"
+          type="button"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="dialog-search">
+
+        <span>
+          ⌕
+        </span>
+
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Search your conversations..."
+          autocomplete="off"
+        >
+
+      </div>
+
+
+      <div
+        id="searchResults"
+        class="search-results"
+      >
+
+        <div class="search-empty">
+          Search your conversations.
         </div>
 
       </div>
 
-    </main>
+    </dialog>
+
+
+    <!-- ==================================================
+         SETTINGS PANEL
+    =================================================== -->
+
+    <dialog
+      id="settingsDialog"
+      class="settings-dialog"
+    >
+
+      <div class="dialog-header">
+
+        <strong>
+          Settings
+        </strong>
+
+        <button
+          id="closeSettingsButton"
+          class="icon-button"
+          type="button"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="settings-content">
+
+
+        <section class="settings-section">
+
+          <h3>
+            Account
+          </h3>
+
+          <p>
+            Sign in with Google to sync your conversations
+            and account settings.
+          </p>
+
+          <button
+            id="googleLoginButton"
+            class="google-login-button"
+            type="button"
+          >
+            Continue with Google
+          </button>
+
+        </section>
+
+
+        <section class="settings-section">
+
+          <h3>
+            Appearance
+          </h3>
+
+          <button
+            id="darkModeButton"
+            class="setting-row"
+            type="button"
+          >
+
+            <span>
+              Dark interface
+            </span>
+
+            <span>
+              On
+            </span>
+
+          </button>
+
+        </section>
+
+
+        <section class="settings-section">
+
+          <h3>
+            Data
+          </h3>
+
+          <button
+            id="clearChatButton"
+            class="danger-button"
+            type="button"
+          >
+            Clear current chat
+          </button>
+
+        </section>
+
+      </div>
+
+    </dialog>
+
 
   </div>
 
 
+  <!-- ==================================================
+       JAVASCRIPT
+  =================================================== -->
+
   <script src="app.js"></script>
 
-
-  <script>
-
-    function useSuggestion(text) {
-
-      const input =
-        document.getElementById("chatInput");
-
-      input.value = text;
-
-      input.focus();
-
-      input.dispatchEvent(
-        new Event("input")
-      );
-
-    }
-
-
-    const menuBtn =
-      document.getElementById("menuBtn");
-
-    const sidebar =
-      document.getElementById("sidebar");
-
-
-    menuBtn.addEventListener(
-      "click",
-      function () {
-
-        sidebar.classList.toggle("open");
-
-      }
-    );
-
-
-    const input =
-      document.getElementById("chatInput");
-
-
-    input.addEventListener(
-      "input",
-      function () {
-
-        this.style.height = "auto";
-
-        this.style.height =
-          Math.min(
-            this.scrollHeight,
-            120
-          ) + "px";
-
-      }
-    );
-
-  </script>
-
 </body>
-</html>
+  </html>
