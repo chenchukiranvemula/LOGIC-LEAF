@@ -2,24 +2,13 @@
 ==================================================
 QTM AI V2
 FRONTEND
-API KEY + CHAT
+Cloudflare Worker + API Keys + Chat
 ==================================================
 */
 
-/*
-  IMPORTANT:
-  Change this to your Cloudflare Worker URL.
-
-  Example:
-  https://qtm-ai.qtmkiller6.workers.dev
-*/
-
 const API_URL =
-  localStorage.getItem("qtm_api_url") ||
-  "YOUR_WORKER_URL";
+  "https://qtm-ai.qtmkiller6.workers.dev";
 
-
-/* ELEMENTS */
 
 const messages =
   document.getElementById("messages");
@@ -36,11 +25,6 @@ const chatList =
 const sendBtn =
   document.getElementById("sendBtn");
 
-const sidebar =
-  document.getElementById("sidebar");
-
-
-/* STATE */
 
 let history = [];
 
@@ -49,66 +33,99 @@ let qtmApiKey =
 
 
 /* =================================================
-   API KEY
+   API REQUEST HELPER
 ================================================= */
 
-async function createApiKey() {
+async function readJSON(response) {
+
+  const text =
+    await response.text();
 
   try {
 
-    const response =
-      await fetch(
-        API_URL + "/api/keys/create",
-        {
-          method: "POST"
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if (!response.ok || !data.api_key) {
-
-      throw new Error(
-        data.error ||
-        "Could not create API key."
-      );
-
-    }
-
-    qtmApiKey =
-      data.api_key;
-
-    localStorage.setItem(
-      "qtm_api_key",
-      qtmApiKey
-    );
-
-    console.log(
-      "QTM API key created."
-    );
-
-    return qtmApiKey;
+    return JSON.parse(text);
 
   } catch (error) {
 
     console.error(
-      "API key error:",
-      error
+      "Server returned non-JSON:",
+      text
     );
 
-    throw error;
+    throw new Error(
+      "Cloudflare Worker returned an invalid response."
+    );
   }
 }
 
 
-/* Get existing key or create one */
+/* =================================================
+   CREATE QTM API KEY
+================================================= */
+
+async function createApiKey() {
+
+  const response =
+    await fetch(
+      API_URL + "/api/keys/create",
+      {
+        method: "POST"
+      }
+    );
+
+
+  const data =
+    await readJSON(response);
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      data.error ||
+      "Could not create QTM API key."
+    );
+  }
+
+
+  if (!data.api_key) {
+
+    throw new Error(
+      "Worker did not return an API key."
+    );
+  }
+
+
+  qtmApiKey =
+    data.api_key;
+
+
+  localStorage.setItem(
+    "qtm_api_key",
+    qtmApiKey
+  );
+
+
+  console.log(
+    "QTM API key created successfully."
+  );
+
+
+  return qtmApiKey;
+}
+
+
+/* =================================================
+   GET API KEY
+================================================= */
 
 async function getApiKey() {
 
   if (qtmApiKey) {
+
     return qtmApiKey;
+
   }
+
 
   return await createApiKey();
 }
@@ -118,10 +135,16 @@ async function getApiKey() {
    ADD MESSAGE
 ================================================= */
 
-function addMessage(role, text) {
+function addMessage(
+  role,
+  text
+) {
 
   const welcome =
-    messages.querySelector(".welcome");
+    messages.querySelector(
+      ".welcome"
+    );
+
 
   if (welcome) {
     welcome.remove();
@@ -129,25 +152,37 @@ function addMessage(role, text) {
 
 
   const row =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   row.className =
     "message " + role;
 
 
   const bubble =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   bubble.className =
     "bubble";
+
 
   bubble.textContent =
     text;
 
 
-  row.appendChild(bubble);
+  row.appendChild(
+    bubble
+  );
 
-  messages.appendChild(row);
+
+  messages.appendChild(
+    row
+  );
 
 
   messages.scrollTop =
@@ -164,22 +199,35 @@ function addMessage(role, text) {
 
 function saveChatTitle(text) {
 
-  if (chatList.children.length > 0) {
+  if (
+    chatList.children.length > 0
+  ) {
+
     return;
+
   }
 
 
   const item =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   item.className =
     "chat-item";
 
+
   item.textContent =
-    text.substring(0, 40);
+    text.substring(
+      0,
+      40
+    );
 
 
-  chatList.appendChild(item);
+  chatList.appendChild(
+    item
+  );
 }
 
 
@@ -214,7 +262,7 @@ async function askQTM(text) {
   try {
 
     /*
-      Make sure we have a QTM API key.
+    Get QTM API key.
     */
 
     const key =
@@ -222,7 +270,8 @@ async function askQTM(text) {
 
 
     /*
-      Call V2 endpoint.
+    Send conversation
+    to Cloudflare Worker.
     */
 
     const response =
@@ -240,34 +289,28 @@ async function askQTM(text) {
           },
 
           body: JSON.stringify({
-            messages: history
+            messages:
+              history
           })
         }
       );
 
 
     const data =
-      await response.json();
+      await readJSON(
+        response
+      );
 
-
-    /*
-      API error
-    */
 
     if (!response.ok) {
 
       throw new Error(
         data.error ||
-        "API error " +
+        "Chat API error: " +
         response.status
       );
-
     }
 
-
-    /*
-      Get AI answer
-    */
 
     const answer =
       data.answer ||
@@ -298,14 +341,15 @@ async function askQTM(text) {
 
 
     /*
-      If the saved API key is invalid,
-      remove it so a new one can be created.
+    If the API key is invalid,
+    remove it and allow a new
+    one to be created next time.
     */
 
     if (
       error.message
         .toLowerCase()
-        .includes("api key")
+        .includes("invalid qtm api key")
     ) {
 
       localStorage.removeItem(
@@ -326,7 +370,7 @@ async function askQTM(text) {
 
 
 /* =================================================
-   SEND MESSAGE
+   SEND
 ================================================= */
 
 composer.addEventListener(
@@ -348,10 +392,14 @@ composer.addEventListener(
     promptBox.value = "";
 
 
-    saveChatTitle(text);
+    saveChatTitle(
+      text
+    );
 
 
-    askQTM(text);
+    askQTM(
+      text
+    );
 
   }
 );
@@ -381,26 +429,35 @@ promptBox.addEventListener(
 
 
 /* =================================================
-   QUICK PROMPTS
+   QUICK BUTTONS
 ================================================= */
 
-document
-  .querySelectorAll(".quick button")
-  .forEach(button => {
+function setupQuickButtons() {
 
-    button.addEventListener(
-      "click",
-      function() {
+  document
+    .querySelectorAll(
+      ".quick button"
+    )
+    .forEach(button => {
 
-        promptBox.value =
-          button.dataset.prompt;
+      button.addEventListener(
+        "click",
+        function() {
 
-        composer.requestSubmit();
+          promptBox.value =
+            button.dataset.prompt;
 
-      }
-    );
+          composer.requestSubmit();
 
-  });
+        }
+      );
+
+    });
+
+}
+
+
+setupQuickButtons();
 
 
 /* =================================================
@@ -461,28 +518,7 @@ document
       `;
 
 
-      /*
-        Re-enable quick buttons
-        after rebuilding the HTML.
-      */
-
-      messages
-        .querySelectorAll(".quick button")
-        .forEach(button => {
-
-          button.addEventListener(
-            "click",
-            function() {
-
-              promptBox.value =
-                button.dataset.prompt;
-
-              composer.requestSubmit();
-
-            }
-          );
-
-        });
+      setupQuickButtons();
 
 
       promptBox.focus();
@@ -492,7 +528,7 @@ document
 
 
 /* =================================================
-   CLEAR CHAT
+   CLEAR
 ================================================= */
 
 document
@@ -503,7 +539,27 @@ document
 
       history = [];
 
-      messages.innerHTML = "";
+
+      messages.innerHTML = `
+        <div class="welcome">
+
+          <div class="logo-orb">
+            Q
+          </div>
+
+          <h1>
+            How can I help you?
+          </h1>
+
+          <p>
+            Welcome to QTM AI.
+            Ask questions, study,
+            create and explore.
+          </p>
+
+        </div>
+      `;
+
 
       promptBox.focus();
 
@@ -521,16 +577,18 @@ document
     "click",
     function() {
 
-      sidebar.classList.toggle(
-        "open"
-      );
+      document
+        .getElementById("sidebar")
+        .classList.toggle(
+          "open"
+        );
 
     }
   );
 
 
 /* =================================================
-   ATTACH FILE
+   ATTACH
 ================================================= */
 
 document
@@ -548,7 +606,7 @@ document
 
 
 /* =================================================
-   FILE SELECT
+   FILE
 ================================================= */
 
 document
@@ -557,8 +615,12 @@ document
     "change",
     function() {
 
-      if (!this.files.length) {
+      if (
+        !this.files.length
+      ) {
+
         return;
+
       }
 
 
@@ -573,16 +635,9 @@ document
       );
 
 
-      /*
-        File understanding will be
-        connected in the next backend upgrade.
-      */
-
       addMessage(
         "assistant",
-        "📎 File received: " +
-        file.name +
-        "\n\nFile analysis will be connected in the next QTM AI upgrade."
+        "📎 File received. File analysis will be added in a future QTM AI version."
       );
 
 
@@ -604,7 +659,7 @@ document
 
       addMessage(
         "assistant",
-        "🖼 Image generation is planned for the next QTM AI upgrade."
+        "🖼 Image generation will be connected in the next QTM AI upgrade."
       );
 
     }
@@ -623,7 +678,7 @@ document
 
       addMessage(
         "assistant",
-        "📄 PDF generation is planned for the next QTM AI upgrade."
+        "📄 PDF generation will be connected in the next QTM AI upgrade."
       );
 
     }
@@ -640,43 +695,10 @@ document
     "click",
     function() {
 
-      const current =
-        API_URL ===
-        "YOUR_WORKER_URL"
-          ? ""
-          : API_URL;
-
-
-      const url =
-        prompt(
-          "Enter your QTM AI Worker URL:",
-          current
-        );
-
-
-      if (!url) {
-        return;
-      }
-
-
-      const cleanURL =
-        url
-          .trim()
-          .replace(/\/+$/, "");
-
-
-      localStorage.setItem(
-        "qtm_api_url",
-        cleanURL
+      alert(
+        "QTM AI Worker is connected to:\n\n" +
+        API_URL
       );
-
-
-      /*
-        Keep existing API key if
-        the Worker is unchanged.
-      */
-
-      location.reload();
 
     }
   );
