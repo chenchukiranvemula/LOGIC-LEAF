@@ -11,7 +11,7 @@ API KEY + CHAT
   Change this to your Cloudflare Worker URL.
 
   Example:
-  https://qtm-ai.yourname.workers.dev
+  https://qtm-ai.qtmkiller6.workers.dev
 */
 
 const API_URL =
