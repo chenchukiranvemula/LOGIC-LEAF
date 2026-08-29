@@ -1,17 +1,34 @@
+/* =========================================
+   QTM AI
+   FRONTEND
+========================================= */
+
 const API_URL =
   "https://qtm-ai-new.qtmkiller6.workers.dev";
 
-const chatForm =
-  document.getElementById("chatForm");
 
-const messageInput =
-  document.getElementById("messageInput");
+/* ELEMENTS */
+
+const welcome =
+  document.getElementById("welcome");
 
 const chatMessages =
   document.getElementById("chatMessages");
 
-const welcome =
-  document.getElementById("welcome");
+const chatArea =
+  document.getElementById("chatArea");
+
+const messageInput =
+  document.getElementById("messageInput");
+
+const heroInput =
+  document.getElementById("heroInput");
+
+const chatForm =
+  document.getElementById("chatForm");
+
+const heroForm =
+  document.getElementById("heroForm");
 
 const sendBtn =
   document.getElementById("sendBtn");
@@ -19,8 +36,17 @@ const sendBtn =
 const newChatBtn =
   document.getElementById("newChatBtn");
 
-const clearBtn =
-  document.getElementById("clearBtn");
+const chatHistory =
+  document.getElementById("chatHistory");
+
+const chatSearch =
+  document.getElementById("chatSearch");
+
+const sidebar =
+  document.getElementById("sidebar");
+
+const mobileMenu =
+  document.getElementById("mobileMenu");
 
 const settingsBtn =
   document.getElementById("settingsBtn");
@@ -31,25 +57,35 @@ const settingsModal =
 const closeSettings =
   document.getElementById("closeSettings");
 
-const mobileMenu =
-  document.getElementById("mobileMenu");
+const loginBtn =
+  document.getElementById("loginBtn");
 
-const sidebar =
-  document.getElementById("sidebar");
+const loginModal =
+  document.getElementById("loginModal");
 
-const chatHistory =
-  document.getElementById("chatHistory");
+const closeLogin =
+  document.getElementById("closeLogin");
 
-let chats = [];
+const googleBtn =
+  document.getElementById("googleBtn");
 
 
-/* =========================
-   ADD MESSAGE
-========================= */
+/* LOCAL HISTORY */
+
+let chats =
+  JSON.parse(
+    localStorage.getItem("qtm_chats") || "[]"
+  );
+
+
+/* =========================================
+   MESSAGE
+========================================= */
 
 function addMessage(text, role) {
 
   welcome.style.display = "none";
+
 
   const row =
     document.createElement("div");
@@ -57,8 +93,10 @@ function addMessage(text, role) {
   row.className =
     `message-row ${role}`;
 
+
   const wrapper =
     document.createElement("div");
+
 
   const label =
     document.createElement("div");
@@ -71,13 +109,16 @@ function addMessage(text, role) {
       ? "YOU"
       : "QTM AI";
 
+
   const bubble =
     document.createElement("div");
 
   bubble.className =
     "message";
 
-  bubble.textContent = text;
+  bubble.textContent =
+    text;
+
 
   wrapper.appendChild(label);
 
@@ -87,43 +128,49 @@ function addMessage(text, role) {
 
   chatMessages.appendChild(row);
 
-  scrollChat();
+
+  scrollToBottom();
 }
 
 
-/* =========================
+/* =========================================
    SCROLL
-========================= */
+========================================= */
 
-function scrollChat() {
-
-  const chatArea =
-    document.getElementById("chatArea");
+function scrollToBottom() {
 
   chatArea.scrollTop =
     chatArea.scrollHeight;
+
 }
 
 
-/* =========================
-   SEND MESSAGE
-========================= */
+/* =========================================
+   ASK
+========================================= */
 
-async function sendMessage(text) {
+async function askAI(text) {
 
-  if (!text.trim()) return;
+  text = text.trim();
+
+  if (!text) return;
+
 
   addMessage(text, "user");
 
+
+  saveChat(text);
+
+
+  heroInput.value = "";
   messageInput.value = "";
 
-  messageInput.style.height =
-    "auto";
+  heroInput.style.height = "auto";
+  messageInput.style.height = "auto";
+
 
   sendBtn.disabled = true;
 
-
-  /* Loading */
 
   const loading =
     document.createElement("div");
@@ -133,17 +180,31 @@ async function sendMessage(text) {
 
   loading.innerHTML = `
     <div>
-      <div class="message-label">QTM AI</div>
-      <div class="message">Thinking...</div>
+      <div class="message-label">
+        QTM AI
+      </div>
+
+      <div class="message">
+        Thinking...
+      </div>
     </div>
   `;
 
   chatMessages.appendChild(loading);
 
-  scrollChat();
+  scrollToBottom();
 
 
   try {
+
+    /*
+      The Worker accepts:
+      POST /api/chat
+
+      {
+        "message": "..."
+      }
+    */
 
     const response =
       await fetch(
@@ -163,24 +224,31 @@ async function sendMessage(text) {
       );
 
 
-    if (!response.ok) {
+    const raw =
+      await response.text();
+
+
+    let data;
+
+    try {
+
+      data =
+        JSON.parse(raw);
+
+    } catch {
 
       throw new Error(
-        `Server error: ${response.status}`
+        "Worker returned invalid JSON"
       );
 
     }
-
-
-    const data =
-      await response.json();
 
 
     loading.remove();
 
 
     if (
-      data.success &&
+      response.ok &&
       data.response
     ) {
 
@@ -189,13 +257,11 @@ async function sendMessage(text) {
         "ai"
       );
 
-      addHistory(text);
-
     } else {
 
       addMessage(
         data.error ||
-        "QTM AI could not respond.",
+        "QTM AI could not answer right now.",
         "ai"
       );
 
@@ -204,12 +270,17 @@ async function sendMessage(text) {
 
   } catch (error) {
 
-    console.error(error);
+    console.error(
+      "QTM AI:",
+      error
+    );
+
 
     loading.remove();
 
+
     addMessage(
-      "Unable to connect to QTM AI. Please try again.",
+      "I couldn't connect to the QTM AI engine. Please check the Worker and try again.",
       "ai"
     );
 
@@ -222,88 +293,118 @@ async function sendMessage(text) {
 }
 
 
-/* =========================
-   FORM
-========================= */
+/* =========================================
+   FORMS
+========================================= */
 
 chatForm.addEventListener(
   "submit",
-  function(event) {
+  event => {
 
     event.preventDefault();
 
-    const text =
-      messageInput.value.trim();
-
-    if (text) {
-
-      sendMessage(text);
-
-    }
+    askAI(
+      messageInput.value
+    );
 
   }
 );
 
 
-/* =========================
-   ENTER TO SEND
-========================= */
+heroForm.addEventListener(
+  "submit",
+  event => {
 
-messageInput.addEventListener(
-  "keydown",
-  function(event) {
+    event.preventDefault();
 
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-
-      event.preventDefault();
-
-      chatForm.requestSubmit();
-
-    }
+    askAI(
+      heroInput.value
+    );
 
   }
 );
 
 
-/* =========================
+/* =========================================
+   ENTER
+========================================= */
+
+function enterToSend(input, form) {
+
+  input.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        form.requestSubmit();
+
+      }
+
+    }
+  );
+
+}
+
+
+enterToSend(
+  messageInput,
+  chatForm
+);
+
+enterToSend(
+  heroInput,
+  heroForm
+);
+
+
+/* =========================================
    AUTO RESIZE
-========================= */
+========================================= */
 
-messageInput.addEventListener(
-  "input",
-  function() {
+function autoResize(input) {
 
-    this.style.height =
-      "auto";
+  input.addEventListener(
+    "input",
+    () => {
 
-    this.style.height =
-      Math.min(
-        this.scrollHeight,
-        150
-      ) + "px";
+      input.style.height =
+        "auto";
 
-  }
-);
+      input.style.height =
+        Math.min(
+          input.scrollHeight,
+          150
+        ) + "px";
+
+    }
+  );
+
+}
 
 
-/* =========================
-   SUGGESTIONS
-========================= */
+autoResize(messageInput);
+autoResize(heroInput);
+
+
+/* =========================================
+   QUICK ACTIONS
+========================================= */
 
 document
-  .querySelectorAll(
-    ".suggestions button"
-  )
+  .querySelectorAll(".quick-actions button")
   .forEach(button => {
 
     button.addEventListener(
       "click",
       () => {
 
-        sendMessage(
+        askAI(
           button.dataset.prompt
         );
 
@@ -313,103 +414,259 @@ document
   });
 
 
-/* =========================
+/* =========================================
    NEW CHAT
-========================= */
-
-function newChat() {
-
-  chatMessages.innerHTML = "";
-
-  welcome.style.display =
-    "block";
-
-  messageInput.value = "";
-
-  messageInput.style.height =
-    "auto";
-
-  messageInput.focus();
-
-}
+========================================= */
 
 newChatBtn.addEventListener(
   "click",
-  newChat
+  () => {
+
+    chatMessages.innerHTML = "";
+
+    welcome.style.display = "block";
+
+    messageInput.value = "";
+    heroInput.value = "";
+
+    messageInput.style.height = "auto";
+    heroInput.style.height = "auto";
+
+    sidebar.classList.remove("open");
+
+    messageInput.focus();
+
+  }
 );
 
-clearBtn.addEventListener(
-  "click",
-  newChat
-);
+
+/* =========================================
+   SAVE HISTORY
+========================================= */
+
+function saveChat(text) {
+
+  chats.unshift({
+    id: Date.now(),
+    text: text,
+    created:
+      new Date().toISOString()
+  });
 
 
-/* =========================
-   CHAT HISTORY
-========================= */
+  chats =
+    chats.slice(0, 100);
 
-function addHistory(text) {
 
-  const item =
-    document.createElement("div");
+  localStorage.setItem(
+    "qtm_chats",
+    JSON.stringify(chats)
+  );
 
-  item.className =
-    "history-item";
 
-  item.textContent = text;
+  renderHistory();
+}
 
-  chatHistory.prepend(item);
 
-  chats.push(text);
+/* =========================================
+   HISTORY
+========================================= */
+
+function renderHistory(filter = "") {
+
+  chatHistory.innerHTML = "";
+
+
+  const query =
+    filter
+      .toLowerCase()
+      .trim();
+
+
+  const results =
+    chats.filter(chat =>
+      chat.text
+        .toLowerCase()
+        .includes(query)
+    );
+
+
+  if (!results.length) {
+
+    const empty =
+      document.createElement("div");
+
+    empty.className =
+      "history-item";
+
+    empty.textContent =
+      query
+        ? "No matching chats"
+        : "No conversations yet";
+
+    chatHistory.appendChild(empty);
+
+    return;
+  }
+
+
+  results.forEach(chat => {
+
+    const item =
+      document.createElement("div");
+
+    item.className =
+      "history-item";
+
+    item.textContent =
+      chat.text;
+
+    item.title =
+      chat.text;
+
+
+    item.addEventListener(
+      "click",
+      () => {
+
+        messageInput.value =
+          chat.text;
+
+        messageInput.focus();
+
+        sidebar.classList.remove(
+          "open"
+        );
+
+      }
+    );
+
+
+    chatHistory.appendChild(item);
+
+  });
 
 }
 
 
-/* =========================
+renderHistory();
+
+
+/* =========================================
+   SEARCH
+========================================= */
+
+chatSearch.addEventListener(
+  "input",
+  () => {
+
+    renderHistory(
+      chatSearch.value
+    );
+
+  }
+);
+
+
+/* =========================================
    SETTINGS
-========================= */
+========================================= */
 
 settingsBtn.addEventListener(
   "click",
   () => {
 
-    settingsModal.classList
-      .remove("hidden");
+    settingsModal.classList.remove(
+      "hidden"
+    );
 
   }
 );
+
 
 closeSettings.addEventListener(
   "click",
   () => {
 
-    settingsModal.classList
-      .add("hidden");
+    settingsModal.classList.add(
+      "hidden"
+    );
 
   }
 );
 
-settingsModal.addEventListener(
+
+/* =========================================
+   LOGIN
+========================================= */
+
+loginBtn.addEventListener(
   "click",
-  event => {
+  () => {
 
-    if (
-      event.target ===
-      settingsModal
-    ) {
-
-      settingsModal.classList
-        .add("hidden");
-
-    }
+    loginModal.classList.remove(
+      "hidden"
+    );
 
   }
 );
 
 
-/* =========================
-   MOBILE MENU
-========================= */
+closeLogin.addEventListener(
+  "click",
+  () => {
+
+    loginModal.classList.add(
+      "hidden"
+    );
+
+  }
+);
+
+
+googleBtn.addEventListener(
+  "click",
+  () => {
+
+    alert(
+      "Google authentication is the next backend step."
+    );
+
+  }
+);
+
+
+/* =========================================
+   MODAL CLOSE
+========================================= */
+
+document
+  .querySelectorAll(".modal")
+  .forEach(modal => {
+
+    modal.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target === modal
+        ) {
+
+          modal.classList.add(
+            "hidden"
+          );
+
+        }
+
+      }
+    );
+
+  });
+
+
+/* =========================================
+   MOBILE
+========================================= */
 
 mobileMenu.addEventListener(
   "click",
@@ -423,9 +680,9 @@ mobileMenu.addEventListener(
 );
 
 
-/* =========================
-   WORKER TEST
-========================= */
+/* =========================================
+   WORKER CHECK
+========================================= */
 
 async function checkWorker() {
 
@@ -434,23 +691,26 @@ async function checkWorker() {
     const response =
       await fetch(API_URL);
 
+
     const data =
       await response.json();
 
+
     console.log(
-      "QTM AI Worker:",
+      "QTM AI Worker online:",
       data
     );
 
   } catch (error) {
 
-    console.error(
-      "Worker connection failed:",
+    console.warn(
+      "Worker health check failed:",
       error
     );
 
   }
 
 }
+
 
 checkWorker();
