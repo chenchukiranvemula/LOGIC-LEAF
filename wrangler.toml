@@ -9,4 +9,4 @@ binding = "AI"
 
 [[kv_namespaces]]
 binding = "QTM_KEYS"
-id = "YOUR_KV_NAMESPACE_ID"
+id = "YOUR_REAL_KV_NAMESPACE_ID"
