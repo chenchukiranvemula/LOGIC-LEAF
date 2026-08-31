@@ -1,65 +1,30 @@
-// ============================================================
-// QTM AI - app.js
-// Google Login + QTM AI Chat
-// Worker: https://ck.qtmkiller6.workers.dev
-// ============================================================
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-
-import {
-    getAuth,
-    GoogleAuthProvider,
-    signInWithPopup,
-    signOut,
-    onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
-
-
-// ============================================================
-// FIREBASE
-// ============================================================
-
-const firebaseConfig = {
-    apiKey: "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
-    authDomain: "logic-leaf.firebaseapp.com",
-    databaseURL: "https://logic-leaf-default-rtdb.firebaseio.com",
-    projectId: "logic-leaf",
-    storageBucket: "logic-leaf.firebasestorage.app",
-    messagingSenderId: "288673697563",
-    appId: "1:288673697563:web:c14d08452b01568d1c8dbe",
-    measurementId: "G-Z30K3K85LX"
-};
-
-const firebaseApp = initializeApp(firebaseConfig);
-
-const auth = getAuth(firebaseApp);
-
-const googleProvider = new GoogleAuthProvider();
-
-
-// ============================================================
-// QTM AI WORKER
-// ============================================================
+/* =========================================================
+   LOGIC-LEAF AI
+   Frontend application
+   ========================================================= */
 
 const API_URL =
-    "https://ck.qtmkiller6.workers.dev/v1/chat";
+    localStorage.getItem("qtm_api_url") ||
+    "https://qtm-ai-new.qtmkiller6.workers.dev";
+
+const API_ENDPOINT = `${API_URL}/api/chat`;
 
 
-// ============================================================
-// ELEMENTS
-// ============================================================
+/* =========================================================
+   ELEMENTS
+   ========================================================= */
 
-const chatMessages =
-    document.getElementById("chatMessages");
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
+const menuBtn = document.getElementById("menuBtn");
 
-const messageInput =
-    document.getElementById("messageInput");
+const newChatBtn = document.getElementById("newChatBtn");
 
-const sendBtn =
-    document.getElementById("sendBtn");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
 
-const newChatBtn =
-    document.getElementById("newChatBtn");
+const chatMessages = document.getElementById("chatMessages");
+const history = document.getElementById("history");
 
 const attachmentBtn =
     document.getElementById("attachmentBtn");
@@ -73,116 +38,122 @@ const cameraBtn =
 const imageBtn =
     document.getElementById("imageBtn");
 
-const sidebar =
-    document.getElementById("sidebar");
-
-const overlay =
-    document.getElementById("overlay");
-
-const menuBtn =
-    document.getElementById("menuBtn");
+const loginBtn =
+    document.getElementById("loginBtn");
 
 const profileButton =
-    document.querySelector(".profile-button");
+    document.getElementById("profileButton");
 
-const account =
-    document.querySelector(".account");
+const settingsBtn =
+    document.getElementById("settingsBtn");
+
+const helpBtn =
+    document.getElementById("helpBtn");
+
+const searchBtn =
+    document.getElementById("searchBtn");
+
+const notificationBtn =
+    document.getElementById("notificationBtn");
 
 
-// ============================================================
-// STATE
-// ============================================================
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
 
-let isThinking = false;
+function openSidebar() {
+    if (!sidebar) return;
 
-let currentUser = null;
+    sidebar.classList.add("open");
 
+    if (overlay) {
+        overlay.classList.add("active");
+    }
+}
 
-// ============================================================
-// WELCOME
-// ============================================================
+function closeSidebar() {
+    if (!sidebar) return;
 
-function addWelcomeMessage() {
+    sidebar.classList.remove("open");
 
-    if (!chatMessages) return;
+    if (overlay) {
+        overlay.classList.remove("active");
+    }
+}
 
-    chatMessages.innerHTML = "";
+function toggleSidebar() {
+    if (!sidebar) return;
 
-    const welcome =
-        document.createElement("div");
+    if (sidebar.classList.contains("open")) {
+        closeSidebar();
+    } else {
+        openSidebar();
+    }
+}
 
-    welcome.className =
-        "welcome-message";
+if (menuBtn) {
+    menuBtn.addEventListener("click", toggleSidebar);
+}
 
-    welcome.innerHTML = `
-        <div class="welcome-logo">Q</div>
-
-        <h1>How can I help you?</h1>
-
-        <p>
-            Ask QTM AI anything — study,
-            coding, problem solving,
-            ideas and more.
-        </p>
-    `;
-
-    chatMessages.appendChild(welcome);
+if (overlay) {
+    overlay.addEventListener("click", closeSidebar);
 }
 
 
-// ============================================================
-// ADD MESSAGE
-// ============================================================
+/* Close sidebar when clicking sidebar navigation */
 
-function addMessage(text, type, thinking = false) {
+document.querySelectorAll(".side-item").forEach((button) => {
+    button.addEventListener("click", () => {
+        closeSidebar();
+    });
+});
 
-    const message =
-        document.createElement("div");
 
-    message.className =
-        `message ${type}`;
+/* Close sidebar after account click */
 
-    if (thinking) {
-        message.classList.add("thinking");
+if (loginBtn) {
+    loginBtn.addEventListener("click", () => {
+        closeSidebar();
+        showSystemMessage(
+            "Google sign-in is ready to be connected."
+        );
+    });
+}
+
+
+/* Escape closes sidebar */
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        closeSidebar();
     }
+});
 
-    const avatar =
-        document.createElement("div");
 
-    avatar.className =
-        "message-avatar";
+/* Close sidebar automatically when screen becomes desktop */
 
-    if (type === "user") {
-
-        avatar.textContent = "You";
-
-    } else if (type === "error") {
-
-        avatar.textContent = "!";
-
-    } else {
-
-        avatar.textContent = "Q";
+window.addEventListener("resize", () => {
+    if (window.innerWidth > 760) {
+        closeSidebar();
     }
+});
 
-    const content =
-        document.createElement("div");
 
-    content.className =
-        "message-content";
+/* =========================================================
+   MESSAGE HELPERS
+   ========================================================= */
 
-    const textElement =
-        document.createElement("div");
+function createMessage(role, text) {
 
-    textElement.className =
-        "message-text";
+    const message = document.createElement("div");
 
-    textElement.textContent =
-        text;
+    message.className = `message ${role}`;
 
-    content.appendChild(textElement);
+    const content = document.createElement("div");
 
-    message.appendChild(avatar);
+    content.className = "message-content";
+
+    content.textContent = text;
 
     message.appendChild(content);
 
@@ -194,595 +165,403 @@ function addMessage(text, type, thinking = false) {
 }
 
 
-// ============================================================
-// SCROLL
-// ============================================================
+function createAssistantMessage() {
+
+    const message =
+        document.createElement("div");
+
+    message.className = "message assistant";
+
+    const content =
+        document.createElement("div");
+
+    content.className = "message-content";
+
+    content.textContent = "Thinking...";
+
+    message.appendChild(content);
+
+    chatMessages.appendChild(message);
+
+    scrollToBottom();
+
+    return content;
+}
+
+
+function showSystemMessage(text) {
+
+    const message =
+        document.createElement("div");
+
+    message.className = "message assistant";
+
+    const content =
+        document.createElement("div");
+
+    content.className = "message-content";
+
+    content.textContent = text;
+
+    message.appendChild(content);
+
+    chatMessages.appendChild(message);
+
+    scrollToBottom();
+}
+
 
 function scrollToBottom() {
 
-    chatMessages.scrollTo({
-        top: chatMessages.scrollHeight,
-        behavior: "smooth"
+    if (!chatMessages) return;
+
+    requestAnimationFrame(() => {
+        chatMessages.scrollTop =
+            chatMessages.scrollHeight;
     });
 }
 
 
-// ============================================================
-// SEND MESSAGE TO QTM AI
-// ============================================================
+/* =========================================================
+   SEND MESSAGE
+   ========================================================= */
 
 async function sendMessage() {
 
-    if (isThinking) return;
+    if (!messageInput || !sendBtn) return;
 
-    const message =
+    const text =
         messageInput.value.trim();
 
-    if (!message) return;
+    if (!text) return;
 
-
-    addMessage(
-        message,
-        "user"
-    );
+    createMessage("user", text);
 
     messageInput.value = "";
 
-    messageInput.style.height =
-        "auto";
-
-
-    isThinking = true;
+    autoResize();
 
     sendBtn.disabled = true;
 
-
-    const thinking =
-        addMessage(
-            "QTM AI is thinking...",
-            "ai",
-            true
-        );
-
+    const assistantContent =
+        createAssistantMessage();
 
     try {
 
         const response =
-            await fetch(API_URL, {
-
+            await fetch(API_ENDPOINT, {
                 method: "POST",
 
                 headers: {
-                    "Content-Type":
-                        "application/json"
+                    "Content-Type": "application/json"
                 },
 
                 body: JSON.stringify({
-
-                    message: message,
-
-                    user: currentUser
-                        ? {
-                            uid: currentUser.uid,
-                            name: currentUser.displayName || "",
-                            email: currentUser.email || ""
-                        }
-                        : null
+                    message: text
                 })
             });
 
+
+        /* =================================================
+           HTTP ERROR
+           ================================================= */
+
+        if (!response.ok) {
+
+            let errorText =
+                `HTTP ${response.status}`;
+
+            try {
+
+                const errorData =
+                    await response.json();
+
+                if (errorData.error) {
+                    errorText =
+                        errorData.error;
+                }
+
+            } catch (_) {
+                /* Response was not JSON */
+            }
+
+            throw new Error(errorText);
+        }
+
+
+        /* =================================================
+           JSON RESPONSE
+           ================================================= */
 
         const data =
             await response.json();
 
 
-        if (!response.ok || !data.ok) {
+        console.log(
+            "LOGIC-LEAF AI response:",
+            data
+        );
+
+
+        /*
+         * Supports:
+         *
+         * { success: true, response: "..." }
+         *
+         * { response: "..." }
+         *
+         * { answer: "..." }
+         *
+         * { message: "..." }
+         */
+
+        const answer =
+            data.response ??
+            data.answer ??
+            data.message ??
+            data.result?.response ??
+            data.result?.answer;
+
+
+        if (!answer) {
 
             throw new Error(
                 data.error ||
-                "AI request failed"
+                "The AI returned an empty response."
             );
         }
 
 
-        thinking.remove();
+        assistantContent.textContent =
+            String(answer);
 
+        scrollToBottom();
 
-        addMessage(
-            data.reply ||
-            "I couldn't generate a response.",
-            "ai"
-        );
-
+        saveHistory(text);
 
     } catch (error) {
 
         console.error(
-            "QTM AI Error:",
+            "LOGIC-LEAF AI error:",
             error
         );
 
+        assistantContent.textContent =
+            "LOGIC-LEAF AI could not connect right now. Please try again.";
 
-        thinking.remove();
+    } finally {
 
-
-        addMessage(
-            "⚠️ QTM AI could not connect right now.\n\n" +
-            "Please try again.",
-            "error"
-        );
-
-    }
-
-
-    isThinking = false;
-
-    sendBtn.disabled = false;
-
-    messageInput.focus();
-}
-
-
-// ============================================================
-// ENTER TO SEND
-// ============================================================
-
-messageInput.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey
-        ) {
-
-            event.preventDefault();
-
-            sendMessage();
-        }
-
-    }
-);
-
-
-// ============================================================
-// AUTO RESIZE
-// ============================================================
-
-messageInput.addEventListener(
-    "input",
-    function() {
-
-        this.style.height =
-            "auto";
-
-        this.style.height =
-            Math.min(
-                this.scrollHeight,
-                160
-            ) + "px";
-
-    }
-);
-
-
-// ============================================================
-// SEND BUTTON
-// ============================================================
-
-sendBtn.addEventListener(
-    "click",
-    sendMessage
-);
-
-
-// ============================================================
-// NEW CHAT
-// ============================================================
-
-newChatBtn.addEventListener(
-    "click",
-    function() {
-
-        addWelcomeMessage();
+        sendBtn.disabled = false;
 
         messageInput.focus();
-
-        closeMobileMenu();
-
-    }
-);
-
-
-// ============================================================
-// GOOGLE LOGIN UI
-// ============================================================
-
-function updateUserUI(user) {
-
-    currentUser = user;
-
-
-    const avatarElements =
-        document.querySelectorAll(
-            ".account-avatar, .profile-button"
-        );
-
-
-    if (user) {
-
-        const photo =
-            user.photoURL;
-
-        avatarElements.forEach(
-            element => {
-
-                if (photo) {
-
-                    element.innerHTML = `
-                        <img
-                            src="${escapeHTML(photo)}"
-                            alt="Profile"
-                        >
-                    `;
-
-                } else {
-
-                    element.textContent =
-                        (
-                            user.displayName ||
-                            "U"
-                        )
-                        .charAt(0)
-                        .toUpperCase();
-                }
-
-            }
-        );
-
-
-        const accountName =
-            document.querySelector(
-                ".account-info strong"
-            );
-
-        const accountEmail =
-            document.querySelector(
-                ".account-info span"
-            );
-
-
-        if (accountName) {
-
-            accountName.textContent =
-                user.displayName ||
-                "Google User";
-        }
-
-
-        if (accountEmail) {
-
-            accountEmail.textContent =
-                user.email ||
-                "Signed in with Google";
-        }
-
-
-    } else {
-
-        avatarElements.forEach(
-            element => {
-
-                element.textContent =
-                    "G";
-
-            }
-        );
-
-
-        const accountName =
-            document.querySelector(
-                ".account-info strong"
-            );
-
-        const accountEmail =
-            document.querySelector(
-                ".account-info span"
-            );
-
-
-        if (accountName) {
-
-            accountName.textContent =
-                "Guest";
-        }
-
-
-        if (accountEmail) {
-
-            accountEmail.textContent =
-                "Sign in with Google";
-        }
-
     }
 }
 
 
-// ============================================================
-// GOOGLE SIGN IN
-// ============================================================
+/* =========================================================
+   SEND BUTTON
+   ========================================================= */
 
-async function googleLogin() {
-
-    try {
-
-        const result =
-            await signInWithPopup(
-                auth,
-                googleProvider
-            );
-
-
-        updateUserUI(
-            result.user
-        );
-
-
-        closeMobileMenu();
-
-
-    } catch (error) {
-
-        console.error(
-            "Google Login Error:",
-            error
-        );
-
-
-        alert(
-            "Google Login failed.\n\n" +
-            error.message
-        );
-    }
-}
-
-
-// ============================================================
-// LOGOUT
-// ============================================================
-
-async function googleLogout() {
-
-    try {
-
-        await signOut(auth);
-
-        updateUserUI(null);
-
-    } catch (error) {
-
-        console.error(
-            "Logout Error:",
-            error
-        );
-    }
-}
-
-
-// ============================================================
-// ACCOUNT CLICK
-// ============================================================
-
-if (account) {
-
-    account.addEventListener(
+if (sendBtn) {
+    sendBtn.addEventListener(
         "click",
-        function() {
-
-            if (currentUser) {
-
-                const logout =
-                    confirm(
-                        "Sign out of QTM AI?"
-                    );
-
-                if (logout) {
-                    googleLogout();
-                }
-
-            } else {
-
-                googleLogin();
-
-            }
-
-        }
+        sendMessage
     );
 }
 
 
-// ============================================================
-// PROFILE BUTTON
-// ============================================================
+/* =========================================================
+   ENTER TO SEND
+   ========================================================= */
 
-if (profileButton) {
+if (messageInput) {
 
-    profileButton.addEventListener(
-        "click",
-        function() {
+    messageInput.addEventListener(
+        "keydown",
+        (event) => {
 
-            if (currentUser) {
+            if (
+                event.key === "Enter" &&
+                !event.shiftKey
+            ) {
 
-                const logout =
-                    confirm(
-                        "Sign out of QTM AI?"
-                    );
+                event.preventDefault();
 
-                if (logout) {
-                    googleLogout();
-                }
-
-            } else {
-
-                googleLogin();
-
+                sendMessage();
             }
-
         }
     );
+
 }
 
 
-// ============================================================
-// FIREBASE AUTH STATE
-// ============================================================
+/* =========================================================
+   TEXTAREA AUTO RESIZE
+   ========================================================= */
 
-onAuthStateChanged(
-    auth,
-    function(user) {
+function autoResize() {
 
-        updateUserUI(user);
+    if (!messageInput) return;
 
-    }
-);
+    messageInput.style.height = "auto";
+
+    messageInput.style.height =
+        Math.min(
+            messageInput.scrollHeight,
+            150
+        ) + "px";
+}
+
+if (messageInput) {
+
+    messageInput.addEventListener(
+        "input",
+        autoResize
+    );
+
+}
 
 
-// ============================================================
-// ATTACH FILE
-// ============================================================
+/* =========================================================
+   NEW CHAT
+   ========================================================= */
 
-if (
-    attachmentBtn &&
-    fileInput
-) {
+if (newChatBtn) {
+
+    newChatBtn.addEventListener(
+        "click",
+        () => {
+
+            if (chatMessages) {
+
+                chatMessages.innerHTML = `
+                    <div class="welcome">
+
+                        <div class="welcome-logo">
+                            L
+                        </div>
+
+                        <div class="welcome-label">
+                            LOGIC-LEAF AI
+                        </div>
+
+                        <h1>
+                            How can I help you?
+                        </h1>
+
+                        <p>
+                            Ask anything. Learn, create,
+                            analyze, solve problems and
+                            explore ideas with AI.
+                        </p>
+
+                    </div>
+                `;
+            }
+
+            if (messageInput) {
+                messageInput.value = "";
+                autoResize();
+                messageInput.focus();
+            }
+
+            closeSidebar();
+        }
+    );
+
+}
+
+
+/* =========================================================
+   FILE ATTACHMENT
+   ========================================================= */
+
+if (attachmentBtn && fileInput) {
 
     attachmentBtn.addEventListener(
         "click",
-        function() {
-
-            fileInput.removeAttribute(
-                "capture"
-            );
-
-            fileInput.setAttribute(
-                "accept",
-                ".pdf,.txt,.csv,.json,.doc,.docx,image/*"
-            );
-
+        () => {
             fileInput.click();
-
         }
     );
 
-
     fileInput.addEventListener(
         "change",
-        function() {
+        () => {
 
             const file =
-                this.files[0];
+                fileInput.files?.[0];
 
             if (!file) return;
 
-
-            addMessage(
-                `📎 ${file.name}\n\n` +
-                "File selected. Full AI file analysis will be connected in the next backend feature.",
-                "ai"
+            showSystemMessage(
+                `Selected file: ${file.name}`
             );
-
-
-            this.value = "";
-
         }
     );
 }
 
 
-// ============================================================
-// CAMERA
-// ============================================================
+/* =========================================================
+   CAMERA
+   ========================================================= */
 
 if (cameraBtn) {
 
     cameraBtn.addEventListener(
         "click",
-        function() {
+        () => {
 
-            if (!fileInput) return;
-
-
-            fileInput.setAttribute(
-                "accept",
-                "image/*"
+            showSystemMessage(
+                "Camera input is not connected yet."
             );
-
-
-            fileInput.setAttribute(
-                "capture",
-                "environment"
-            );
-
-
-            fileInput.click();
 
         }
     );
 }
 
 
-// ============================================================
-// IMAGE GENERATION
-// ============================================================
+/* =========================================================
+   IMAGE BUTTON
+   ========================================================= */
 
 if (imageBtn) {
 
     imageBtn.addEventListener(
         "click",
-        function() {
+        () => {
 
-            messageInput.value =
-                "Create an image of ";
+            if (messageInput) {
 
-            messageInput.focus();
+                messageInput.focus();
+
+                if (!messageInput.value) {
+
+                    messageInput.value =
+                        "Create an image of ";
+
+                    autoResize();
+
+                }
+            }
 
         }
     );
 }
 
 
-// ============================================================
-// MOBILE MENU
-// ============================================================
+/* =========================================================
+   SEARCH
+   ========================================================= */
 
-function closeMobileMenu() {
+if (searchBtn) {
 
-    if (sidebar) {
-        sidebar.classList.remove(
-            "open"
-        );
-    }
-
-    if (overlay) {
-        overlay.classList.remove(
-            "show"
-        );
-    }
-}
-
-
-if (menuBtn) {
-
-    menuBtn.addEventListener(
+    searchBtn.addEventListener(
         "click",
-        function() {
+        () => {
 
-            sidebar.classList.toggle(
-                "open"
-            );
-
-            overlay.classList.toggle(
-                "show"
+            showSystemMessage(
+                "Search is not connected yet."
             );
 
         }
@@ -790,116 +569,148 @@ if (menuBtn) {
 }
 
 
-if (overlay) {
+/* =========================================================
+   NOTIFICATIONS
+   ========================================================= */
 
-    overlay.addEventListener(
+if (notificationBtn) {
+
+    notificationBtn.addEventListener(
         "click",
-        closeMobileMenu
+        () => {
+
+            showSystemMessage(
+                "No new notifications."
+            );
+
+        }
     );
 }
 
 
-// ============================================================
-// COPY AI RESPONSE
-// ============================================================
+/* =========================================================
+   SETTINGS
+   ========================================================= */
 
-chatMessages.addEventListener(
-    "click",
-    async function(event) {
+if (settingsBtn) {
 
-        const target =
-            event.target;
+    settingsBtn.addEventListener(
+        "click",
+        () => {
 
+            showSystemMessage(
+                "LOGIC-LEAF AI settings."
+            );
 
-        if (
-            !target.classList.contains(
-                "message-text"
-            )
-        ) {
-            return;
         }
-
-
-        const message =
-            target.closest(
-                ".message"
-            );
-
-
-        if (
-            !message ||
-            !message.classList.contains(
-                "ai"
-            )
-        ) {
-            return;
-        }
-
-
-        try {
-
-            await navigator.clipboard
-                .writeText(
-                    target.textContent
-                );
-
-
-            target.setAttribute(
-                "data-copied",
-                "Copied!"
-            );
-
-
-            setTimeout(
-                function() {
-
-                    target.removeAttribute(
-                        "data-copied"
-                    );
-
-                },
-                1200
-            );
-
-        } catch (error) {
-
-            console.log(
-                "Copy failed."
-            );
-        }
-
-    }
-);
-
-
-// ============================================================
-// BASIC HTML ESCAPE
-// ============================================================
-
-function escapeHTML(value) {
-
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+    );
 }
 
 
-// ============================================================
-// START
-// ============================================================
+/* =========================================================
+   HELP
+   ========================================================= */
 
-addWelcomeMessage();
+if (helpBtn) {
 
-messageInput.focus();
+    helpBtn.addEventListener(
+        "click",
+        () => {
+
+            showSystemMessage(
+                "LOGIC-LEAF AI is your AI assistant for learning, coding, problem solving and ideas."
+            );
+
+        }
+    );
+}
+
+
+/* =========================================================
+   PROFILE BUTTON
+   ========================================================= */
+
+if (profileButton) {
+
+    profileButton.addEventListener(
+        "click",
+        () => {
+
+            showSystemMessage(
+                "Google sign-in is ready to be connected."
+            );
+
+        }
+    );
+}
+
+
+/* =========================================================
+   SIMPLE CHAT HISTORY
+   ========================================================= */
+
+function saveHistory(text) {
+
+    if (!history) return;
+
+    const item =
+        document.createElement("button");
+
+    item.type = "button";
+
+    item.className = "side-item";
+
+    item.style.fontSize = "11px";
+
+    item.textContent =
+        text.length > 28
+            ? text.substring(0, 28) + "..."
+            : text;
+
+    item.addEventListener(
+        "click",
+        () => {
+
+            if (messageInput) {
+                messageInput.value = text;
+                autoResize();
+                messageInput.focus();
+            }
+
+            closeSidebar();
+        }
+    );
+
+    const empty =
+        history.querySelector(
+            ".empty-history"
+        );
+
+    if (empty) {
+        empty.remove();
+    }
+
+    history.prepend(item);
+}
+
+
+/* =========================================================
+   INITIAL STATE
+   ========================================================= */
+
+if (sendBtn) {
+    sendBtn.disabled = false;
+}
+
+if (messageInput) {
+    messageInput.focus();
+}
 
 console.log(
-    "QTM AI ready."
+    "LOGIC-LEAF AI frontend loaded."
 );
 
 console.log(
-    "Worker:",
-    API_URL
+    "AI endpoint:",
+    API_ENDPOINT
 );
