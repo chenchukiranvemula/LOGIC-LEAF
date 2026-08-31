@@ -2,57 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#030605">
 
     <title>QTM AI</title>
 
     <link rel="stylesheet" href="style.css">
 
-    <!-- Google Identity Services -->
-    <script
-        src="https://accounts.google.com/gsi/client"
-        async
-        defer>
-    </script>
+    <script type="module" src="app.js"></script>
 </head>
 
 <body>
 
-    <!-- BACKGROUND -->
-    <div class="background-glow"></div>
-    <div class="leaf"></div>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <div class="leaf-bg"></div>
 
-    <!-- =================================================
-         LOGIN SCREEN
-    ================================================== -->
+    <!-- LOGIN -->
 
     <section id="loginScreen" class="login-screen">
 
         <div class="login-card">
 
-            <div class="login-logo">
-                Q
-            </div>
+            <div class="q-logo">Q</div>
 
-            <div class="login-title">
-                QTM AI
-            </div>
+            <h1>QTM AI</h1>
 
-            <div class="login-subtitle">
-                Your intelligent AI workspace
-            </div>
+            <p class="tagline">
+                Intelligence. Simplified.
+            </p>
 
-            <div class="login-line"></div>
+            <div class="line"></div>
 
-            <div class="google-area">
+            <button id="googleLogin" class="google-btn">
 
-                <div id="googleButton"></div>
+                <span class="google-icon">
+                    G
+                </span>
 
-            </div>
+                <span>
+                    Continue with Google
+                </span>
 
-            <p class="login-note">
-                Sign in securely with your Google Account.
+            </button>
+
+            <p id="loginError" class="login-error"></p>
+
+            <p class="small-note">
+                Secure authentication powered by Firebase
             </p>
 
         </div>
@@ -60,9 +57,7 @@
     </section>
 
 
-    <!-- =================================================
-         APPLICATION
-    ================================================== -->
+    <!-- APP -->
 
     <div id="app" class="app hidden">
 
@@ -77,78 +72,50 @@
                 </div>
 
                 <div>
-                    <div class="brand-name">
+                    <div class="brand-title">
                         QTM AI
                     </div>
 
-                    <div class="brand-version">
-                        V1
+                    <div class="brand-subtitle">
+                        AI Workspace
                     </div>
                 </div>
 
             </div>
 
 
-            <button
-                id="newChat"
-                class="new-chat"
-                type="button">
-
-                <span class="plus">
-                    ＋
-                </span>
-
-                <span>
-                    New chat
-                </span>
-
+            <button id="newChat" class="new-chat">
+                <span>＋</span>
+                New chat
             </button>
 
 
-            <div class="section-label">
-                CHATS
+            <div class="label">
+                CONVERSATIONS
             </div>
 
 
-            <div
-                id="chatList"
-                class="chat-list">
-            </div>
+            <div id="chatList" class="chat-list"></div>
 
 
-            <!-- USER -->
+            <div class="profile">
 
-            <div class="user-area">
+                <img id="avatar" class="avatar" alt="Profile">
 
-                <img
-                    id="userAvatar"
-                    class="user-avatar"
-                    alt="Profile">
+                <div class="profile-info">
 
-                <div class="user-details">
-
-                    <div
-                        id="userName"
-                        class="user-name">
+                    <strong id="username">
                         User
-                    </div>
+                    </strong>
 
-                    <div
-                        id="userEmail"
-                        class="user-email">
+                    <span id="email">
                         Signed in
-                    </div>
+                    </span>
 
                 </div>
 
-
-                <button
-                    id="logoutButton"
-                    class="logout-button"
-                    title="Sign out">
-
+                <button id="logout" class="logout">
                     ⎋
-
                 </button>
 
             </div>
@@ -160,76 +127,43 @@
 
         <main class="main">
 
-
-            <!-- TOPBAR -->
-
             <header class="topbar">
 
                 <div class="mobile-brand">
-
-                    <div class="mobile-logo">
-                        Q
-                    </div>
-
-                    <span>
-                        QTM AI
-                    </span>
-
+                    <div class="mobile-logo">Q</div>
+                    <span>QTM AI</span>
                 </div>
 
-
-                <div class="top-status">
-
-                    <span class="status-dot"></span>
-
-                    <span>
-                        Online
-                    </span>
-
+                <div class="online">
+                    <i></i>
+                    Online
                 </div>
 
             </header>
 
 
-            <!-- MESSAGES -->
-
-            <section
-                id="messages"
-                class="messages">
-            </section>
+            <section id="messages" class="messages"></section>
 
 
-            <!-- COMPOSER -->
-
-            <div class="composer-area">
+            <div class="composer-wrap">
 
                 <div class="composer">
 
                     <textarea
-                        id="messageInput"
+                        id="input"
+                        placeholder="Ask QTM AI anything..."
                         rows="1"
                         maxlength="12000"
-                        placeholder="Ask QTM AI anything..."
-                        autocomplete="off"
-                        spellcheck="true">
-                    </textarea>
+                    ></textarea>
 
-
-                    <button
-                        id="sendBtn"
-                        class="send-btn"
-                        type="button"
-                        aria-label="Send">
-
+                    <button id="send" class="send">
                         ↑
-
                     </button>
 
                 </div>
 
-
-                <div class="disclaimer">
-                    QTM AI may make mistakes. Check important information.
+                <div class="hint">
+                    QTM AI can make mistakes. Verify important information.
                 </div>
 
             </div>
@@ -238,8 +172,5 @@
 
     </div>
 
-
-    <script src="app.js"></script>
-
 </body>
-                  </html>
+</html>
