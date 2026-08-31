@@ -670,7 +670,7 @@ composer.addEventListener(
     if (
       !WORKER_URL ||
       WORKER_URL.includes(
-        "YOUR_CLOUDFLARE_WORKER_URL"
+        "ck.qtmkiller6.workers.dev"
       )
     ) {
 
