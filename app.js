@@ -1,1484 +1,733 @@
-/* =========================================================
-   LOGIC-LEAF AI
-   Firebase + Google Login + Cloudflare AI
-   Developer: V. CHENCHUKIRAN
-   Cloud Security & DevSecOps
-   ========================================================= */
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
-    initializeApp
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-
-import {
-    getAuth,
-    GoogleAuthProvider,
-    signInWithPopup,
-    signOut,
-    onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 
-/* =========================================================
-   CONFIG
-   ========================================================= */
+// =====================================================
+// CONFIG
+// =====================================================
 
 const API_URL =
-    "https://ck.qtmkiller6.workers.dev";
-
+  "https://ck.qtmkiller6.workers.dev";
 
 const firebaseConfig = {
-
-    apiKey:
-        "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
-
-    authDomain:
-        "logic-leaf.firebaseapp.com",
-
-    databaseURL:
-        "https://logic-leaf-default-rtdb.firebaseio.com",
-
-    projectId:
-        "logic-leaf",
-
-    storageBucket:
-        "logic-leaf.firebasestorage.app",
-
-    messagingSenderId:
-        "288673697563",
-
-    appId:
-        "1:288673697563:web:c14d08452b01568d1c8dbe",
-
-    measurementId:
-        "G-Z30K3K85LX"
+  apiKey: "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
+  authDomain: "logic-leaf.firebaseapp.com",
+  databaseURL: "https://logic-leaf-default-rtdb.firebaseio.com",
+  projectId: "logic-leaf",
+  storageBucket: "logic-leaf.firebasestorage.app",
+  messagingSenderId: "288673697563",
+  appId: "1:288673697563:web:c14d08452b01568d1c8dbe",
+  measurementId: "G-Z30K3K85LX"
 };
 
 
-/* =========================================================
-   FIREBASE
-   ========================================================= */
+// =====================================================
+// FIREBASE
+// =====================================================
 
-const firebaseApp =
-    initializeApp(firebaseConfig);
-
-
-const auth =
-    getAuth(firebaseApp);
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
 
 
-const googleProvider =
-    new GoogleAuthProvider();
+// =====================================================
+// ELEMENTS
+// =====================================================
+
+const sidebar =
+  document.getElementById("sidebar");
+
+const sidebarOverlay =
+  document.getElementById("sidebarOverlay");
+
+const menuButton =
+  document.getElementById("menuButton");
+
+const closeSidebar =
+  document.getElementById("closeSidebar");
+
+const newChatBtn =
+  document.getElementById("newChatBtn");
+
+const messageInput =
+  document.getElementById("messageInput");
+
+const sendBtn =
+  document.getElementById("sendBtn");
+
+const chatMessages =
+  document.getElementById("chatMessages");
+
+const welcome =
+  document.getElementById("welcome");
+
+const history =
+  document.getElementById("chatHistory");
+
+const attachmentBtn =
+  document.getElementById("attachmentBtn");
+
+const cameraBtn =
+  document.getElementById("cameraBtn");
+
+const imageBtn =
+  document.getElementById("imageBtn");
+
+const fileInput =
+  document.getElementById("fileInput");
+
+const cameraInput =
+  document.getElementById("cameraInput");
+
+const settingsBtn =
+  document.getElementById("settingsBtn");
+
+const settingsModal =
+  document.getElementById("settingsModal");
+
+const closeSettings =
+  document.getElementById("closeSettings");
+
+const loginBtn =
+  document.getElementById("loginBtn");
+
+const topLoginBtn =
+  document.getElementById("topLoginBtn");
+
+const loginModal =
+  document.getElementById("loginModal");
+
+const closeLogin =
+  document.getElementById("closeLogin");
+
+const googleLogin =
+  document.getElementById("googleLogin");
+
+const logoutBtn =
+  document.getElementById("logoutBtn");
+
+const loginStatus =
+  document.getElementById("loginStatus");
+
+const userName =
+  document.getElementById("userName");
+
+const userEmail =
+  document.getElementById("userEmail");
+
+const userAvatar =
+  document.getElementById("userAvatar");
+
+const topAvatar =
+  document.getElementById("topAvatar");
+
+const enterToSend =
+  document.getElementById("enterToSend");
+
+const animations =
+  document.getElementById("animations");
 
 
-googleProvider.setCustomParameters({
-    prompt: "select_account"
+// =====================================================
+// SIDEBAR
+// =====================================================
+
+function openSidebar() {
+  sidebar.classList.add("open");
+  sidebarOverlay.classList.add("show");
+}
+
+function closeSidebarMenu() {
+  sidebar.classList.remove("open");
+  sidebarOverlay.classList.remove("show");
+}
+
+menuButton.addEventListener("click", openSidebar);
+closeSidebar.addEventListener("click", closeSidebarMenu);
+sidebarOverlay.addEventListener("click", closeSidebarMenu);
+
+
+// =====================================================
+// NEW CHAT
+// =====================================================
+
+function startNewChat() {
+  chatMessages.innerHTML = "";
+  chatMessages.appendChild(welcome);
+
+  welcome.style.display = "";
+
+  messageInput.value = "";
+  messageInput.style.height = "auto";
+
+  messageInput.focus();
+
+  closeSidebarMenu();
+}
+
+newChatBtn.addEventListener("click", startNewChat);
+
+
+// =====================================================
+// AUTO RESIZE
+// =====================================================
+
+messageInput.addEventListener("input", () => {
+  messageInput.style.height = "auto";
+
+  messageInput.style.height =
+    Math.min(messageInput.scrollHeight, 180) + "px";
 });
 
 
-/* =========================================================
-   DOM
-   ========================================================= */
+// =====================================================
+// SUGGESTIONS
+// =====================================================
 
-const $ = (id) =>
-    document.getElementById(id);
+document.querySelectorAll(".suggestion").forEach(button => {
 
+  button.addEventListener("click", () => {
 
-const sidebar =
-    $("sidebar");
+    messageInput.value =
+      button.textContent.trim();
 
-const overlay =
-    $("overlay");
+    messageInput.dispatchEvent(
+      new Event("input")
+    );
 
-const menuBtn =
-    $("menuBtn");
+    messageInput.focus();
+  });
 
-const closeSidebarBtn =
-    $("closeSidebar");
-
-const newChatBtn =
-    $("newChatBtn");
-
-const sidebarSearch =
-    $("sidebarSearch");
-
-const searchBtn =
-    $("searchBtn");
-
-const notificationBtn =
-    $("notificationBtn");
-
-const profileButton =
-    $("profileButton");
-
-const accountCard =
-    $("accountCard");
-
-const accountMore =
-    $("accountMore");
-
-const accountMenu =
-    $("accountMenu");
-
-const accountLoginBtn =
-    $("accountLoginBtn");
-
-const accountLogoutBtn =
-    $("accountLogoutBtn");
-
-const settingsBtn =
-    $("settingsBtn");
-
-const settingsModal =
-    $("settingsModal");
-
-const closeSettings =
-    $("closeSettings");
-
-const settingsLoginBtn =
-    $("settingsLoginBtn");
-
-const logoutBtn =
-    $("logoutBtn");
-
-const helpBtn =
-    $("helpBtn");
-
-const chatMessages =
-    $("chatMessages");
-
-const messageInput =
-    $("messageInput");
-
-const sendBtn =
-    $("sendBtn");
-
-const attachmentBtn =
-    $("attachmentBtn");
-
-const cameraBtn =
-    $("cameraBtn");
-
-const imageBtn =
-    $("imageBtn");
-
-const fileInput =
-    $("fileInput");
-
-const history =
-    $("history");
-
-const userName =
-    $("userName");
-
-const userStatus =
-    $("userStatus");
-
-const userAvatar =
-    $("userAvatar");
+});
 
 
-/* =========================================================
-   STATE
-   ========================================================= */
+// =====================================================
+// CHAT UI
+// =====================================================
 
-let conversation = [];
+function addMessage(role, text) {
 
-let isSending = false;
+  if (welcome.parentNode === chatMessages) {
+    welcome.style.display = "none";
+  }
 
-let currentUser = null;
+  const row =
+    document.createElement("div");
 
+  row.className =
+    `message-row ${
+      role === "user"
+        ? "user-message"
+        : "ai-message"
+    }`;
 
-/* =========================================================
-   SIDEBAR
-   ========================================================= */
+  const avatar =
+    document.createElement("div");
 
-function openSidebar() {
+  avatar.className =
+    "message-avatar";
 
-    sidebar?.classList.add("open");
+  avatar.textContent =
+    role === "user" ? "U" : "L";
 
-    overlay?.classList.add("active");
+  const content =
+    document.createElement("div");
 
+  content.className =
+    "message-content";
+
+  content.textContent = text;
+
+  row.appendChild(avatar);
+  row.appendChild(content);
+
+  chatMessages.appendChild(row);
+
+  chatMessages.scrollTop =
+    chatMessages.scrollHeight;
+
+  return content;
 }
 
 
-function closeSidebarMenu() {
+function addTyping() {
 
-    sidebar?.classList.remove("open");
+  if (welcome.parentNode === chatMessages) {
+    welcome.style.display = "none";
+  }
 
-    overlay?.classList.remove("active");
+  const row =
+    document.createElement("div");
 
+  row.className =
+    "message-row ai-message";
+
+  const avatar =
+    document.createElement("div");
+
+  avatar.className =
+    "message-avatar";
+
+  avatar.textContent = "L";
+
+  const content =
+    document.createElement("div");
+
+  content.className =
+    "message-content";
+
+  content.innerHTML = `
+    <span class="typing">
+      <i></i>
+      <i></i>
+      <i></i>
+    </span>
+  `;
+
+  row.appendChild(avatar);
+  row.appendChild(content);
+
+  chatMessages.appendChild(row);
+
+  chatMessages.scrollTop =
+    chatMessages.scrollHeight;
+
+  return row;
 }
 
 
-menuBtn?.addEventListener(
-    "click",
-    openSidebar
-);
-
-
-closeSidebarBtn?.addEventListener(
-    "click",
-    closeSidebarMenu
-);
-
-
-overlay?.addEventListener(
-    "click",
-    closeSidebarMenu
-);
-
-
-document.addEventListener(
-    "keydown",
-    (event) => {
-
-        if (event.key === "Escape") {
-
-            closeSidebarMenu();
-
-            closeSettingsModal();
-
-            closeAccountMenu();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   WELCOME
-   ========================================================= */
-
-function showWelcome() {
-
-    if (!chatMessages) return;
-
-
-    chatMessages.innerHTML = `
-
-        <div class="welcome">
-
-            <div class="welcome-mark">
-                L
-            </div>
-
-            <h1>
-                How can I help you?
-            </h1>
-
-            <p>
-                Ask LOGIC-LEAF AI anything.
-            </p>
-
-            <div class="suggestions">
-
-                <button
-                    class="suggestion"
-                    data-prompt="Explain this topic clearly and step by step."
-                    type="button"
-                >
-                    <span class="suggestion-icon">+</span>
-
-                    <span>
-                        <strong>Explain something</strong>
-                        <small>Learn a topic step by step</small>
-                    </span>
-                </button>
-
-                <button
-                    class="suggestion"
-                    data-prompt="Help me solve this problem step by step."
-                    type="button"
-                >
-                    <span class="suggestion-icon">?</span>
-
-                    <span>
-                        <strong>Solve a problem</strong>
-                        <small>Work through the solution</small>
-                    </span>
-                </button>
-
-                <button
-                    class="suggestion"
-                    data-prompt="Help me write and debug code."
-                    type="button"
-                >
-                    <span class="suggestion-icon">&lt;/&gt;</span>
-
-                    <span>
-                        <strong>Write code</strong>
-                        <small>Build and debug projects</small>
-                    </span>
-                </button>
-
-                <button
-                    class="suggestion"
-                    data-prompt="Give me creative ideas for a project."
-                    type="button"
-                >
-                    <span class="suggestion-icon">*</span>
-
-                    <span>
-                        <strong>Brainstorm</strong>
-                        <small>Explore new possibilities</small>
-                    </span>
-                </button>
-
-            </div>
-
-        </div>
-    `;
-
-
-    document
-        .querySelectorAll(".suggestion")
-        .forEach((button) => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    messageInput.value =
-                        button.dataset.prompt || "";
-
-                    resizeInput();
-
-                    messageInput.focus();
-
-                }
-            );
-
-        });
-
-}
-
-
-showWelcome();
-
-
-/* =========================================================
-   INPUT
-   ========================================================= */
-
-function resizeInput() {
-
-    if (!messageInput) return;
-
-    messageInput.style.height =
-        "auto";
-
-
-    messageInput.style.height =
-        Math.min(
-            messageInput.scrollHeight,
-            180
-        ) + "px";
-
-}
-
-
-messageInput?.addEventListener(
-    "input",
-    resizeInput
-);
-
-
-messageInput?.addEventListener(
-    "keydown",
-    (event) => {
-
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey
-        ) {
-
-            event.preventDefault();
-
-            sendMessage();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   SEND
-   ========================================================= */
-
-sendBtn?.addEventListener(
-    "click",
-    sendMessage
-);
-
+// =====================================================
+// SEND
+// =====================================================
+
+let sending = false;
 
 async function sendMessage() {
 
-    if (isSending) return;
+  if (sending) return;
 
+  const message =
+    messageInput.value.trim();
 
-    const text =
-        messageInput?.value.trim();
+  if (!message) return;
 
+  sending = true;
+  sendBtn.disabled = true;
 
-    if (!text) return;
+  addMessage("user", message);
 
+  messageInput.value = "";
+  messageInput.style.height = "auto";
 
-    isSending = true;
+  const typing =
+    addTyping();
 
-    sendBtn.disabled = true;
-
-
-    removeWelcome();
-
-
-    addUserMessage(text);
-
-
-    messageInput.value = "";
-
-    resizeInput();
-
-
-    const assistant =
-        addAssistantMessage();
-
-
-    try {
-
-        const response =
-            await callAI(text);
-
-
-        if (response) {
-
-            setAssistantMessage(
-                assistant,
-                response
-            );
-
-        } else {
-
-            setAssistantMessage(
-                assistant,
-                "The AI returned an empty response."
-            );
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "LOGIC-LEAF AI:",
-            error
-        );
-
-
-        setAssistantMessage(
-            assistant,
-            "LOGIC-LEAF AI could not connect right now. Please try again."
-        );
-
-    }
-
-
-    isSending = false;
-
-    sendBtn.disabled = false;
-
-    scrollBottom();
-
-}
-
-
-/* =========================================================
-   CLOUDflare WORKER
-   ========================================================= */
-
-async function callAI(text) {
+  try {
 
     const response =
-        await fetch(
-            API_URL + "/v1/chat",
-            {
-                method: "POST",
+      await fetch(`${API_URL}/v1/chat`, {
+        method: "POST",
 
-                headers: {
-                    "Content-Type":
-                        "application/json",
+        headers: {
+          "Content-Type": "application/json"
+        },
 
-                    "Accept":
-                        "application/json"
-                },
+        body: JSON.stringify({
+          message
+        })
+      });
 
-                body: JSON.stringify({
-                    message: text
-                })
-            }
-        );
+    const data =
+      await response.json();
 
+    typing.remove();
 
-    const raw =
-        await response.text();
+    if (!response.ok || !data.ok) {
 
+      addMessage(
+        "assistant",
+        data?.error ||
+        "The AI could not respond."
+      );
 
-    console.log(
-        "LOGIC-LEAF Worker:",
-        response.status,
-        raw
-    );
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            "Worker HTTP " +
-            response.status
-        );
-
+      return;
     }
 
+    addMessage(
+      "assistant",
+      data.reply ||
+      "I couldn't generate a response."
+    );
 
-    let data;
+    addHistory(message);
 
+  } catch (error) {
+
+    typing.remove();
+
+    addMessage(
+      "assistant",
+      "Connection failed. Please check the Worker and try again."
+    );
+
+    console.error(error);
+
+  } finally {
+
+    sending = false;
+    sendBtn.disabled = false;
+    messageInput.focus();
+  }
+}
+
+sendBtn.addEventListener(
+  "click",
+  sendMessage
+);
+
+
+// =====================================================
+// ENTER TO SEND
+// =====================================================
+
+messageInput.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey &&
+      enterToSend.checked
+    ) {
+
+      event.preventDefault();
+      sendMessage();
+    }
+
+  }
+);
+
+
+// =====================================================
+// CHAT HISTORY
+// =====================================================
+
+function addHistory(message) {
+
+  const empty =
+    history.querySelector(".history-empty");
+
+  if (empty) {
+    empty.remove();
+  }
+
+  const item =
+    document.createElement("button");
+
+  item.type = "button";
+  item.className = "history-item";
+
+  item.textContent =
+    message.length > 42
+      ? message.slice(0, 42) + "..."
+      : message;
+
+  item.addEventListener(
+    "click",
+    () => closeSidebarMenu()
+  );
+
+  history.prepend(item);
+}
+
+
+// =====================================================
+// ATTACHMENTS
+// =====================================================
+
+attachmentBtn.addEventListener(
+  "click",
+  () => fileInput.click()
+);
+
+cameraBtn.addEventListener(
+  "click",
+  () => cameraInput.click()
+);
+
+fileInput.addEventListener(
+  "change",
+  () => {
+
+    if (!fileInput.files.length) return;
+
+    const names =
+      [...fileInput.files]
+        .map(file => file.name)
+        .join(", ");
+
+    messageInput.value =
+      `Attached: ${names}\n\n`;
+
+    messageInput.dispatchEvent(
+      new Event("input")
+    );
+
+    messageInput.focus();
+  }
+);
+
+cameraInput.addEventListener(
+  "change",
+  () => {
+
+    if (!cameraInput.files.length) return;
+
+    messageInput.value =
+      "Camera image attached.";
+
+    messageInput.focus();
+  }
+);
+
+
+// =====================================================
+// IMAGE BUTTON
+// =====================================================
+
+imageBtn.addEventListener(
+  "click",
+  () => {
+
+    messageInput.value =
+      "Create an image of ";
+
+    messageInput.dispatchEvent(
+      new Event("input")
+    );
+
+    messageInput.focus();
+  }
+);
+
+
+// =====================================================
+// SETTINGS
+// =====================================================
+
+settingsBtn.addEventListener(
+  "click",
+  () => {
+    settingsModal.classList.remove("hidden");
+    closeSidebarMenu();
+  }
+);
+
+closeSettings.addEventListener(
+  "click",
+  () => {
+    settingsModal.classList.add("hidden");
+  }
+);
+
+settingsModal.addEventListener(
+  "click",
+  event => {
+
+    if (event.target === settingsModal) {
+      settingsModal.classList.add("hidden");
+    }
+
+  }
+);
+
+
+// =====================================================
+// GOOGLE LOGIN UI
+// =====================================================
+
+function openLogin() {
+  loginModal.classList.remove("hidden");
+}
+
+loginBtn.addEventListener(
+  "click",
+  openLogin
+);
+
+topLoginBtn.addEventListener(
+  "click",
+  openLogin
+);
+
+closeLogin.addEventListener(
+  "click",
+  () => {
+    loginModal.classList.add("hidden");
+  }
+);
+
+loginModal.addEventListener(
+  "click",
+  event => {
+
+    if (event.target === loginModal) {
+      loginModal.classList.add("hidden");
+    }
+
+  }
+);
+
+
+// =====================================================
+// GOOGLE AUTH
+// =====================================================
+
+googleLogin.addEventListener(
+  "click",
+  async () => {
+
+    loginStatus.textContent =
+      "Opening Google sign-in...";
 
     try {
 
-        data =
-            JSON.parse(raw);
-
-    } catch {
-
-        throw new Error(
-            "Worker returned invalid JSON"
-        );
-
-    }
-
-
-    return extractAIResponse(data);
-
-}
-
-
-/* =========================================================
-   RESPONSE PARSER
-   ========================================================= */
-
-function extractAIResponse(data) {
-
-    if (!data) {
-        return "";
-    }
-
-
-    if (
-        typeof data ===
-        "string"
-    ) {
-
-        return data;
-
-    }
-
-
-    const possible = [
-
-        data.response,
-
-        data.answer,
-
-        data.content,
-
-        data.text,
-
-        data.message,
-
-        data.output,
-
-        data.result,
-
-        data.result?.response,
-
-        data.result?.answer,
-
-        data.result?.content,
-
-        data.result?.text,
-
-        data.result?.output,
-
-        data.result?.message
-
-    ];
-
-
-    for (
-        const value of possible
-    ) {
-
-        if (
-            typeof value === "string" &&
-            value.trim()
-        ) {
-
-            return value;
-
-        }
-
-    }
-
-
-    if (
-        Array.isArray(data.choices) &&
-        data.choices.length
-    ) {
-
-        const choice =
-            data.choices[0];
-
-
-        if (
-            typeof choice?.message?.content ===
-            "string"
-        ) {
-
-            return choice.message.content;
-
-        }
-
-
-        if (
-            typeof choice?.text ===
-            "string"
-        ) {
-
-            return choice.text;
-
-        }
-
-    }
-
-
-    return "";
-}
-
-
-/* =========================================================
-   MESSAGES
-   ========================================================= */
-
-function removeWelcome() {
-
-    chatMessages
-        ?.querySelector(".welcome")
-        ?.remove();
-
-}
-
-
-function addUserMessage(text) {
-
-    const wrapper =
-        document.createElement("div");
-
-
-    wrapper.className =
-        "message user-message";
-
-
-    wrapper.innerHTML = `
-
-        <div class="message-avatar">
-            ${currentUser ? "Y" : "G"}
-        </div>
-
-        <div class="message-content"></div>
-    `;
-
-
-    wrapper
-        .querySelector(".message-content")
-        .textContent = text;
-
-
-    chatMessages.appendChild(wrapper);
-
-
-    conversation.push({
-        role: "user",
-        content: text
-    });
-
-
-    addHistory(text);
-
-    scrollBottom();
-
-}
-
-
-function addAssistantMessage() {
-
-    const wrapper =
-        document.createElement("div");
-
-
-    wrapper.className =
-        "message assistant-message";
-
-
-    wrapper.innerHTML = `
-
-        <div class="message-avatar">
-            L
-        </div>
-
-        <div class="message-content">
-            Thinking...
-        </div>
-    `;
-
-
-    chatMessages.appendChild(wrapper);
-
-
-    scrollBottom();
-
-
-    return wrapper;
-
-}
-
-
-function setAssistantMessage(
-    wrapper,
-    text
-) {
-
-    if (!wrapper) return;
-
-
-    const content =
-        wrapper.querySelector(
-            ".message-content"
-        );
-
-
-    if (!content) return;
-
-
-    content.textContent =
-        text;
-
-
-    conversation.push({
-        role: "assistant",
-        content: text
-    });
-
-}
-
-
-/* =========================================================
-   HISTORY
-   ========================================================= */
-
-function addHistory(text) {
-
-    if (!history) return;
-
-
-    const empty =
-        history.querySelector(
-            ".history-empty"
-        );
-
-
-    empty?.remove();
-
-
-    const item =
-        document.createElement("button");
-
-
-    item.className =
-        "history-item";
-
-
-    item.type =
-        "button";
-
-
-    item.textContent =
-        text.length > 42
-            ? text.slice(0, 42) + "..."
-            : text;
-
-
-    item.addEventListener(
-        "click",
-        () => {
-
-            messageInput.value =
-                text;
-
-            resizeInput();
-
-            messageInput.focus();
-
-            closeSidebarMenu();
-
-        }
-    );
-
-
-    history.prepend(item);
-
-}
-
-
-/* =========================================================
-   SCROLL
-   ========================================================= */
-
-function scrollBottom() {
-
-    requestAnimationFrame(
-        () => {
-
-            chatMessages.scrollTop =
-                chatMessages.scrollHeight;
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   NEW CHAT
-   ========================================================= */
-
-newChatBtn?.addEventListener(
-    "click",
-    () => {
-
-        conversation = [];
-
-        showWelcome();
-
-        messageInput.value = "";
-
-        resizeInput();
-
-        closeSidebarMenu();
-
-        messageInput.focus();
-
-    }
-);
-
-
-/* =========================================================
-   SEARCH
-   ========================================================= */
-
-function searchChats() {
-
-    const query =
-        prompt("Search chats");
-
-
-    if (!query) return;
-
-
-    const items =
-        history.querySelectorAll(
-            ".history-item"
-        );
-
-
-    items.forEach(
-        (item) => {
-
-            item.style.display =
-                item.textContent
-                    .toLowerCase()
-                    .includes(
-                        query.toLowerCase()
-                    )
-                    ? "block"
-                    : "none";
-
-        }
-    );
-
-}
-
-
-sidebarSearch?.addEventListener(
-    "click",
-    searchChats
-);
-
-
-searchBtn?.addEventListener(
-    "click",
-    searchChats
-);
-
-
-/* =========================================================
-   NOTIFICATIONS
-   ========================================================= */
-
-notificationBtn?.addEventListener(
-    "click",
-    () => {
-
-        alert(
-            "LOGIC-LEAF AI notifications\n\nNo new notifications."
-        );
-
-    }
-);
-
-
-/* =========================================================
-   GOOGLE LOGIN
-   ========================================================= */
-
-async function loginWithGoogle() {
-
-    try {
-
-        const result =
-            await signInWithPopup(
-                auth,
-                googleProvider
-            );
-
-
-        currentUser =
-            result.user;
-
-
-        updateUserUI(
-            currentUser
-        );
-
-
-        closeAccountMenu();
-
-        closeSettingsModal();
-
-        closeSidebarMenu();
-
+      await signInWithPopup(
+        auth,
+        googleProvider
+      );
+
+      loginStatus.textContent =
+        "Signed in successfully.";
 
     } catch (error) {
 
-        console.error(
-            "Google Login:",
-            error
-        );
+      console.error(error);
 
-
-        alert(
-            "Google Login failed.\n\n" +
-            error.message
-        );
+      loginStatus.textContent =
+        error?.message ||
+        "Google sign-in failed.";
 
     }
 
-}
+  }
+);
 
 
-async function logoutGoogle() {
+logoutBtn.addEventListener(
+  "click",
+  async () => {
 
     try {
+      await signOut(auth);
 
-        await signOut(auth);
-
-        currentUser = null;
-
-        updateUserUI(null);
-
-        closeAccountMenu();
-
-        closeSettingsModal();
+      loginStatus.textContent =
+        "Signed out.";
 
     } catch (error) {
-
-        console.error(
-            "Sign out:",
-            error
-        );
-
+      console.error(error);
     }
 
-}
-
-
-profileButton?.addEventListener(
-    "click",
-    loginWithGoogle
+  }
 );
 
 
-accountLoginBtn?.addEventListener(
-    "click",
-    loginWithGoogle
-);
-
-
-settingsLoginBtn?.addEventListener(
-    "click",
-    loginWithGoogle
-);
-
-
-accountLogoutBtn?.addEventListener(
-    "click",
-    logoutGoogle
-);
-
-
-logoutBtn?.addEventListener(
-    "click",
-    logoutGoogle
-);
-
-
-/* =========================================================
-   AUTH STATE
-   ========================================================= */
+// =====================================================
+// AUTH STATE
+// =====================================================
 
 onAuthStateChanged(
-    auth,
-    (user) => {
+  auth,
+  user => {
 
-        currentUser =
-            user || null;
+    if (user) {
 
-        updateUserUI(
-            currentUser
-        );
-
-    }
-);
-
-
-/* =========================================================
-   USER UI
-   ========================================================= */
-
-function updateUserUI(user) {
-
-    if (!user) {
-
-        if (userName) {
-            userName.textContent =
-                "Guest";
-        }
-
-
-        if (userStatus) {
-            userStatus.textContent =
-                "Sign in with Google";
-        }
-
-
-        if (userAvatar) {
-
-            userAvatar.innerHTML =
-                "G";
-
-        }
-
-
-        if (profileButton) {
-
-            profileButton.innerHTML =
-                "G";
-
-        }
-
-        return;
-
-    }
-
-
-    const name =
+      userName.textContent =
         user.displayName ||
         "Google User";
 
-
-    const email =
+      userEmail.textContent =
         user.email ||
         "";
 
+      if (user.photoURL) {
 
-    if (userName) {
+        userAvatar.innerHTML =
+          `<img src="${user.photoURL}" alt="">`;
 
-        userName.textContent =
-            name;
+        topAvatar.innerHTML =
+          `<img src="${user.photoURL}" alt="">`;
 
-    }
+      } else {
 
+        userAvatar.textContent =
+          (user.displayName || "G")
+            .charAt(0)
+            .toUpperCase();
 
-    if (userStatus) {
+        topAvatar.textContent =
+          (user.displayName || "G")
+            .charAt(0)
+            .toUpperCase();
+      }
 
-        userStatus.textContent =
-            email;
-
-    }
-
-
-    if (user.photoURL) {
-
-        if (userAvatar) {
-
-            userAvatar.innerHTML = `
-
-                <img
-                    src="${escapeAttribute(user.photoURL)}"
-                    alt="Profile"
-                >
-
-            `;
-
-        }
-
-
-        if (profileButton) {
-
-            profileButton.innerHTML = `
-
-                <img
-                    src="${escapeAttribute(user.photoURL)}"
-                    alt="Profile"
-                >
-
-            `;
-
-        }
+      googleLogin.classList.add("hidden");
+      logoutBtn.classList.remove("hidden");
 
     } else {
 
-        const letter =
-            name
-                .charAt(0)
-                .toUpperCase();
+      userName.textContent = "Guest";
+      userEmail.textContent =
+        "Sign in with Google";
 
+      userAvatar.textContent = "G";
+      topAvatar.textContent = "G";
 
-        if (userAvatar) {
-
-            userAvatar.textContent =
-                letter;
-
-        }
-
-
-        if (profileButton) {
-
-            profileButton.textContent =
-                letter;
-
-        }
-
+      googleLogin.classList.remove("hidden");
+      logoutBtn.classList.add("hidden");
     }
 
-}
+  }
+);
 
 
-function escapeAttribute(value) {
+// =====================================================
+// ANIMATION SETTING
+// =====================================================
 
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/"/g, "&quot;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+animations.addEventListener(
+  "change",
+  () => {
 
-}
-
-
-/* =========================================================
-   ACCOUNT MENU
-   ========================================================= */
-
-function openAccountMenu() {
-
-    accountMenu?.classList.add(
-        "open"
+    document.body.style.setProperty(
+      "--animation-state",
+      animations.checked ? "1" : "0"
     );
 
-}
-
-
-function closeAccountMenu() {
-
-    accountMenu?.classList.remove(
-        "open"
-    );
-
-}
-
-
-accountMore?.addEventListener(
-    "click",
-    (event) => {
-
-        event.stopPropagation();
-
-        accountMenu
-            ?.classList.toggle("open");
-
-    }
+  }
 );
 
 
-document.addEventListener(
-    "click",
-    (event) => {
-
-        if (
-            accountMenu &&
-            !accountMenu.contains(event.target) &&
-            event.target !== accountMore
-        ) {
-
-            closeAccountMenu();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   SETTINGS
-   ========================================================= */
-
-function openSettingsModal() {
-
-    settingsModal?.classList.add(
-        "open"
-    );
-
-    closeSidebarMenu();
-
-}
-
-
-function closeSettingsModal() {
-
-    settingsModal?.classList.remove(
-        "open"
-    );
-
-}
-
-
-settingsBtn?.addEventListener(
-    "click",
-    openSettingsModal
-);
-
-
-closeSettings?.addEventListener(
-    "click",
-    closeSettingsModal
-);
-
-
-settingsModal?.addEventListener(
-    "click",
-    (event) => {
-
-        if (
-            event.target ===
-            settingsModal
-        ) {
-
-            closeSettingsModal();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   HELP
-   ========================================================= */
-
-helpBtn?.addEventListener(
-    "click",
-    () => {
-
-        alert(
-            "LOGIC-LEAF AI\n\n" +
-            "An AI assistant for learning, " +
-            "problem solving, coding and ideas.\n\n" +
-            "Developer:\n" +
-            "V. CHENCHUKIRAN\n" +
-            "Cloud Security & DevSecOps"
-        );
-
-    }
-);
-
-
-/* =========================================================
-   FILE ATTACHMENT
-   ========================================================= */
-
-attachmentBtn?.addEventListener(
-    "click",
-    () => {
-
-        fileInput?.click();
-
-    }
-);
-
-
-fileInput?.addEventListener(
-    "change",
-    () => {
-
-        const file =
-            fileInput.files?.[0];
-
-
-        if (!file) return;
-
-
-        messageInput.value =
-            `Please help me with the attached file: ${file.name}`;
-
-
-        resizeInput();
-
-        messageInput.focus();
-
-    }
-);
-
-
-/* =========================================================
-   CAMERA
-   ========================================================= */
-
-cameraBtn?.addEventListener(
-    "click",
-    () => {
-
-        const camera =
-            document.createElement("input");
-
-
-        camera.type =
-            "file";
-
-
-        camera.accept =
-            "image/*";
-
-
-        camera.setAttribute(
-            "capture",
-            "environment"
-        );
-
-
-        camera.click();
-
-
-        camera.addEventListener(
-            "change",
-            () => {
-
-                const file =
-                    camera.files?.[0];
-
-
-                if (!file) return;
-
-
-                messageInput.value =
-                    `Please help me with this camera image: ${file.name}`;
-
-
-                resizeInput();
-
-                messageInput.focus();
-
-            }
-        );
-
-    }
-);
-
-
-/* =========================================================
-   IMAGE BUTTON
-   ========================================================= */
-
-imageBtn?.addEventListener(
-    "click",
-    () => {
-
-        messageInput.value =
-            "Create an image of ";
-
-
-        resizeInput();
-
-        messageInput.focus();
-
-    }
-);
-
-
-/* =========================================================
-   MOBILE CLEANUP
-   ========================================================= */
+// =====================================================
+// CLOSE SIDEBAR AFTER MOBILE ACTION
+// =====================================================
 
 window.addEventListener(
-    "resize",
-    () => {
+  "resize",
+  () => {
 
-        if (
-            window.innerWidth > 760
-        ) {
-
-            closeSidebarMenu();
-
-        }
-
+    if (window.innerWidth > 760) {
+      closeSidebarMenu();
     }
-);
 
-
-/* =========================================================
-   STARTUP
-   ========================================================= */
-
-console.log(
-    "LOGIC-LEAF AI loaded"
-);
-
-
-console.log(
-    "Cloudflare Worker:",
-    API_URL
-);
-
-
-console.log(
-    "Firebase project:",
-    firebaseConfig.projectId
+  }
 );
