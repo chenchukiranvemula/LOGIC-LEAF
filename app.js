@@ -50,7 +50,7 @@ const FIREBASE_CONFIG = {
    Do NOT add /api/chat here.
 */
 const WORKER_URL =
-  "https://ck.qtmkiller6.workers.dev";
+  "ck.qtmkiller6.workers.dev";
 
 
 /* =========================================================
@@ -670,7 +670,7 @@ composer.addEventListener(
     if (
       !WORKER_URL ||
       WORKER_URL.includes(
-        "https://ck.qtmkiller6.workers.dev"
+        "ck.qtmkiller6.workers.dev"
       )
     ) {
 
