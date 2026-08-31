@@ -2,170 +2,394 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#030605">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta name="theme-color" content="#050807">
 
     <title>QTM AI</title>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 
-    <script type="module" src="app.js"></script>
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <div class="ambient ambient-one"></div>
-    <div class="ambient ambient-two"></div>
-    <div class="leaf-bg"></div>
+    <!-- ================= BACKGROUND ================= -->
 
-    <!-- LOGIN -->
+    <div class="background">
 
-    <section id="loginScreen" class="login-screen">
+        <div class="leaf-glow"></div>
 
-        <div class="login-card">
+        <div class="leaf"></div>
 
-            <div class="q-logo">Q</div>
+        <div class="particle particle-1"></div>
+        <div class="particle particle-2"></div>
+        <div class="particle particle-3"></div>
+        <div class="particle particle-4"></div>
 
-            <h1>QTM AI</h1>
-
-            <p class="tagline">
-                Intelligence. Simplified.
-            </p>
-
-            <div class="line"></div>
-
-            <button id="googleLogin" class="google-btn">
-
-                <span class="google-icon">
-                    G
-                </span>
-
-                <span>
-                    Continue with Google
-                </span>
-
-            </button>
-
-            <p id="loginError" class="login-error"></p>
-
-            <p class="small-note">
-                Secure authentication powered by Firebase
-            </p>
-
-        </div>
-
-    </section>
+    </div>
 
 
-    <!-- APP -->
+    <!-- ================= APP ================= -->
 
-    
-    <div id="app" class="app hidden">
+    <div class="app">
 
-        <!-- SIDEBAR -->
 
-        <aside class="sidebar">
+        <!-- ================= SIDEBAR ================= -->
 
-            <div class="brand">
+        <aside
+            class="sidebar"
+            id="sidebar"
+        >
 
-                <div class="brand-logo">
-                    Q
+            <div class="sidebar-top">
+
+
+                <!-- BRAND -->
+
+                <div class="brand">
+
+                    <div class="brand-logo">
+                        Q
+                    </div>
+
+                    <div class="brand-text">
+
+                        <strong>
+                            QTM AI
+                        </strong>
+
+                        <span>
+                            Intelligence redefined
+                        </span>
+
+                    </div>
+
                 </div>
 
-                <div>
-                    <div class="brand-title">
-                        QTM AI
+
+                <!-- NEW CHAT -->
+
+                <button
+                    class="new-chat"
+                    id="newChatBtn"
+                    type="button"
+                >
+
+                    <span class="new-chat-icon">
+                        ＋
+                    </span>
+
+                    <span>
+                        New chat
+                    </span>
+
+                </button>
+
+
+                <!-- CHAT LABEL -->
+
+                <div class="sidebar-label">
+                    CHATS
+                </div>
+
+
+                <!-- HISTORY -->
+
+                <div
+                    class="history"
+                    id="history"
+                >
+
+                    <div class="empty-history">
+
+                        Your conversations
+                        <br>
+
+                        will appear here.
+
                     </div>
 
-                    <div class="brand-subtitle">
-                        AI Workspace
-                    </div>
                 </div>
 
             </div>
 
 
-            <button id="newChat" class="new-chat">
-                <span>＋</span>
-                New chat
-            </button>
+            <!-- SIDEBAR BOTTOM -->
+
+            <div class="sidebar-bottom">
 
 
-            <div class="label">
-                CONVERSATIONS
-            </div>
+                <button
+                    class="side-item"
+                    type="button"
+                >
+
+                    <span>⚙</span>
+
+                    <span>
+                        Settings
+                    </span>
+
+                </button>
 
 
-            <div id="chatList" class="chat-list"></div>
+                <button
+                    class="side-item"
+                    type="button"
+                >
+
+                    <span>?</span>
+
+                    <span>
+                        Help
+                    </span>
+
+                </button>
 
 
-            <div class="profile">
+                <!-- GOOGLE ACCOUNT -->
 
-                <img id="avatar" class="avatar" alt="Profile">
+                <div class="account">
 
-                <div class="profile-info">
+                    <div class="account-avatar">
+                        G
+                    </div>
 
-                    <strong id="username">
-                        User
-                    </strong>
+                    <div class="account-info">
 
-                    <span id="email">
-                        Signed in
+                        <strong>
+                            Guest
+                        </strong>
+
+                        <span>
+                            Sign in with Google
+                        </span>
+
+                    </div>
+
+                    <span class="account-arrow">
+                        ›
                     </span>
 
                 </div>
-
-                <button id="logout" class="logout">
-                    ⎋
-                </button>
 
             </div>
 
         </aside>
 
 
-        <!-- MAIN -->
+        <!-- ================= MAIN ================= -->
 
         <main class="main">
 
+
+            <!-- ================= TOP BAR ================= -->
+
             <header class="topbar">
 
+
+                <!-- MOBILE MENU -->
+
+                <button
+                    class="menu-btn"
+                    id="menuBtn"
+                    type="button"
+                    aria-label="Open menu"
+                >
+
+                    <span></span>
+                    <span></span>
+                    <span></span>
+
+                </button>
+
+
+                <!-- MOBILE BRAND -->
+
                 <div class="mobile-brand">
-                    <div class="mobile-logo">Q</div>
-                    <span>QTM AI</span>
+
+                    <div class="mobile-logo">
+                        Q
+                    </div>
+
+                    <strong>
+                        QTM AI
+                    </strong>
+
                 </div>
 
-                <div class="online">
-                    <i></i>
-                    Online
+
+                <!-- TOP RIGHT -->
+
+                <div class="topbar-right">
+
+                    <button
+                        class="top-icon"
+                        type="button"
+                        title="Search"
+                    >
+                        ⌕
+                    </button>
+
+
+                    <button
+                        class="top-icon"
+                        type="button"
+                        title="Notifications"
+                    >
+                        ♢
+                    </button>
+
+
+                    <button
+                        class="profile-button"
+                        type="button"
+                        title="Google Login"
+                    >
+                        G
+                    </button>
+
                 </div>
 
             </header>
 
 
-            <section id="messages" class="messages"></section>
+            <!-- ================= CHAT ================= -->
+
+            <section
+                class="chat-messages"
+                id="chatMessages"
+            >
+
+            </section>
 
 
-            <div class="composer-wrap">
+            <!-- ================= COMPOSER ================= -->
+
+            <div class="composer-area">
+
 
                 <div class="composer">
 
+
+                    <!-- TEXT -->
+
                     <textarea
-                        id="input"
-                        placeholder="Ask QTM AI anything..."
+                        id="messageInput"
+                        placeholder="Message QTM AI..."
                         rows="1"
-                        maxlength="12000"
+                        autocomplete="off"
+                        spellcheck="true"
                     ></textarea>
 
-                    <button id="send" class="send">
-                        ↑
-                    </button>
+
+                    <!-- CONTROLS -->
+
+                    <div class="composer-bottom">
+
+
+                        <!-- LEFT TOOLS -->
+
+                        <div class="composer-tools">
+
+
+                            <!-- FILE -->
+
+                            <button
+                                class="tool-btn"
+                                id="attachmentBtn"
+                                type="button"
+                                title="Attach file"
+                                aria-label="Attach file"
+                            >
+                                📎
+                            </button>
+
+
+                            <!-- CAMERA -->
+
+                            <button
+                                class="tool-btn"
+                                id="cameraBtn"
+                                type="button"
+                                title="Camera"
+                                aria-label="Camera"
+                            >
+                                📷
+                            </button>
+
+
+                            <!-- IMAGE -->
+
+                            <button
+                                class="tool-btn image-tool"
+                                id="imageBtn"
+                                type="button"
+                                title="Create image"
+                                aria-label="Create image"
+                            >
+                                ✦
+                            </button>
+
+
+                            <!-- HIDDEN FILE INPUT -->
+
+                            <input
+                                type="file"
+                                id="fileInput"
+                                hidden
+                            >
+
+                        </div>
+
+
+                        <!-- RIGHT TOOLS -->
+
+                        <div class="composer-actions">
+
+                            <span class="shortcut">
+                                Enter ↵
+                            </span>
+
+
+                            <button
+                                class="send-btn"
+                                id="sendBtn"
+                                type="button"
+                                title="Send message"
+                                aria-label="Send message"
+                            >
+                                ↑
+                            </button>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
-                <div class="hint">
-                    QTM AI can make mistakes. Verify important information.
-                </div>
+
+                <p class="disclaimer">
+                    QTM AI can make mistakes.
+                    Check important information.
+                </p>
 
             </div>
 
@@ -173,5 +397,26 @@
 
     </div>
 
+
+    <!-- ================= MOBILE OVERLAY ================= -->
+
+    <div
+        class="overlay"
+        id="overlay"
+    ></div>
+
+
+    <!-- ================= APP JS ================= -->
+
+    <!-- IMPORTANT:
+         type="module" is required
+         because app.js imports Firebase.
+    -->
+
+    <script
+        type="module"
+        src="app.js"
+    ></script>
+
 </body>
-</html>
+    </html>
