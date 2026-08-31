@@ -46,12 +46,11 @@ const FIREBASE_CONFIG = {
    CHANGE ONLY THIS VALUE.
 
    Example:
-   https://qtm-ai.username.workers.dev
-
+   https://ck.qtmkiller6.workers.dev
    Do NOT add /api/chat here.
 */
 const WORKER_URL =
-  "YOUR_CLOUDFLARE_WORKER_URL";
+  "ck.qtmkiller6.workers.dev";
 
 
 /* =========================================================
