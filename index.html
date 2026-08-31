@@ -10,18 +10,21 @@
 
     <meta
         name="theme-color"
-        content="#050807"
+        content="#050505"
     >
 
     <meta
         name="description"
-        content="LOGIC-LEAF AI — intelligent AI for learning, creating and problem solving."
+        content="LOGIC-LEAF AI — an intelligent AI assistant"
     >
 
     <title>LOGIC-LEAF AI</title>
 
-    <!-- Google Font -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
     <link
         rel="preconnect"
         href="https://fonts.gstatic.com"
@@ -29,669 +32,630 @@
     >
 
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet"
     >
 
-    <!-- Main CSS -->
     <link
         rel="stylesheet"
         href="style.css"
     >
 </head>
 
-
 <body>
 
-    <!-- =====================================================
-         BACKGROUND
-         ===================================================== -->
+<!-- =====================================================
+     APP
+     ===================================================== -->
 
-    <div
-        class="background"
-        aria-hidden="true"
+<div class="app">
+
+
+    <!-- =================================================
+         SIDEBAR
+         ================================================= -->
+
+    <aside
+        class="sidebar"
+        id="sidebar"
     >
 
-        <div class="leaf-glow"></div>
-
-        <div class="leaf"></div>
-
-        <div class="particle particle-1"></div>
-        <div class="particle particle-2"></div>
-        <div class="particle particle-3"></div>
-        <div class="particle particle-4"></div>
-
-    </div>
+        <div class="sidebar-content">
 
 
-    <!-- =====================================================
-         APPLICATION
-         ===================================================== -->
+            <!-- BRAND -->
 
-    <div class="app">
+            <div class="sidebar-brand">
+
+                <div class="sidebar-brand-icon">
+                    L
+                </div>
+
+                <div>
+                    <div class="sidebar-brand-name">
+                        LOGIC-LEAF
+                    </div>
+
+                    <div class="sidebar-brand-sub">
+                        AI
+                    </div>
+                </div>
+
+            </div>
+
+
+            <!-- NEW CHAT -->
+
+            <button
+                class="new-chat"
+                id="newChatBtn"
+                type="button"
+            >
+
+                <span class="new-chat-plus">
+                    +
+                </span>
+
+                <span>
+                    New chat
+                </span>
+
+            </button>
+
+
+            <!-- SEARCH -->
+
+            <button
+                class="sidebar-button"
+                id="searchBtn"
+                type="button"
+            >
+
+                <span class="icon">
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <circle
+                            cx="11"
+                            cy="11"
+                            r="6.5"
+                        ></circle>
+
+                        <path
+                            d="M16 16l5 5"
+                        ></path>
+                    </svg>
+                </span>
+
+                <span>
+                    Search
+                </span>
+
+            </button>
+
+
+            <!-- RECENT -->
+
+            <div class="sidebar-section-title">
+                Recent
+            </div>
+
+            <div
+                class="history"
+                id="history"
+            >
+
+                <div class="history-empty">
+                    Your conversations
+                    will appear here.
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- SIDEBAR FOOTER -->
+
+        <div class="sidebar-footer">
+
+
+            <button
+                class="sidebar-button"
+                id="helpBtn"
+                type="button"
+            >
+
+                <span class="icon">
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <circle
+                            cx="12"
+                            cy="12"
+                            r="8"
+                        ></circle>
+
+                        <path
+                            d="M9.8 9a2.3 2.3 0 1 1 4.1 1.5c-.8.8-1.9 1.1-1.9 2.4"
+                        ></path>
+
+                        <circle
+                            cx="12"
+                            cy="16.5"
+                            r=".7"
+                            fill="currentColor"
+                            stroke="none"
+                        ></circle>
+                    </svg>
+                </span>
+
+                <span>
+                    Help
+                </span>
+
+            </button>
+
+
+            <!-- DEVELOPER -->
+
+            <div class="developer">
+
+                <div class="developer-avatar">
+                    VC
+                </div>
+
+                <div class="developer-info">
+
+                    <strong>
+                        V. CHENCHUKIRAN
+                    </strong>
+
+                    <span>
+                        Cloud Security & DevSecOps
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- USER -->
+
+            <button
+                class="user-account"
+                id="loginBtn"
+                type="button"
+            >
+
+                <div
+                    class="user-avatar"
+                    id="userAvatar"
+                >
+                    G
+                </div>
+
+                <div class="user-details">
+
+                    <strong id="userName">
+                        Guest
+                    </strong>
+
+                    <span id="userStatus">
+                        Sign in with Google
+                    </span>
+
+                </div>
+
+                <span class="user-more">
+                    ...
+                </span>
+
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =================================================
+         MAIN
+         ================================================= -->
+
+    <main class="main">
 
 
         <!-- =================================================
-             SIDEBAR
+             HEADER
              ================================================= -->
 
-        <aside
-            class="sidebar"
-            id="sidebar"
-        >
+        <header class="topbar">
 
-            <div class="sidebar-top">
 
+            <!-- MOBILE MENU -->
 
-                <!-- BRAND -->
-
-                <div class="brand">
-
-                    <div class="brand-logo">
-                        L
-                    </div>
-
-                    <div class="brand-text">
-
-                        <strong>
-                            LOGIC-LEAF
-                        </strong>
-
-                        <span>
-                            AI
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- NEW CHAT -->
-
-                <button
-                    class="new-chat"
-                    id="newChatBtn"
-                    type="button"
-                >
-
-                    <span class="new-chat-icon">
-
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path d="M12 5v14"></path>
-                            <path d="M5 12h14"></path>
-                        </svg>
-
-                    </span>
-
-                    <span>
-                        New chat
-                    </span>
-
-                </button>
-
-
-                <!-- CHAT LABEL -->
-
-                <div class="sidebar-label">
-                    CHATS
-                </div>
-
-
-                <!-- CHAT HISTORY -->
-
-                <div
-                    class="history"
-                    id="history"
-                >
-
-                    <div class="empty-history">
-
-                        Your conversations
-                        <br>
-                        will appear here.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 SIDEBAR BOTTOM
-                 ================================================= -->
-
-            <div class="sidebar-bottom">
-
-
-                <!-- SETTINGS -->
-
-                <button
-                    class="side-item"
-                    type="button"
-                    id="settingsBtn"
-                >
-
-                    <span class="side-icon">
-
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-
-                            <circle
-                                cx="12"
-                                cy="12"
-                                r="3.2"
-                            ></circle>
-
-                            <path
-                                d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.1h-2.6v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1A1.7 1.7 0 0 0 7.4 15a1.7 1.7 0 0 0-1.5-1H5.8v-2.6h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L7 8.4l1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5v-.1h2.6v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1V14h-.1a1.7 1.7 0 0 0-1.5 1Z"
-                            ></path>
-
-                        </svg>
-
-                    </span>
-
-                    <span>
-                        Settings
-                    </span>
-
-                </button>
-
-
-                <!-- HELP -->
-
-                <button
-                    class="side-item"
-                    type="button"
-                    id="helpBtn"
-                >
-
-                    <span class="side-icon">
-
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-
-                            <circle
-                                cx="12"
-                                cy="12"
-                                r="9"
-                            ></circle>
-
-                            <path
-                                d="M9.7 9.2a2.5 2.5 0 1 1 4.4 1.6c-.7.8-2 1.1-2 2.3"
-                            ></path>
-
-                            <path
-                                d="M12 16.5h.01"
-                            ></path>
-
-                        </svg>
-
-                    </span>
-
-                    <span>
-                        Help
-                    </span>
-
-                </button>
-
-
-                <!-- =================================================
-                     DEVELOPER
-                     ================================================= -->
-
-                <div class="developer-card">
-
-                    <div class="developer-mark">
-                        VC
-                    </div>
-
-                    <div class="developer-info">
-
-                        <strong>
-                            V. CHENCHUKIRAN
-                        </strong>
-
-                        <span>
-                            Cloud Security &amp; DevSecOps Developer
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- =================================================
-                     GOOGLE ACCOUNT
-                     ================================================= -->
-
-                <button
-                    class="account"
-                    id="loginBtn"
-                    type="button"
-                >
-
-                    <div class="account-avatar">
-                        G
-                    </div>
-
-                    <div class="account-info">
-
-                        <strong>
-                            Guest
-                        </strong>
-
-                        <span>
-                            Sign in with Google
-                        </span>
-
-                    </div>
-
-                    <span class="account-arrow">
-
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-                            <path d="m9 18 6-6-6-6"></path>
-                        </svg>
-
-                    </span>
-
-                </button>
-
-            </div>
-
-        </aside>
-
-
-        <!-- =====================================================
-             MAIN
-             ===================================================== -->
-
-        <main class="main">
-
-
-            <!-- =================================================
-                 TOP BAR
-                 ================================================= -->
-
-            <header class="topbar">
-
-
-                <!-- MOBILE MENU -->
-
-                <button
-                    class="menu-btn"
-                    id="menuBtn"
-                    type="button"
-                    aria-label="Open menu"
-                    aria-controls="sidebar"
-                >
-
-                    <span></span>
-                    <span></span>
-                    <span></span>
-
-                </button>
-
-
-                <!-- MOBILE BRAND -->
-
-                <div class="mobile-brand">
-
-                    <div class="mobile-logo">
-                        L
-                    </div>
-
-                    <div>
-
-                        <strong>
-                            LOGIC-LEAF
-                        </strong>
-
-                        <span>
-                            AI
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- TOP RIGHT -->
-
-                <div class="topbar-right">
-
-
-                    <!-- SEARCH -->
-
-                    <button
-                        class="top-icon"
-                        id="searchBtn"
-                        type="button"
-                        title="Search"
-                        aria-label="Search"
-                    >
-
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-
-                            <circle
-                                cx="11"
-                                cy="11"
-                                r="6.5"
-                            ></circle>
-
-                            <path
-                                d="m16 16 5 5"
-                            ></path>
-
-                        </svg>
-
-                    </button>
-
-
-                    <!-- NOTIFICATIONS -->
-
-                    <button
-                        class="top-icon"
-                        id="notificationBtn"
-                        type="button"
-                        title="Notifications"
-                        aria-label="Notifications"
-                    >
-
-                        <svg
-                            viewBox="0 0 24 24"
-                            aria-hidden="true"
-                        >
-
-                            <path
-                                d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
-                            ></path>
-
-                            <path
-                                d="M10 21h4"
-                            ></path>
-
-                        </svg>
-
-                    </button>
-
-
-                    <!-- PROFILE -->
-
-                    <button
-                        class="profile-button"
-                        id="profileButton"
-                        type="button"
-                        title="Google Login"
-                        aria-label="Google Login"
-                    >
-                        G
-                    </button>
-
-                </div>
-
-            </header>
-
-
-            <!-- =================================================
-                 CHAT MESSAGES
-                 ================================================= -->
-
-            <section
-                class="chat-messages"
-                id="chatMessages"
-                aria-live="polite"
+            <button
+                class="menu-btn"
+                id="menuBtn"
+                type="button"
+                aria-label="Open menu"
             >
 
+                <span></span>
+                <span></span>
+                <span></span>
 
-                <!-- WELCOME -->
+            </button>
 
-                <div class="welcome">
 
-                    <div class="welcome-logo">
-                        L
-                    </div>
+            <!-- MODEL SELECTOR -->
 
-                    <div class="welcome-label">
-                        LOGIC-LEAF AI
-                    </div>
+            <button
+                class="model-selector"
+                type="button"
+            >
 
-                    <h1>
-                        How can I help you?
-                    </h1>
+                <span class="model-dot"></span>
 
-                    <p>
-                        Ask anything. Learn, create, analyze,
-                        solve problems and explore ideas with AI.
-                    </p>
+                <span>
+                    LOGIC-LEAF AI
+                </span>
 
-                </div>
+                <span class="model-arrow">
+                    ▾
+                </span>
 
-            </section>
+            </button>
 
 
-            <!-- =================================================
-                 COMPOSER
-                 ================================================= -->
+            <!-- TOP RIGHT -->
 
-            <div class="composer-area">
+            <div class="topbar-right">
 
+                <button
+                    class="top-button"
+                    id="notificationBtn"
+                    type="button"
+                    aria-label="Notifications"
+                >
 
-                <div class="composer">
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 8h18c0-1-3-1-3-8"
+                        ></path>
 
+                        <path
+                            d="M10 21h4"
+                        ></path>
+                    </svg>
 
-                    <!-- MESSAGE INPUT -->
+                </button>
 
-                    <textarea
-                        id="messageInput"
-                        placeholder="Message LOGIC-LEAF AI..."
-                        rows="1"
-                        autocomplete="off"
-                        spellcheck="true"
-                        aria-label="Message LOGIC-LEAF AI"
-                    ></textarea>
 
+                <!-- SMALL GOOGLE BUTTON -->
 
-                    <!-- COMPOSER BOTTOM -->
-
-                    <div class="composer-bottom">
-
-
-                        <!-- LEFT TOOLS -->
-
-                        <div class="composer-tools">
-
-
-                            <!-- ATTACH -->
-
-                            <button
-                                class="tool-btn"
-                                id="attachmentBtn"
-                                type="button"
-                                title="Attach file"
-                                aria-label="Attach file"
-                            >
-
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-
-                                    <path
-                                        d="m20.5 11.5-8.7 8.7a6 6 0 0 1-8.5-8.5l9.1-9.1a4 4 0 0 1 5.7 5.7l-9.1 9.1a2 2 0 1 1-2.8-2.8l8.4-8.4"
-                                    ></path>
-
-                                </svg>
-
-                            </button>
-
-
-                            <!-- CAMERA -->
-
-                            <button
-                                class="tool-btn"
-                                id="cameraBtn"
-                                type="button"
-                                title="Camera"
-                                aria-label="Camera"
-                            >
-
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-
-                                    <path
-                                        d="M4 7h4l1.5-2h5L16 7h4v12H4Z"
-                                    ></path>
-
-                                    <circle
-                                        cx="12"
-                                        cy="13"
-                                        r="3.5"
-                                    ></circle>
-
-                                </svg>
-
-                            </button>
-
-
-                            <!-- IMAGE -->
-
-                            <button
-                                class="tool-btn image-tool"
-                                id="imageBtn"
-                                type="button"
-                                title="Create image"
-                                aria-label="Create image"
-                            >
-
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-
-                                    <path
-                                        d="M12 3v18"
-                                    ></path>
-
-                                    <path
-                                        d="M3 12h18"
-                                    ></path>
-
-                                    <path
-                                        d="m5.5 5.5 13 13"
-                                    ></path>
-
-                                    <path
-                                        d="m18.5 5.5-13 13"
-                                    ></path>
-
-                                </svg>
-
-                            </button>
-
-
-                            <!-- FILE INPUT -->
-
-                            <input
-                                type="file"
-                                id="fileInput"
-                                hidden
-                            >
-
-                        </div>
-
-
-                        <!-- RIGHT ACTIONS -->
-
-                        <div class="composer-actions">
-
-
-                            <span class="shortcut">
-                                Enter ↵
-                            </span>
-
-
-                            <!-- SEND -->
-
-                            <button
-                                class="send-btn"
-                                id="sendBtn"
-                                type="button"
-                                title="Send message"
-                                aria-label="Send message"
-                            >
-
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-
-                                    <path
-                                        d="M12 19V5"
-                                    ></path>
-
-                                    <path
-                                        d="m6 11 6-6 6 6"
-                                    ></path>
-
-                                </svg>
-
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- DISCLAIMER -->
-
-                <p class="disclaimer">
-                    LOGIC-LEAF AI may make mistakes.
-                    Check important information.
-                </p>
+                <button
+                    class="profile-button"
+                    type="button"
+                    id="profileButton"
+                    aria-label="Account"
+                >
+                    G
+                </button>
 
             </div>
 
-        </main>
-
-    </div>
+        </header>
 
 
-    <!-- =====================================================
-         MOBILE OVERLAY
-         ===================================================== -->
+        <!-- =================================================
+             CHAT AREA
+             ================================================= -->
 
-    <div
-        class="overlay"
-        id="overlay"
-    ></div>
+        <section
+            class="chat-messages"
+            id="chatMessages"
+        >
 
 
-    <!-- =====================================================
-         JAVASCRIPT
-         ===================================================== -->
+            <!-- WELCOME -->
 
-    <script
-        type="module"
-        src="app.js"
-    ></script>
+            <div class="welcome">
+
+                <div class="welcome-mark">
+                    L
+                </div>
+
+                <h1>
+                    How can I help you?
+                </h1>
+
+                <p>
+                    Ask LOGIC-LEAF AI anything.
+                </p>
+
+
+                <!-- SUGGESTIONS -->
+
+                <div class="suggestions">
+
+
+                    <button
+                        class="suggestion"
+                        type="button"
+                        data-prompt="Explain this concept simply"
+                    >
+
+                        <span class="suggestion-icon">
+                            ✦
+                        </span>
+
+                        <span>
+                            Explain something
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="suggestion"
+                        type="button"
+                        data-prompt="Help me solve a problem step by step"
+                    >
+
+                        <span class="suggestion-icon">
+                            ∑
+                        </span>
+
+                        <span>
+                            Solve a problem
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="suggestion"
+                        type="button"
+                        data-prompt="Help me write some code"
+                    >
+
+                        <span class="suggestion-icon">
+                            &lt;/&gt;
+                        </span>
+
+                        <span>
+                            Write code
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="suggestion"
+                        type="button"
+                        data-prompt="Give me some creative ideas"
+                    >
+
+                        <span class="suggestion-icon">
+                            ✧
+                        </span>
+
+                        <span>
+                            Brainstorm ideas
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             COMPOSER
+             ================================================= -->
+
+        <div class="composer-wrapper">
+
+
+            <div class="composer">
+
+
+                <!-- TEXT -->
+
+                <textarea
+                    id="messageInput"
+                    rows="1"
+                    maxlength="12000"
+                    placeholder="Message LOGIC-LEAF AI..."
+                    autocomplete="off"
+                    spellcheck="true"
+                ></textarea>
+
+
+                <!-- BOTTOM -->
+
+                <div class="composer-bottom">
+
+
+                    <!-- LEFT -->
+
+                    <div class="composer-left">
+
+
+                        <!-- ATTACH -->
+
+                        <button
+                            class="composer-button"
+                            id="attachmentBtn"
+                            type="button"
+                            aria-label="Attach file"
+                            title="Attach file"
+                        >
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M21 11.5L12.5 20a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10.5 18a2 2 0 0 1-3-3l8-8"
+                                ></path>
+                            </svg>
+
+                        </button>
+
+
+                        <!-- FILE -->
+
+                        <input
+                            id="fileInput"
+                            type="file"
+                            hidden
+                        >
+
+
+                        <!-- CAMERA -->
+
+                        <button
+                            class="composer-button"
+                            id="cameraBtn"
+                            type="button"
+                            aria-label="Camera"
+                            title="Camera"
+                        >
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M4 7h3l1.5-2h7L17 7h3v11H4z"
+                                ></path>
+
+                                <circle
+                                    cx="12"
+                                    cy="12.5"
+                                    r="3.5"
+                                ></circle>
+                            </svg>
+
+                        </button>
+
+
+                        <!-- IMAGE -->
+
+                        <button
+                            class="composer-button"
+                            id="imageBtn"
+                            type="button"
+                            aria-label="Create image"
+                            title="Create image"
+                        >
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M12 3v18"
+                                ></path>
+
+                                <path
+                                    d="M3 12h18"
+                                ></path>
+
+                                <path
+                                    d="M5.6 5.6l12.8 12.8"
+                                ></path>
+
+                                <path
+                                    d="M18.4 5.6L5.6 18.4"
+                                ></path>
+                            </svg>
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- RIGHT -->
+
+                    <div class="composer-right">
+
+                        <span class="enter-hint">
+                            Enter to send
+                        </span>
+
+                        <button
+                            class="send-button"
+                            id="sendBtn"
+                            type="button"
+                            aria-label="Send"
+                            title="Send"
+                        >
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+
+                                <path
+                                    d="M12 19V5"
+                                ></path>
+
+                                <path
+                                    d="M6 11l6-6 6 6"
+                                ></path>
+
+                            </svg>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="disclaimer">
+                LOGIC-LEAF AI can make mistakes.
+                Check important information.
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<!-- =====================================================
+     MOBILE OVERLAY
+     ===================================================== -->
+
+<div
+    class="overlay"
+    id="overlay"
+></div>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+     ===================================================== -->
+
+<script
+    type="module"
+    src="app.js"
+></script>
 
 </body>
     </html>
