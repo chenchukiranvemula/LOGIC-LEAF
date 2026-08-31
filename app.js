@@ -1,45 +1,92 @@
-"use strict";
-
 /* =========================================================
    QTM AI — APP.JS
+   Firebase Google Authentication
    ========================================================= */
 
-const API_URL =
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signOut,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+
+/* =========================================================
+   FIREBASE CONFIG
+========================================================= */
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
+
+    authDomain:
+        "logic-leaf.firebaseapp.com",
+
+    databaseURL:
+        "https://logic-leaf-default-rtdb.firebaseio.com",
+
+    projectId:
+        "logic-leaf",
+
+    storageBucket:
+        "logic-leaf.firebasestorage.app",
+
+    messagingSenderId:
+        "288673697563",
+
+    appId:
+        "1:288673697563:web:c14d08452b01568d1c8dbe",
+
+    measurementId:
+        "G-Z30K3K85LX"
+};
+
+
+/* =========================================================
+   FIREBASE
+========================================================= */
+
+const firebaseApp =
+    initializeApp(firebaseConfig);
+
+const auth =
+    getAuth(firebaseApp);
+
+const provider =
+    new GoogleAuthProvider();
+
+
+provider.setCustomParameters({
+    prompt: "select_account"
+});
+
+
+/* =========================================================
+   QTM API
+========================================================= */
+
+const API =
     "https://ck.qtmkiller6.workers.dev";
 
-const CHAT_URL =
-    API_URL + "/v1/chat";
-
-const AUTH_URL =
-    API_URL + "/api/auth/google";
-
-const ME_URL =
-    API_URL + "/api/auth/me";
-
-const LOGOUT_URL =
-    API_URL + "/api/auth/logout";
+const CHAT_API =
+    API + "/v1/chat";
 
 
-/*
-   IMPORTANT:
-   Replace this with your Google OAuth Web Client ID.
+/* =========================================================
+   STORAGE
+========================================================= */
 
-   Example:
-   1234567890-abcdefg.apps.googleusercontent.com
-*/
-
-const GOOGLE_CLIENT_ID =
-    "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
-
-
-const STORAGE_CHATS =
+const CHATS_KEY =
     "qtm_ai_chats";
 
-const STORAGE_CURRENT =
+const CURRENT_KEY =
     "qtm_ai_current";
-
-const STORAGE_USER =
-    "qtm_ai_user";
 
 
 let chats = [];
@@ -49,25 +96,91 @@ let generating = false;
 
 
 /* =========================================================
-   START
+   DOM
 ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
+const loginScreen =
+    document.getElementById(
+        "loginScreen"
+    );
+
+const app =
+    document.getElementById(
+        "app"
+    );
+
+const googleLogin =
+    document.getElementById(
+        "googleLogin"
+    );
+
+const loginError =
+    document.getElementById(
+        "loginError"
+    );
+
+const messages =
+    document.getElementById(
+        "messages"
+    );
+
+const chatList =
+    document.getElementById(
+        "chatList"
+    );
+
+const input =
+    document.getElementById(
+        "input"
+    );
+
+const send =
+    document.getElementById(
+        "send"
+    );
+
+const newChat =
+    document.getElementById(
+        "newChat"
+    );
+
+const logout =
+    document.getElementById(
+        "logout"
+    );
+
+
+/* =========================================================
+   GOOGLE LOGIN
+========================================================= */
+
+googleLogin.addEventListener(
+    "click",
     async () => {
 
-        loadLocalData();
+        setLoginState(true);
 
-        setupEvents();
+        clearLoginError();
 
-        initializeGoogle();
+        try {
 
-        const authenticated =
-            await restoreSession();
+            await signInWithPopup(
+                auth,
+                provider
+            );
 
-        if (authenticated) {
+        } catch (error) {
 
-            showApp();
+            console.error(
+                "Google Login:",
+                error
+            );
+
+            showLoginError(
+                getAuthError(error)
+            );
+
+            setLoginState(false);
 
         }
 
@@ -76,214 +189,81 @@ document.addEventListener(
 
 
 /* =========================================================
-   GOOGLE LOGIN
+   AUTH STATE
 ========================================================= */
 
-function initializeGoogle() {
+onAuthStateChanged(
+    auth,
+    user => {
 
-    if (
-        GOOGLE_CLIENT_ID.includes(
-            "YOUR_GOOGLE_CLIENT_ID"
-        )
-    ) {
+        if (user) {
 
-        console.warn(
-            "QTM AI: Google Client ID has not been configured."
-        );
+            currentUser = user;
 
-        return;
+            showApplication();
+
+        } else {
+
+            currentUser = null;
+
+            showLogin();
+
+        }
 
     }
+);
 
 
-    const waitForGoogle =
-        setInterval(
-            () => {
+/* =========================================================
+   SHOW LOGIN
+========================================================= */
 
-                if (
-                    window.google &&
-                    google.accounts &&
-                    google.accounts.id
-                ) {
+function showLogin() {
 
-                    clearInterval(
-                        waitForGoogle
-                    );
-
-                    google.accounts.id.initialize({
-
-                        client_id:
-                            GOOGLE_CLIENT_ID,
-
-                        callback:
-                            handleGoogleCredential,
-
-                        auto_select:
-                            false,
-
-                        cancel_on_tap_outside:
-                            true
-
-                    });
-
-
-                    const button =
-                        document.getElementById(
-                            "googleButton"
-                        );
-
-
-                    if (button) {
-
-                        google.accounts.id.renderButton(
-
-                            button,
-
-                            {
-                                type:
-                                    "standard",
-
-                                theme:
-                                    "outline",
-
-                                size:
-                                    "large",
-
-                                text:
-                                    "signin_with",
-
-                                shape:
-                                    "rectangular",
-
-                                logo_alignment:
-                                    "left",
-
-                                width:
-                                    300
-
-                            }
-
-                        );
-
-                    }
-
-                }
-
-            },
-            100
-        );
-
-
-    setTimeout(
-        () => clearInterval(waitForGoogle),
-        10000
+    loginScreen.classList.remove(
+        "hidden"
     );
 
+    app.classList.add(
+        "hidden"
+    );
+
+    setLoginState(false);
+
 }
 
 
 /* =========================================================
-   GOOGLE CREDENTIAL
+   SHOW APPLICATION
 ========================================================= */
 
-async function handleGoogleCredential(
-    response
-) {
+function showApplication() {
+
+    loginScreen.classList.add(
+        "hidden"
+    );
+
+    app.classList.remove(
+        "hidden"
+    );
+
+
+    updateProfile();
+
+
+    loadChats();
+
 
     if (
-        !response ||
-        !response.credential
+        !currentChatId ||
+        !getCurrentChat()
     ) {
 
-        showLoginError(
-            "Google did not return a valid credential."
-        );
+        createChat();
 
-        return;
+    } else {
 
-    }
-
-
-    setLoginLoading(true);
-
-
-    try {
-
-        const result =
-            await fetch(
-                AUTH_URL,
-                {
-
-                    method:
-                        "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json",
-
-                        "Accept":
-                            "application/json"
-                    },
-
-                    credentials:
-                        "include",
-
-                    body:
-                        JSON.stringify({
-
-                            credential:
-                                response.credential
-
-                        })
-
-                }
-            );
-
-
-        const data =
-            await readJSON(result);
-
-
-        if (!result.ok) {
-
-            throw new Error(
-                data.error ||
-                "Google sign-in failed."
-            );
-
-        }
-
-
-        currentUser =
-            data.user;
-
-
-        localStorage.setItem(
-            STORAGE_USER,
-            JSON.stringify(
-                currentUser
-            )
-        );
-
-
-        showApp();
-
-
-    } catch (error) {
-
-        console.error(
-            "Google login error:",
-            error
-        );
-
-        showLoginError(
-            error.message ||
-            "Unable to sign in."
-        );
-
-    } finally {
-
-        setLoginLoading(false);
+        render();
 
     }
 
@@ -291,75 +271,46 @@ async function handleGoogleCredential(
 
 
 /* =========================================================
-   RESTORE SESSION
+   PROFILE
 ========================================================= */
 
-async function restoreSession() {
+function updateProfile() {
 
-    try {
-
-        const response =
-            await fetch(
-                ME_URL,
-                {
-                    method:
-                        "GET",
-
-                    credentials:
-                        "include",
-
-                    headers: {
-                        "Accept":
-                            "application/json"
-                    }
-                }
-            );
+    if (!currentUser)
+        return;
 
 
-        if (!response.ok) {
-
-            return false;
-
-        }
-
-
-        const data =
-            await readJSON(response);
-
-
-        if (
-            data &&
-            data.authenticated &&
-            data.user
-        ) {
-
-            currentUser =
-                data.user;
-
-
-            localStorage.setItem(
-                STORAGE_USER,
-                JSON.stringify(
-                    currentUser
-                )
-            );
-
-
-            return true;
-
-        }
-
-
-    } catch (error) {
-
-        console.log(
-            "No active server session."
+    const username =
+        document.getElementById(
+            "username"
         );
 
-    }
+    const email =
+        document.getElementById(
+            "email"
+        );
+
+    const avatar =
+        document.getElementById(
+            "avatar"
+        );
 
 
-    return false;
+    username.textContent =
+        currentUser.displayName ||
+        "Google User";
+
+
+    email.textContent =
+        currentUser.email ||
+        "";
+
+
+    avatar.src =
+        currentUser.photoURL ||
+        makeAvatar(
+            currentUser.displayName
+        );
 
 }
 
@@ -368,301 +319,54 @@ async function restoreSession() {
    LOGOUT
 ========================================================= */
 
-async function logout() {
+logout.addEventListener(
+    "click",
+    async () => {
 
-    try {
-
-        await fetch(
-            LOGOUT_URL,
-            {
-                method:
-                    "POST",
-
-                credentials:
-                    "include"
-            }
-        );
-
-    } catch (error) {
-
-        console.warn(error);
-
-    }
+        if (generating)
+            return;
 
 
-    currentUser = null;
+        try {
 
-    localStorage.removeItem(
-        STORAGE_USER
-    );
+            await signOut(auth);
 
+        } catch (error) {
 
-    document
-        .getElementById("app")
-        ?.classList.add("hidden");
-
-
-    document
-        .getElementById("loginScreen")
-        ?.classList.remove("hidden");
-
-
-    if (
-        window.google &&
-        google.accounts &&
-        google.accounts.id
-    ) {
-
-        google.accounts.id.disableAutoSelect();
-
-    }
-
-}
-
-
-/* =========================================================
-   SHOW APP
-========================================================= */
-
-function showApp() {
-
-    document
-        .getElementById("loginScreen")
-        ?.classList.add("hidden");
-
-
-    document
-        .getElementById("app")
-        ?.classList.remove("hidden");
-
-
-    updateUserUI();
-
-
-    loadLocalData();
-
-
-    if (
-        !currentChatId ||
-        !getCurrentChat()
-    ) {
-
-        createNewChat();
-
-    } else {
-
-        renderAll();
-
-    }
-
-}
-
-
-/* =========================================================
-   USER UI
-========================================================= */
-
-function updateUserUI() {
-
-    if (!currentUser) return;
-
-
-    const name =
-        document.getElementById(
-            "userName"
-        );
-
-    const email =
-        document.getElementById(
-            "userEmail"
-        );
-
-    const avatar =
-        document.getElementById(
-            "userAvatar"
-        );
-
-
-    if (name) {
-
-        name.textContent =
-            currentUser.name ||
-            "Google User";
-
-    }
-
-
-    if (email) {
-
-        email.textContent =
-            currentUser.email ||
-            "Signed in";
-
-    }
-
-
-    if (avatar) {
-
-        avatar.src =
-            currentUser.picture ||
-            createAvatar(
-                currentUser.name
+            console.error(
+                error
             );
 
-    }
+        }
 
-}
+    }
+);
 
 
 /* =========================================================
-   EVENTS
+   NEW CHAT
 ========================================================= */
 
-function setupEvents() {
+newChat.addEventListener(
+    "click",
+    () => {
 
-    document
-        .getElementById("newChat")
-        ?.addEventListener(
-            "click",
-            () => {
+        if (!generating) {
 
-                if (!generating) {
+            createChat();
 
-                    createNewChat();
-
-                }
-
-            }
-        );
-
-
-    document
-        .getElementById("sendBtn")
-        ?.addEventListener(
-            "click",
-            sendMessage
-        );
-
-
-    document
-        .getElementById("logoutButton")
-        ?.addEventListener(
-            "click",
-            logout
-        );
-
-
-    const input =
-        document.getElementById(
-            "messageInput"
-        );
-
-
-    if (input) {
-
-        input.addEventListener(
-            "keydown",
-            event => {
-
-                if (
-                    event.key === "Enter" &&
-                    !event.shiftKey
-                ) {
-
-                    event.preventDefault();
-
-                    sendMessage();
-
-                }
-
-            }
-        );
-
-
-        input.addEventListener(
-            "input",
-            () => {
-
-                input.style.height =
-                    "auto";
-
-                input.style.height =
-                    Math.min(
-                        input.scrollHeight,
-                        180
-                    ) + "px";
-
-            }
-        );
+        }
 
     }
-
-}
-
-
-/* =========================================================
-   LOCAL DATA
-========================================================= */
-
-function loadLocalData() {
-
-    try {
-
-        chats =
-            JSON.parse(
-                localStorage.getItem(
-                    STORAGE_CHATS
-                )
-            ) || [];
+);
 
 
-        currentChatId =
-            localStorage.getItem(
-                STORAGE_CURRENT
-            );
-
-
-    } catch {
-
-        chats = [];
-
-        currentChatId = null;
-
-    }
-
-}
-
-
-function saveData() {
-
-    localStorage.setItem(
-        STORAGE_CHATS,
-        JSON.stringify(chats)
-    );
-
-
-    if (currentChatId) {
-
-        localStorage.setItem(
-            STORAGE_CURRENT,
-            currentChatId
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   CHAT
-========================================================= */
-
-function createNewChat() {
+function createChat() {
 
     const chat = {
 
         id:
-            "qtm_" +
+            "chat_" +
             Date.now() +
             "_" +
             Math.random()
@@ -674,24 +378,31 @@ function createNewChat() {
 
         messages: [],
 
-        createdAt:
+        created:
             Date.now()
 
     };
 
 
-    chats.unshift(chat);
+    chats.unshift(
+        chat
+    );
+
 
     currentChatId =
         chat.id;
 
 
-    saveData();
+    saveChats();
 
-    renderAll();
+    render();
 
 }
 
+
+/* =========================================================
+   GET CHAT
+========================================================= */
 
 function getCurrentChat() {
 
@@ -705,46 +416,133 @@ function getCurrentChat() {
 
 
 /* =========================================================
+   LOAD / SAVE
+========================================================= */
+
+function loadChats() {
+
+    try {
+
+        chats =
+            JSON.parse(
+                localStorage.getItem(
+                    CHATS_KEY
+                )
+            ) || [];
+
+
+        currentChatId =
+            localStorage.getItem(
+                CURRENT_KEY
+            );
+
+    } catch {
+
+        chats = [];
+
+        currentChatId = null;
+
+    }
+
+}
+
+
+function saveChats() {
+
+    localStorage.setItem(
+        CHATS_KEY,
+        JSON.stringify(
+            chats
+        )
+    );
+
+
+    if (currentChatId) {
+
+        localStorage.setItem(
+            CURRENT_KEY,
+            currentChatId
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SEND
+========================================================= */
+
+send.addEventListener(
+    "click",
+    sendMessage
+);
+
+
+input.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key ===
+                "Enter" &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            sendMessage();
+
+        }
+
+    }
+);
+
+
+input.addEventListener(
+    "input",
+    () => {
+
+        input.style.height =
+            "auto";
+
+        input.style.height =
+            Math.min(
+                input.scrollHeight,
+                180
+            ) + "px";
+
+    }
+);
+
+
+/* =========================================================
    SEND MESSAGE
 ========================================================= */
 
 async function sendMessage() {
 
-    if (generating) return;
-
-
-    if (!currentUser) {
-
-        showLoginError(
-            "Please sign in first."
-        );
-
+    if (
+        generating ||
+        !currentUser
+    )
         return;
-
-    }
-
-
-    const input =
-        document.getElementById(
-            "messageInput"
-        );
-
-
-    if (!input) return;
 
 
     const text =
         input.value.trim();
 
 
-    if (!text) return;
+    if (!text)
+        return;
 
 
     const chat =
         getCurrentChat();
 
 
-    if (!chat) return;
+    if (!chat)
+        return;
 
 
     input.value = "";
@@ -759,10 +557,7 @@ async function sendMessage() {
             "user",
 
         content:
-            text,
-
-        timestamp:
-            Date.now()
+            text
 
     });
 
@@ -773,39 +568,42 @@ async function sendMessage() {
     ) {
 
         chat.title =
-            text.length > 38
-                ? text.slice(0,38) + "..."
+            text.length > 40
+                ? text.slice(0,40) + "..."
                 : text;
 
     }
 
 
-    saveData();
+    saveChats();
 
-    renderAll();
+    render();
 
 
     generating = true;
 
-    setGenerating(true);
+    send.disabled = true;
+
+    input.disabled = true;
+
+    input.placeholder =
+        "QTM AI is thinking...";
 
 
     const loading =
-        showLoading();
+        addLoading();
 
 
     try {
 
         const answer =
-            await askQTM(
+            await askAI(
                 text,
                 chat
             );
 
 
-        removeLoading(
-            loading
-        );
+        loading.remove();
 
 
         chat.messages.push({
@@ -814,24 +612,24 @@ async function sendMessage() {
                 "assistant",
 
             content:
-                answer,
-
-            timestamp:
-                Date.now()
+                answer
 
         });
 
 
-        saveData();
+        saveChats();
 
-        renderAll();
+        render();
 
 
     } catch (error) {
 
-        removeLoading(
-            loading
+        console.error(
+            error
         );
+
+
+        loading.remove();
 
 
         chat.messages.push({
@@ -840,27 +638,26 @@ async function sendMessage() {
                 "assistant",
 
             content:
-                "QTM AI error:\n\n" +
-                error.message,
-
-            error:
-                true,
-
-            timestamp:
-                Date.now()
+                "⚠️ " +
+                error.message
 
         });
 
 
-        saveData();
+        saveChats();
 
-        renderAll();
+        render();
 
     } finally {
 
         generating = false;
 
-        setGenerating(false);
+        send.disabled = false;
+
+        input.disabled = false;
+
+        input.placeholder =
+            "Ask QTM AI anything...";
 
     }
 
@@ -868,31 +665,44 @@ async function sendMessage() {
 
 
 /* =========================================================
-   QTM API
+   CALL CLOUDFLARE WORKER
 ========================================================= */
 
-async function askQTM(
+async function askAI(
     text,
     chat
 ) {
 
+    /*
+       Get Firebase ID token.
+
+       This token proves that the user
+       is authenticated with Firebase.
+    */
+
+    const idToken =
+        await currentUser.getIdToken(
+            true
+        );
+
+
     const response =
         await fetch(
-            CHAT_URL,
+            CHAT_API,
             {
 
                 method:
                     "POST",
 
-                credentials:
-                    "include",
-
                 headers: {
+
                     "Content-Type":
                         "application/json",
 
-                    "Accept":
-                        "application/json"
+                    "Authorization":
+                        "Bearer " +
+                        idToken
+
                 },
 
                 body:
@@ -902,17 +712,19 @@ async function askQTM(
                             text,
 
                         messages:
-                            chat.messages.map(
-                                item => ({
+                            chat.messages
+                                .slice(-12)
+                                .map(
+                                    item => ({
 
-                                    role:
-                                        item.role,
+                                        role:
+                                            item.role,
 
-                                    content:
-                                        item.content
+                                        content:
+                                            item.content
 
-                                })
-                            ),
+                                    })
+                                ),
 
                         conversation_id:
                             chat.id
@@ -923,10 +735,27 @@ async function askQTM(
         );
 
 
-    const data =
-        await readJSON(
-            response
+    const raw =
+        await response.text();
+
+
+    let data;
+
+
+    try {
+
+        data =
+            JSON.parse(
+                raw
+            );
+
+    } catch {
+
+        throw new Error(
+            "QTM Worker returned invalid JSON."
         );
+
+    }
 
 
     if (!response.ok) {
@@ -948,7 +777,7 @@ async function askQTM(
 
 
 /* =========================================================
-   RESPONSE
+   EXTRACT ANSWER
 ========================================================= */
 
 function extractAnswer(data) {
@@ -963,50 +792,40 @@ function extractAnswer(data) {
     }
 
 
-    const values = [
-
-        data?.response,
-
-        data?.reply,
-
-        data?.answer,
-
-        data?.content,
-
-        data?.message
-
-    ];
-
-
-    for (
-        const value of values
-    ) {
-
-        if (
-            typeof value ===
-            "string"
-        ) {
-
-            return value;
-
-        }
-
-    }
-
-
     if (
-        data?.result &&
-        typeof data.result ===
+        typeof data.response ===
         "string"
     ) {
 
-        return data.result;
+        return data.response;
 
     }
 
 
     if (
-        data?.result?.response
+        typeof data.answer ===
+        "string"
+    ) {
+
+        return data.answer;
+
+    }
+
+
+    if (
+        typeof data.reply ===
+        "string"
+    ) {
+
+        return data.reply;
+
+    }
+
+
+    if (
+        data.result &&
+        typeof data.result.response ===
+        "string"
     ) {
 
         return data.result.response;
@@ -1015,37 +834,23 @@ function extractAnswer(data) {
 
 
     if (
-        Array.isArray(
-            data?.choices
-        )
+        data.choices &&
+        data.choices[0]
     ) {
 
-        const choice =
-            data.choices[0];
-
-
-        if (
-            choice?.message?.content
-        ) {
-
-            return choice.message.content;
-
-        }
-
-
-        if (
-            choice?.text
-        ) {
-
-            return choice.text;
-
-        }
+        return (
+            data.choices[0]
+                ?.message
+                ?.content ||
+            data.choices[0]
+                ?.text
+        );
 
     }
 
 
     throw new Error(
-        "Unknown AI response format."
+        "AI returned an unknown response."
     );
 
 }
@@ -1055,41 +860,34 @@ function extractAnswer(data) {
    RENDER
 ========================================================= */
 
-function renderAll() {
+function render() {
 
-    renderSidebar();
+    renderChats();
 
     renderMessages();
 
 }
 
 
-/* SIDEBAR */
+/* =========================================================
+   CHAT LIST
+========================================================= */
 
-function renderSidebar() {
+function renderChats() {
 
-    const list =
-        document.getElementById(
-            "chatList"
-        );
-
-
-    if (!list) return;
-
-
-    list.innerHTML = "";
+    chatList.innerHTML = "";
 
 
     chats.forEach(
         chat => {
 
-            const button =
+            const item =
                 document.createElement(
                     "button"
                 );
 
 
-            button.className =
+            item.className =
                 "chat-item" +
                 (
                     chat.id ===
@@ -1099,26 +897,19 @@ function renderSidebar() {
                 );
 
 
-            button.innerHTML = `
-
-                <span class="chat-icon">
-                    ✦
-                </span>
-
+            item.innerHTML = `
+                <span class="chat-icon">✦</span>
                 <span class="chat-title"></span>
-
             `;
 
 
-            button
-                .querySelector(
-                    ".chat-title"
-                )
-                .textContent =
-                    chat.title;
+            item.querySelector(
+                ".chat-title"
+            ).textContent =
+                chat.title;
 
 
-            button.addEventListener(
+            item.addEventListener(
                 "click",
                 () => {
 
@@ -1128,16 +919,16 @@ function renderSidebar() {
                     currentChatId =
                         chat.id;
 
-                    saveData();
+                    saveChats();
 
-                    renderAll();
+                    render();
 
                 }
             );
 
 
-            list.appendChild(
-                button
+            chatList.appendChild(
+                item
             );
 
         }
@@ -1146,36 +937,47 @@ function renderSidebar() {
 }
 
 
-/* MESSAGES */
+/* =========================================================
+   MESSAGES
+========================================================= */
 
 function renderMessages() {
 
-    const area =
-        document.getElementById(
-            "messages"
-        );
-
-
-    if (!area) return;
-
-
-    area.innerHTML = "";
+    messages.innerHTML = "";
 
 
     const chat =
         getCurrentChat();
 
 
-    if (!chat) return;
+    if (!chat)
+        return;
 
 
     if (
         chat.messages.length === 0
     ) {
 
-        renderWelcome(
-            area
-        );
+        messages.innerHTML = `
+
+            <div class="welcome">
+
+                <div class="welcome-logo">
+                    Q
+                </div>
+
+                <h2>
+                    What can I help you with?
+                </h2>
+
+                <p>
+                    Ask QTM AI anything and start
+                    your next conversation.
+                </p>
+
+            </div>
+
+        `;
 
         return;
 
@@ -1212,7 +1014,7 @@ function renderMessages() {
 
 
             bubble.innerHTML =
-                formatText(
+                formatMessage(
                     message.content
                 );
 
@@ -1222,7 +1024,7 @@ function renderMessages() {
             );
 
 
-            area.appendChild(
+            messages.appendChild(
                 row
             );
 
@@ -1235,47 +1037,8 @@ function renderMessages() {
 }
 
 
-/* WELCOME */
-
-function renderWelcome(area) {
-
-    const welcome =
-        document.createElement(
-            "div"
-        );
-
-
-    welcome.className =
-        "welcome";
-
-
-    welcome.innerHTML = `
-
-        <div class="welcome-icon">
-            Q
-        </div>
-
-        <h1>
-            What can I help you with?
-        </h1>
-
-        <p>
-            Ask QTM AI anything and
-            start your next conversation.
-        </p>
-
-    `;
-
-
-    area.appendChild(
-        welcome
-    );
-
-}
-
-
 /* =========================================================
-   FORMAT
+   FORMAT MESSAGE
 ========================================================= */
 
 function escapeHTML(text) {
@@ -1305,7 +1068,7 @@ function escapeHTML(text) {
 }
 
 
-function formatText(text) {
+function formatMessage(text) {
 
     let value =
         escapeHTML(
@@ -1319,9 +1082,7 @@ function formatText(text) {
             (_, code) => {
 
                 return `
-                    <pre><code>
-                        ${code.trim()}
-                    </code></pre>
+                    <pre><code>${code.trim()}</code></pre>
                 `;
 
             }
@@ -1358,16 +1119,7 @@ function formatText(text) {
    LOADING
 ========================================================= */
 
-function showLoading() {
-
-    const area =
-        document.getElementById(
-            "messages"
-        );
-
-
-    if (!area) return null;
-
+function addLoading() {
 
     const row =
         document.createElement(
@@ -1392,7 +1144,7 @@ function showLoading() {
     `;
 
 
-    area.appendChild(
+    messages.appendChild(
         row
     );
 
@@ -1405,99 +1157,17 @@ function showLoading() {
 }
 
 
-function removeLoading(element) {
-
-    element?.remove();
-
-}
-
-
 /* =========================================================
-   UI STATE
+   SCROLL
 ========================================================= */
-
-function setGenerating(active) {
-
-    const button =
-        document.getElementById(
-            "sendBtn"
-        );
-
-
-    const input =
-        document.getElementById(
-            "messageInput"
-        );
-
-
-    if (button) {
-
-        button.disabled =
-            active;
-
-    }
-
-
-    if (input) {
-
-        input.disabled =
-            active;
-
-        input.placeholder =
-            active
-                ? "QTM AI is thinking..."
-                : "Ask QTM AI anything...";
-
-    }
-
-}
-
-
-/* =========================================================
-   HELPERS
-========================================================= */
-
-async function readJSON(
-    response
-) {
-
-    const text =
-        await response.text();
-
-
-    try {
-
-        return text
-            ? JSON.parse(text)
-            : {};
-
-    } catch {
-
-        throw new Error(
-            "Server returned invalid JSON."
-        );
-
-    }
-
-}
-
 
 function scrollBottom() {
-
-    const area =
-        document.getElementById(
-            "messages"
-        );
-
-
-    if (!area) return;
-
 
     requestAnimationFrame(
         () => {
 
-            area.scrollTop =
-                area.scrollHeight;
+            messages.scrollTop =
+                messages.scrollHeight;
 
         }
     );
@@ -1505,7 +1175,98 @@ function scrollBottom() {
 }
 
 
-function createAvatar(name) {
+/* =========================================================
+   LOGIN HELPERS
+========================================================= */
+
+function setLoginState(
+    loading
+) {
+
+    googleLogin.disabled =
+        loading;
+
+
+    googleLogin.style.opacity =
+        loading ? ".6" : "1";
+
+
+    googleLogin.innerHTML =
+        loading
+            ? "Signing in..."
+            : `
+                <span class="google-icon">G</span>
+                <span>Continue with Google</span>
+            `;
+
+}
+
+
+function showLoginError(
+    text
+) {
+
+    loginError.textContent =
+        text;
+
+}
+
+
+function clearLoginError() {
+
+    loginError.textContent =
+        "";
+
+}
+
+
+function getAuthError(
+    error
+) {
+
+    switch (
+        error?.code
+    ) {
+
+        case
+            "auth/popup-closed-by-user":
+
+            return "Google sign-in was cancelled.";
+
+        case
+            "auth/popup-blocked":
+
+            return "Your browser blocked the Google sign-in popup.";
+
+        case
+            "auth/unauthorized-domain":
+
+            return "This website is not authorized in Firebase Authentication.";
+
+        case
+            "auth/network-request-failed":
+
+            return "Network error. Check your internet connection.";
+
+        default:
+
+            return (
+                error?.message ||
+                "Google sign-in failed."
+            );
+
+    }
+
+}
+
+
+/* =========================================================
+   AVATAR
+========================================================= */
+
+function makeAvatar(
+    name
+) {
 
     const letter =
         encodeURIComponent(
@@ -1530,107 +1291,29 @@ function createAvatar(name) {
 
 
 /* =========================================================
-   LOGIN UI
-========================================================= */
-
-function setLoginLoading(
-    loading
-) {
-
-    const card =
-        document.querySelector(
-            ".login-card"
-        );
-
-
-    if (!card) return;
-
-
-    card.classList.toggle(
-        "loading-login",
-        loading
-    );
-
-}
-
-
-function showLoginError(
-    message
-) {
-
-    let error =
-        document.getElementById(
-            "loginError"
-        );
-
-
-    if (!error) {
-
-        error =
-            document.createElement(
-                "div"
-            );
-
-        error.id =
-            "loginError";
-
-        error.style.cssText = `
-            color:#ff9a9a;
-            font-size:11px;
-            margin-top:14px;
-            line-height:1.5;
-        `;
-
-
-        document
-            .querySelector(
-                ".google-area"
-            )
-            ?.after(error);
-
-    }
-
-
-    error.textContent =
-        message;
-
-}
-
-
-/* =========================================================
    DEBUG
 ========================================================= */
 
-window.QTM_AI = {
+window.QTM = {
 
-    api:
-        API_URL,
+    API,
 
-    chat:
-        CHAT_URL,
+    CHAT_API,
+
+    getUser:
+        () => currentUser,
 
     newChat:
-        createNewChat,
-
-    send:
-        sendMessage,
-
-    logout:
-        logout
+        createChat
 
 };
 
 
 console.log(
-    "QTM AI frontend loaded."
+    "QTM AI loaded."
 );
 
 console.log(
-    "Worker:",
-    API_URL
-);
-
-console.log(
-    "Chat:",
-    CHAT_URL
+    "QTM API:",
+    API
 );
