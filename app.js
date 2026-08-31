@@ -1,20 +1,7 @@
-/* =========================================================
-   LOGIC-LEAF AI
-   APP.JS
-   ========================================================= */
-
-const API_URL =
-    localStorage.getItem("logic_leaf_api_url") ||
-    "https://ck.qtmkiller6.workers.dev";
-
-
-/* =========================================================
-   ELEMENTS
-   ========================================================= */
+const API_URL = "https://ck.qtmkiller6.workers.dev";
 
 const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("overlay");
-
 const menuBtn = document.getElementById("menuBtn");
 const sidebarClose = document.getElementById("sidebarClose");
 
@@ -22,54 +9,29 @@ const newChatBtn = document.getElementById("newChatBtn");
 const newTopChat = document.getElementById("newTopChat");
 
 const searchBtn = document.getElementById("searchBtn");
+const topSearchBtn = document.getElementById("topSearchBtn");
 const helpBtn = document.getElementById("helpBtn");
 
 const loginBtn = document.getElementById("loginBtn");
 const profileButton = document.getElementById("profileButton");
 
-const messageInput =
-    document.getElementById("messageInput");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
 
-const sendBtn =
-    document.getElementById("sendBtn");
+const chatMessages = document.getElementById("chatMessages");
+const history = document.getElementById("history");
 
-const chatMessages =
-    document.getElementById("chatMessages");
+const attachmentBtn = document.getElementById("attachmentBtn");
+const cameraBtn = document.getElementById("cameraBtn");
+const imageBtn = document.getElementById("imageBtn");
+const fileInput = document.getElementById("fileInput");
 
-const history =
-    document.getElementById("history");
+const userName = document.getElementById("userName");
+const userStatus = document.getElementById("userStatus");
+const userAvatar = document.getElementById("userAvatar");
 
-const attachmentBtn =
-    document.getElementById("attachmentBtn");
-
-const cameraBtn =
-    document.getElementById("cameraBtn");
-
-const imageBtn =
-    document.getElementById("imageBtn");
-
-const fileInput =
-    document.getElementById("fileInput");
-
-const userName =
-    document.getElementById("userName");
-
-const userStatus =
-    document.getElementById("userStatus");
-
-const userAvatar =
-    document.getElementById("userAvatar");
-
-
-/* =========================================================
-   STATE
-   ========================================================= */
-
-let messages = [];
-
-let isSending = false;
-
-let currentChatId = null;
+let conversation = [];
+let sending = false;
 
 
 /* =========================================================
@@ -77,159 +39,64 @@ let currentChatId = null;
    ========================================================= */
 
 function openSidebar() {
-
-    if (!sidebar) return;
-
     sidebar.classList.add("open");
-
-    if (overlay) {
-        overlay.classList.add("active");
-    }
+    overlay.classList.add("active");
 }
-
 
 function closeSidebar() {
-
-    if (!sidebar) return;
-
     sidebar.classList.remove("open");
+    overlay.classList.remove("active");
+}
 
-    if (overlay) {
-        overlay.classList.remove("active");
+menuBtn?.addEventListener("click", openSidebar);
+sidebarClose?.addEventListener("click", closeSidebar);
+overlay?.addEventListener("click", closeSidebar);
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        closeSidebar();
     }
-}
-
-
-if (menuBtn) {
-    menuBtn.addEventListener("click", openSidebar);
-}
-
-
-if (sidebarClose) {
-    sidebarClose.addEventListener(
-        "click",
-        closeSidebar
-    );
-}
-
-
-if (overlay) {
-    overlay.addEventListener(
-        "click",
-        closeSidebar
-    );
-}
-
-
-/* =========================================================
-   NEW CHAT
-   ========================================================= */
-
-function createNewChat() {
-
-    messages = [];
-
-    currentChatId = Date.now();
-
-    if (chatMessages) {
-
-        chatMessages.innerHTML = "";
-
-        renderWelcome();
-
-    }
-
-    if (messageInput) {
-
-        messageInput.value = "";
-
-        autoResize();
-
-        messageInput.focus();
-
-    }
-
-    closeSidebar();
-
-}
-
-
-if (newChatBtn) {
-    newChatBtn.addEventListener(
-        "click",
-        createNewChat
-    );
-}
-
-
-if (newTopChat) {
-    newTopChat.addEventListener(
-        "click",
-        createNewChat
-    );
-}
+});
 
 
 /* =========================================================
    WELCOME SCREEN
    ========================================================= */
 
-function renderWelcome() {
-
-    if (!chatMessages) return;
-
+function showWelcome() {
     chatMessages.innerHTML = `
-
         <div class="welcome">
 
-            <div class="welcome-logo">
-                L
-            </div>
+            <div class="welcome-logo">L</div>
 
-            <h1>
-                How can I help you?
-            </h1>
+            <h1>How can I help you?</h1>
 
-            <p>
-                Ask LOGIC-LEAF AI anything.
-            </p>
+            <p>Ask LOGIC-LEAF AI anything.</p>
 
             <div class="suggestions">
 
                 <button
                     class="suggestion"
-                    type="button"
-                    data-prompt="Explain a topic to me simply"
+                    data-prompt="Explain this topic to me simply and clearly."
                 >
-
                     <div class="suggestion-icon">
                         <svg viewBox="0 0 24 24">
-                            <path d="M12 4v16"></path>
-                            <path d="M4 12h16"></path>
+                            <path d="M12 5v14"></path>
+                            <path d="M5 12h14"></path>
                         </svg>
                     </div>
 
                     <div class="suggestion-content">
-
-                        <strong>
-                            Explain something
-                        </strong>
-
-                        <span>
-                            Learn a topic step by step
-                        </span>
-
+                        <strong>Explain something</strong>
+                        <span>Learn a topic step by step</span>
                     </div>
-
                 </button>
 
 
                 <button
                     class="suggestion"
-                    type="button"
-                    data-prompt="Help me solve a problem step by step"
+                    data-prompt="Help me solve this problem step by step."
                 >
-
                     <div class="suggestion-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M5 12h14"></path>
@@ -238,26 +105,16 @@ function renderWelcome() {
                     </div>
 
                     <div class="suggestion-content">
-
-                        <strong>
-                            Solve a problem
-                        </strong>
-
-                        <span>
-                            Work through it together
-                        </span>
-
+                        <strong>Solve a problem</strong>
+                        <span>Work through it together</span>
                     </div>
-
                 </button>
 
 
                 <button
                     class="suggestion"
-                    type="button"
-                    data-prompt="Help me write code"
+                    data-prompt="Help me write and improve some code."
                 >
-
                     <div class="suggestion-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M8 8l-4 4 4 4"></path>
@@ -267,174 +124,90 @@ function renderWelcome() {
                     </div>
 
                     <div class="suggestion-content">
-
-                        <strong>
-                            Write code
-                        </strong>
-
-                        <span>
-                            Build and debug projects
-                        </span>
-
+                        <strong>Write code</strong>
+                        <span>Build and debug projects</span>
                     </div>
-
                 </button>
 
 
                 <button
                     class="suggestion"
-                    type="button"
-                    data-prompt="Give me ideas for a project"
+                    data-prompt="Give me creative ideas for a project."
                 >
-
                     <div class="suggestion-icon">
                         <svg viewBox="0 0 24 24">
                             <path d="M9 18h6"></path>
                             <path d="M10 21h4"></path>
-                            <path
-                                d="M8.5 14.5A6 6 0 1 1 15.5 14c-.9.8-1.5 1.8-1.5 3H10c0-1.2-.6-2.3-1.5-3.5z"
-                            ></path>
+                            <path d="M8.5 14.5a6 6 0 1 1 7 0"></path>
                         </svg>
                     </div>
 
                     <div class="suggestion-content">
-
-                        <strong>
-                            Brainstorm ideas
-                        </strong>
-
-                        <span>
-                            Explore projects and possibilities
-                        </span>
-
+                        <strong>Brainstorm ideas</strong>
+                        <span>Explore projects and possibilities</span>
                     </div>
-
                 </button>
 
             </div>
-
         </div>
-
     `;
 
-    attachSuggestionEvents();
-}
-
-
-/* =========================================================
-   SUGGESTIONS
-   ========================================================= */
-
-function attachSuggestionEvents() {
-
-    const suggestions =
-        document.querySelectorAll(
-            ".suggestion"
-        );
-
-    suggestions.forEach(button => {
-
-        button.addEventListener(
-            "click",
-            () => {
-
-                const prompt =
-                    button.dataset.prompt;
-
-                if (!prompt) return;
-
-                messageInput.value = prompt;
-
-                autoResize();
-
-                messageInput.focus();
-
-            }
-        );
-
+    document.querySelectorAll(".suggestion").forEach((button) => {
+        button.addEventListener("click", () => {
+            messageInput.value = button.dataset.prompt || "";
+            resizeInput();
+            messageInput.focus();
+        });
     });
-
 }
 
-
-/* =========================================================
-   INITIAL WELCOME
-   ========================================================= */
-
-renderWelcome();
+showWelcome();
 
 
 /* =========================================================
-   TEXTAREA AUTO RESIZE
+   TEXTAREA
    ========================================================= */
 
-function autoResize() {
-
-    if (!messageInput) return;
-
+function resizeInput() {
     messageInput.style.height = "auto";
 
-    const height =
-        Math.min(
-            messageInput.scrollHeight,
-            180
-        );
-
-    messageInput.style.height =
-        height + "px";
-
-}
-
-
-if (messageInput) {
-
-    messageInput.addEventListener(
-        "input",
-        autoResize
+    const height = Math.min(
+        messageInput.scrollHeight,
+        180
     );
 
+    messageInput.style.height = `${height}px`;
 }
+
+messageInput.addEventListener(
+    "input",
+    resizeInput
+);
 
 
 /* =========================================================
-   ENTER TO SEND
+   SEND
    ========================================================= */
 
-if (messageInput) {
+messageInput.addEventListener(
+    "keydown",
+    (event) => {
 
-    messageInput.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey
-            ) {
-
-                event.preventDefault();
-
-                sendMessage();
-
-            }
-
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+            event.preventDefault();
+            sendMessage();
         }
-    );
 
-}
+    }
+);
 
-
-/* =========================================================
-   SEND BUTTON
-   ========================================================= */
-
-if (sendBtn) {
-
-    sendBtn.addEventListener(
-        "click",
-        sendMessage
-    );
-
-}
+sendBtn.addEventListener(
+    "click",
+    sendMessage
+);
 
 
 /* =========================================================
@@ -443,159 +216,193 @@ if (sendBtn) {
 
 async function sendMessage() {
 
-    if (isSending) return;
+    if (sending) return;
 
-    const text =
-        messageInput.value.trim();
+    const text = messageInput.value.trim();
 
     if (!text) return;
 
-
-    isSending = true;
-
+    sending = true;
     sendBtn.disabled = true;
 
+    removeWelcome();
 
-    /* Remove welcome */
-
-    const welcome =
-        chatMessages.querySelector(
-            ".welcome"
-        );
-
-    if (welcome) {
-        welcome.remove();
-    }
-
-
-    /* Add user message */
-
-    addMessage(
-        "user",
-        text
-    );
-
+    addUserMessage(text);
 
     messageInput.value = "";
+    resizeInput();
 
-    autoResize();
-
-
-    /* Create assistant message */
-
-    const assistantElement =
-        addMessage(
-            "assistant",
-            "Thinking..."
-        );
-
+    const assistant = createAssistantMessage();
 
     try {
 
-        const response =
-            await callAPI(text);
+        const answer = await requestAI(text);
 
+        assistant.content.textContent =
+            answer || "The AI returned an empty response.";
 
-        const answer =
-            extractAnswer(response);
-
-
-        if (!answer) {
-
-            throw new Error(
-                "Empty response from AI"
-            );
-
-        }
-
-
-        updateMessage(
-            assistantElement,
-            answer
-        );
-
+        conversation.push({
+            role: "assistant",
+            content: answer
+        });
 
     } catch (error) {
 
-        console.error(
-            "LOGIC-LEAF AI error:",
-            error
-        );
+        console.error(error);
 
-
-        updateMessage(
-            assistantElement,
-            "LOGIC-LEAF AI could not connect right now. Please check your Worker URL and /v1/chat endpoint."
-        );
+        assistant.content.textContent =
+            "I couldn't get a response from LOGIC-LEAF AI. Please check the Worker /v1/chat endpoint.";
 
     } finally {
 
-        isSending = false;
-
+        sending = false;
         sendBtn.disabled = false;
 
+        scrollToBottom();
+
         messageInput.focus();
-
     }
-
 }
 
 
 /* =========================================================
-   CALL CLOUDFLARE WORKER
+   REMOVE WELCOME
    ========================================================= */
 
-async function callAPI(message) {
+function removeWelcome() {
 
-    if (
-        !API_URL ||
-        API_URL === "YOUR_WORKER_URL"
-    ) {
+    const welcome =
+        chatMessages.querySelector(".welcome");
 
-        throw new Error(
-            "Worker URL is not configured."
-        );
-
+    if (welcome) {
+        welcome.remove();
     }
+}
 
+
+/* =========================================================
+   USER MESSAGE
+   ========================================================= */
+
+function addUserMessage(text) {
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "message user-message";
+
+    const avatar =
+        document.createElement("div");
+
+    avatar.className =
+        "message-avatar";
+
+    avatar.textContent = "G";
+
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "message-content";
+
+    content.textContent = text;
+
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(content);
+
+    chatMessages.appendChild(wrapper);
+
+    conversation.push({
+        role: "user",
+        content: text
+    });
+
+    addHistory(text);
+
+    scrollToBottom();
+}
+
+
+/* =========================================================
+   ASSISTANT MESSAGE
+   ========================================================= */
+
+function createAssistantMessage() {
+
+    const wrapper =
+        document.createElement("div");
+
+    wrapper.className =
+        "message assistant-message";
+
+    const avatar =
+        document.createElement("div");
+
+    avatar.className =
+        "message-avatar";
+
+    avatar.textContent = "L";
+
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "message-content";
+
+    content.textContent =
+        "Thinking...";
+
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(content);
+
+    chatMessages.appendChild(wrapper);
+
+    scrollToBottom();
+
+    return {
+        wrapper,
+        content
+    };
+}
+
+
+/* =========================================================
+   REAL WORKER REQUEST
+   ========================================================= */
+
+async function requestAI(message) {
 
     const endpoint =
-        API_URL.replace(/\/+$/, "") +
-        "/v1/chat";
-
+        `${API_URL}/v1/chat`;
 
     const response =
         await fetch(
             endpoint,
             {
-
                 method: "POST",
 
                 headers: {
-                    "Content-Type":
-                        "application/json"
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
                 },
 
                 body: JSON.stringify({
-
                     message: message,
-
-                    messages: messages
-
+                    messages: conversation
                 })
-
             }
         );
 
 
-    const rawText =
+    const text =
         await response.text();
 
 
     if (!response.ok) {
 
         throw new Error(
-            `HTTP ${response.status}: ${rawText}`
+            `Worker error ${response.status}: ${text}`
         );
 
     }
@@ -605,120 +412,105 @@ async function callAPI(message) {
 
     try {
 
-        data =
-            JSON.parse(rawText);
+        data = JSON.parse(text);
 
     } catch {
 
         throw new Error(
-            "Worker returned non-JSON data."
+            "Worker did not return JSON."
         );
 
     }
 
 
-    return data;
-
+    return extractAIText(data);
 }
 
 
 /* =========================================================
-   EXTRACT AI ANSWER
+   RESPONSE PARSER
    ========================================================= */
 
-function extractAnswer(data) {
+function extractAIText(data) {
 
     if (!data) {
         return "";
     }
 
 
-    if (
-        typeof data === "string"
-    ) {
+    if (typeof data === "string") {
         return data;
     }
 
 
-    if (
-        typeof data.response ===
-        "string"
-    ) {
-        return data.response;
+    const possibleValues = [
+
+        data.response,
+
+        data.answer,
+
+        data.content,
+
+        data.message,
+
+        data.text,
+
+        data.output,
+
+        data.result?.response,
+
+        data.result?.answer,
+
+        data.result?.content,
+
+        data.result?.text,
+
+        data.result?.output,
+
+        data.result?.response?.text,
+
+        data.result?.content?.text
+
+    ];
+
+
+    for (const value of possibleValues) {
+
+        if (typeof value === "string" && value.trim()) {
+            return value;
+        }
+
     }
 
 
     if (
-        typeof data.answer ===
-        "string"
-    ) {
-        return data.answer;
-    }
-
-
-    if (
-        typeof data.message ===
-        "string"
-    ) {
-        return data.message;
-    }
-
-
-    if (
-        typeof data.content ===
-        "string"
-    ) {
-        return data.content;
-    }
-
-
-    if (
-        data.result &&
-        typeof data.result.response ===
-        "string"
-    ) {
-        return data.result.response;
-    }
-
-
-    if (
-        data.result &&
-        typeof data.result.answer ===
-        "string"
-    ) {
-        return data.result.answer;
-    }
-
-
-    if (
-        data.choices &&
-        data.choices[0]
+        Array.isArray(data.choices) &&
+        data.choices.length
     ) {
 
-        const choice =
-            data.choices[0];
-
+        const choice = data.choices[0];
 
         if (
-            choice.message &&
-            typeof choice.message.content ===
+            typeof choice?.message?.content ===
             "string"
         ) {
-
             return choice.message.content;
-
         }
-
 
         if (
-            typeof choice.text ===
+            typeof choice?.text ===
             "string"
         ) {
-
             return choice.text;
-
         }
+    }
 
+
+    if (
+        data.result &&
+        typeof data.result === "string"
+    ) {
+        return data.result;
     }
 
 
@@ -727,157 +519,13 @@ function extractAnswer(data) {
 
 
 /* =========================================================
-   ADD MESSAGE
+   HISTORY
    ========================================================= */
 
-function addMessage(
-    role,
-    text
-) {
-
-    const message =
-        document.createElement("div");
-
-
-    message.className =
-        "message " +
-        role +
-        "-message";
-
-
-    const avatar =
-        document.createElement("div");
-
-
-    avatar.className =
-        "message-avatar";
-
-
-    avatar.textContent =
-        role === "user"
-            ? "G"
-            : "L";
-
-
-    const content =
-        document.createElement("div");
-
-
-    content.className =
-        "message-content";
-
-
-    content.textContent =
-        text;
-
-
-    message.appendChild(
-        avatar
-    );
-
-
-    message.appendChild(
-        content
-    );
-
-
-    chatMessages.appendChild(
-        message
-    );
-
-
-    chatMessages.scrollTop =
-        chatMessages.scrollHeight;
-
-
-    messages.push({
-
-        role:
-            role === "user"
-                ? "user"
-                : "assistant",
-
-        content: text
-
-    });
-
-
-    if (role === "user") {
-
-        addHistoryItem(text);
-
-    }
-
-
-    return message;
-
-}
-
-
-/* =========================================================
-   UPDATE MESSAGE
-   ========================================================= */
-
-function updateMessage(
-    element,
-    text
-) {
-
-    if (!element) return;
-
-
-    const content =
-        element.querySelector(
-            ".message-content"
-        );
-
-
-    if (content) {
-
-        content.textContent =
-            text;
-
-    }
-
-
-    const index =
-        messages.length - 1;
-
-
-    if (
-        index >= 0 &&
-        messages[index].role ===
-            "assistant"
-    ) {
-
-        messages[index].content =
-            text;
-
-    }
-
-
-    chatMessages.scrollTop =
-        chatMessages.scrollHeight;
-
-}
-
-
-/* =========================================================
-   CHAT HISTORY
-   ========================================================= */
-
-function addHistoryItem(
-    text
-) {
-
-    if (!history) return;
-
+function addHistory(text) {
 
     const empty =
-        history.querySelector(
-            ".history-empty"
-        );
-
+        history.querySelector(".history-empty");
 
     if (empty) {
         empty.remove();
@@ -887,263 +535,264 @@ function addHistoryItem(
     const item =
         document.createElement("button");
 
-
+    item.type = "button";
     item.className =
         "sidebar-nav history-item";
-
-
-    item.type =
-        "button";
-
 
     const icon =
         document.createElement("span");
 
-
     icon.className =
         "history-item-icon";
 
-
-    icon.textContent =
-        "•";
+    icon.textContent = "•";
 
 
     const title =
         document.createElement("span");
 
-
     title.textContent =
-        text.length > 35
-            ? text.substring(0, 35) +
-              "..."
+        text.length > 38
+            ? `${text.slice(0, 38)}...`
             : text;
 
 
     item.appendChild(icon);
-
     item.appendChild(title);
 
-
     history.prepend(item);
-
 }
+
+
+/* =========================================================
+   NEW CHAT
+   ========================================================= */
+
+function newChat() {
+
+    conversation = [];
+
+    showWelcome();
+
+    messageInput.value = "";
+
+    resizeInput();
+
+    closeSidebar();
+
+    messageInput.focus();
+}
+
+
+newChatBtn.addEventListener(
+    "click",
+    newChat
+);
+
+
+newTopChat.addEventListener(
+    "click",
+    newChat
+);
 
 
 /* =========================================================
    SEARCH
    ========================================================= */
 
-if (searchBtn) {
+function searchChats() {
 
-    searchBtn.addEventListener(
-        "click",
-        () => {
+    const query =
+        prompt("Search your chats:");
 
-            const query =
-                prompt(
-                    "Search your conversations:"
+    if (!query) return;
+
+
+    const items =
+        history.querySelectorAll(
+            ".history-item"
+        );
+
+
+    items.forEach((item) => {
+
+        const matches =
+            item.textContent
+                .toLowerCase()
+                .includes(
+                    query.toLowerCase()
                 );
 
-
-            if (!query) return;
-
-
-            const items =
-                history.querySelectorAll(
-                    ".history-item"
-                );
-
-
-            items.forEach(item => {
-
-                const matches =
-                    item.textContent
-                        .toLowerCase()
-                        .includes(
-                            query.toLowerCase()
-                        );
-
-
-                item.style.display =
-                    matches
-                        ? "flex"
-                        : "none";
-
-            });
-
-        }
-    );
-
+        item.style.display =
+            matches ? "flex" : "none";
+    });
 }
+
+
+searchBtn.addEventListener(
+    "click",
+    searchChats
+);
+
+
+topSearchBtn.addEventListener(
+    "click",
+    searchChats
+);
 
 
 /* =========================================================
    HELP
    ========================================================= */
 
-if (helpBtn) {
+helpBtn.addEventListener(
+    "click",
+    () => {
 
-    helpBtn.addEventListener(
-        "click",
-        () => {
+        alert(
+            "LOGIC-LEAF AI\n\n" +
+            "AI assistant for questions, " +
+            "problem solving, coding, learning " +
+            "and creative work.\n\n" +
+            "Developer:\n" +
+            "V. CHENCHUKIRAN\n" +
+            "Cloud Security & DevSecOps"
+        );
 
-            alert(
-                "LOGIC-LEAF AI\n\n" +
-                "Ask questions, solve problems, " +
-                "write code and explore ideas.\n\n" +
-                "Developer:\n" +
-                "V. CHENCHUKIRAN\n" +
-                "Cloud Security & DevSecOps"
-            );
-
-        }
-    );
-
-}
+    }
+);
 
 
 /* =========================================================
-   ATTACHMENT
+   FILE BUTTON
    ========================================================= */
 
-if (attachmentBtn) {
-
-    attachmentBtn.addEventListener(
-        "click",
-        () => {
-
-            if (fileInput) {
-                fileInput.click();
-            }
-
-        }
-    );
-
-}
+attachmentBtn.addEventListener(
+    "click",
+    () => {
+        fileInput.click();
+    }
+);
 
 
-/* =========================================================
-   FILE SELECTED
-   ========================================================= */
+fileInput.addEventListener(
+    "change",
+    () => {
 
-if (fileInput) {
+        if (!fileInput.files.length) return;
 
-    fileInput.addEventListener(
-        "change",
-        () => {
+        const files =
+            Array.from(fileInput.files);
 
-            const file =
-                fileInput.files[0];
+        const names =
+            files
+                .map(file => file.name)
+                .join(", ");
 
-            if (!file) return;
+        messageInput.value =
+            `I uploaded: ${names}`;
 
-
-            messageInput.value =
-                `File selected: ${file.name}`;
-
-
-            autoResize();
-
-            messageInput.focus();
-
-        }
-    );
-
-}
+        resizeInput();
+        messageInput.focus();
+    }
+);
 
 
 /* =========================================================
    CAMERA
    ========================================================= */
 
-if (cameraBtn) {
+cameraBtn.addEventListener(
+    "click",
+    () => {
 
-    cameraBtn.addEventListener(
-        "click",
-        () => {
+        const cameraInput =
+            document.createElement("input");
 
-            alert(
-                "Camera input will be connected to LOGIC-LEAF AI in the next version."
-            );
+        cameraInput.type = "file";
+        cameraInput.accept =
+            "image/*";
+        cameraInput.capture =
+            "environment";
 
-        }
-    );
+        cameraInput.click();
 
-}
-
-
-/* =========================================================
-   IMAGE GENERATION
-   ========================================================= */
-
-if (imageBtn) {
-
-    imageBtn.addEventListener(
-        "click",
-        () => {
-
-            messageInput.value =
-                "Create an image of ";
-
-
-            autoResize();
-
-            messageInput.focus();
-
-        }
-    );
-
-}
+    }
+);
 
 
 /* =========================================================
-   GOOGLE LOGIN PLACEHOLDER
+   IMAGE REQUEST
    ========================================================= */
 
-function handleLogin() {
+imageBtn.addEventListener(
+    "click",
+    () => {
+
+        messageInput.value =
+            "Create an image of ";
+
+        resizeInput();
+
+        messageInput.focus();
+
+    }
+);
+
+
+/* =========================================================
+   GOOGLE ACCOUNT UI
+   ========================================================= */
+
+function login() {
 
     alert(
-        "Google Login is not connected yet.\n\n" +
-        "The interface is ready for Google authentication."
+        "Google sign-in is not connected yet.\n\n" +
+        "This button is intentionally kept as account UI " +
+        "until real Google OAuth credentials are configured."
     );
 
 }
 
 
-if (loginBtn) {
-
-    loginBtn.addEventListener(
-        "click",
-        handleLogin
-    );
-
-}
+loginBtn.addEventListener(
+    "click",
+    login
+);
 
 
-if (profileButton) {
+profileButton.addEventListener(
+    "click",
+    login
+);
 
-    profileButton.addEventListener(
-        "click",
-        handleLogin
-    );
+
+/* =========================================================
+   SCROLL
+   ========================================================= */
+
+function scrollToBottom() {
+
+    requestAnimationFrame(() => {
+
+        chatMessages.scrollTop =
+            chatMessages.scrollHeight;
+
+    });
 
 }
 
 
 /* =========================================================
-   MOBILE SIDEBAR
+   MOBILE
    ========================================================= */
 
 window.addEventListener(
     "resize",
     () => {
 
-        if (
-            window.innerWidth > 800
-        ) {
-
+        if (window.innerWidth > 700) {
             closeSidebar();
-
         }
 
     }
@@ -1151,118 +800,14 @@ window.addEventListener(
 
 
 /* =========================================================
-   KEYBOARD ESCAPE
-   ========================================================= */
-
-document.addEventListener(
-    "keydown",
-    event => {
-
-        if (
-            event.key === "Escape"
-        ) {
-
-            closeSidebar();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   LOAD SAVED USER
-   ========================================================= */
-
-function loadSavedUser() {
-
-    const savedUser =
-        localStorage.getItem(
-            "logic_leaf_user"
-        );
-
-
-    if (!savedUser) return;
-
-
-    try {
-
-        const user =
-            JSON.parse(savedUser);
-
-
-        if (user.name) {
-
-            userName.textContent =
-                user.name;
-
-        }
-
-
-        if (user.email) {
-
-            userStatus.textContent =
-                user.email;
-
-        }
-
-
-        if (user.picture) {
-
-            userAvatar.textContent =
-                "";
-
-            userAvatar.style.backgroundImage =
-                `url("${user.picture}")`;
-
-            userAvatar.style.backgroundSize =
-                "cover";
-
-            userAvatar.style.backgroundPosition =
-                "center";
-
-        }
-
-    } catch (error) {
-
-        console.error(
-            "Could not load user:",
-            error
-        );
-
-    }
-
-}
-
-
-loadSavedUser();
-
-
-/* =========================================================
-   INITIAL FOCUS
-   ========================================================= */
-
-if (messageInput) {
-
-    setTimeout(
-        () => {
-            messageInput.focus();
-        },
-        300
-    );
-
-}
-
-
-/* =========================================================
-   LOG
+   STARTUP
    ========================================================= */
 
 console.log(
-    "LOGIC-LEAF AI loaded."
+    "LOGIC-LEAF AI started."
 );
 
 console.log(
-    "API:",
+    "Worker:",
     API_URL
 );
