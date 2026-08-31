@@ -1076,3 +1076,82 @@ textarea:focus-visible {
         height: 40px;
     }
 }
+
+/* =====================================================
+   FINAL MOBILE FIXES
+   ===================================================== */
+
+.profile-button {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 36px !important;
+    height: 36px !important;
+
+    min-width: 36px !important;
+    max-width: 36px !important;
+
+    min-height: 36px !important;
+    max-height: 36px !important;
+
+    padding: 0 !important;
+    margin: 0 !important;
+
+    overflow: hidden !important;
+
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+
+    flex: 0 0 36px !important;
+}
+
+.profile-button img {
+    display: block !important;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    min-width: 100% !important;
+    max-width: 100% !important;
+
+    min-height: 100% !important;
+    max-height: 100% !important;
+
+    object-fit: cover !important;
+
+    border-radius: 50% !important;
+}
+
+@media (max-width: 760px) {
+
+    .profile-button {
+        width: 34px !important;
+        height: 34px !important;
+
+        min-width: 34px !important;
+        max-width: 34px !important;
+
+        min-height: 34px !important;
+        max-height: 34px !important;
+
+        flex-basis: 34px !important;
+    }
+
+    .profile-button img {
+        width: 34px !important;
+        height: 34px !important;
+    }
+
+    .sidebar {
+        z-index: 9999 !important;
+    }
+
+    .overlay {
+        z-index: 9998 !important;
+    }
+
+    .main {
+        z-index: 1;
+    }
+}
