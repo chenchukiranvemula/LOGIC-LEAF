@@ -3,264 +3,492 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0b0b0c">
+
+  <meta name="theme-color" content="#09090b">
+  <meta name="description" content="QTM AI - Intelligent AI Workspace">
+
   <title>QTM AI</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="app">
+  <!-- ==============================
+       APP
+  =============================== -->
+  <div id="app" class="app">
 
-  <div id="overlay" class="overlay"></div>
+    <!-- Mobile overlay -->
+    <div id="mobileOverlay" class="mobile-overlay"></div>
 
-  <!-- SIDEBAR -->
-  <aside id="sidebar" class="sidebar">
+    <!-- ==============================
+         SIDEBAR
+    =============================== -->
+    <aside id="sidebar" class="sidebar">
 
-    <div class="sidebar-top">
+      <div class="sidebar-top">
 
-      <div class="brand">
-        <div class="brand-symbol">Q</div>
-        <div>
-          <div class="brand-title">QTM AI</div>
-          <div class="brand-version">Intelligence workspace</div>
-        </div>
-      </div>
+        <!-- Brand -->
+        <div class="brand">
+          <div class="brand-logo">Q</div>
 
-      <button id="newChatBtn" class="new-chat">
-        <span class="plus">+</span>
-        <span>New chat</span>
-      </button>
-
-      <button id="searchBtn" class="side-btn">
-        <span class="side-icon">⌕</span>
-        <span>Search chats</span>
-        <kbd>/</kbd>
-      </button>
-
-      <div class="section-label">Recent</div>
-
-      <div id="chatHistory" class="chat-history">
-        <div class="history-empty">
-          Your conversations will appear here.
-        </div>
-      </div>
-
-    </div>
-
-    <div class="sidebar-bottom">
-
-      <button id="settingsBtn" class="side-btn">
-        <span class="side-icon">⚙</span>
-        <span>Settings</span>
-      </button>
-
-      <button id="googleLoginBtn" class="account">
-        <div id="accountAvatar" class="account-avatar">G</div>
-
-        <div class="account-text">
-          <strong id="accountName">Sign in</strong>
-          <small id="accountEmail">Google account</small>
+          <div class="brand-text">
+            <div class="brand-name">QTM AI</div>
+            <div class="brand-subtitle">Intelligent workspace</div>
+          </div>
         </div>
 
-        <span class="account-more">•••</span>
-      </button>
+        <!-- New Chat -->
+        <button id="newChatBtn" class="new-chat-btn" type="button">
+          <span class="plus">+</span>
+          <span>New chat</span>
+        </button>
 
-    </div>
+        <!-- Search -->
+        <button id="searchBtn" class="sidebar-button" type="button">
+          <span class="sidebar-icon">⌕</span>
+          <span>Search</span>
+          <span class="shortcut">/</span>
+        </button>
 
-  </aside>
+        <!-- Chat section -->
+        <div class="section-title">Your chats</div>
 
-
-  <!-- MAIN -->
-  <main class="main">
-
-    <header class="topbar">
-
-      <button id="menuBtn" class="mobile-menu">
-        ☰
-      </button>
-
-      <button id="modelButton" class="model-button">
-        <span>QTM AI</span>
-        <span class="arrow">⌄</span>
-      </button>
-
-      <div class="top-actions">
-        <button id="shareBtn" class="top-btn">Share</button>
-      </div>
-
-    </header>
-
-
-    <!-- CHAT -->
-    <section id="chatMessages" class="chat-area">
-
-      <div id="welcome" class="welcome">
-
-        <div class="welcome-orb">
-          <div class="orb-core">Q</div>
-        </div>
-
-        <h1>How can I help you?</h1>
-
-        <p>
-          Ask QTM AI anything. Learn, create, solve and explore.
-        </p>
-
-        <div class="suggestions">
-
-          <button onclick="useSuggestion('Explain this topic simply')">
-            <span class="card-title">Explain</span>
-            <span class="card-text">Understand difficult topics clearly.</span>
-          </button>
-
-          <button onclick="useSuggestion('Help me solve this problem step by step')">
-            <span class="card-title">Solve</span>
-            <span class="card-text">Work through a problem step by step.</span>
-          </button>
-
-          <button onclick="useSuggestion('Write code for me and explain it')">
-            <span class="card-title">Code</span>
-            <span class="card-text">Build and understand software.</span>
-          </button>
-
-          <button onclick="useSuggestion('Create a study plan for me')">
-            <span class="card-title">Study</span>
-            <span class="card-text">Create a focused learning plan.</span>
-          </button>
-
+        <div id="chatHistory" class="chat-history">
+          <div class="history-empty">
+            Your conversations will appear here.
+          </div>
         </div>
 
       </div>
 
-    </section>
+      <!-- Sidebar bottom -->
+      <div class="sidebar-bottom">
+
+        <!-- Settings -->
+        <button id="settingsBtn" class="sidebar-button" type="button">
+          <span class="sidebar-icon">⚙</span>
+          <span>Settings</span>
+        </button>
+
+        <!-- Account -->
+        <button id="accountBtn" class="account-button" type="button">
+
+          <div id="accountAvatar" class="account-avatar">
+            G
+          </div>
+
+          <div class="account-details">
+            <strong id="accountName">Sign in</strong>
+            <span id="accountEmail">Google account</span>
+          </div>
+
+          <span class="account-arrow">›</span>
+
+        </button>
+
+      </div>
+
+    </aside>
 
 
-    <!-- COMPOSER -->
-    <div class="composer-wrapper">
+    <!-- ==============================
+         MAIN
+    =============================== -->
+    <main class="main">
 
-      <div id="filePreview" class="file-preview"></div>
-
-      <form id="composer" class="composer">
+      <!-- Top bar -->
+      <header class="topbar">
 
         <button
-          id="attachBtn"
-          class="attach-btn"
+          id="menuBtn"
+          class="mobile-menu"
           type="button"
-          title="Attach file"
-        >
-          +
+          aria-label="Open menu">
+          ☰
         </button>
 
-        <input
-          id="fileInput"
-          type="file"
-          hidden
-          multiple
-        >
+        <button id="modelBtn" class="model-button" type="button">
 
-        <textarea
-          id="chatInput"
-          rows="1"
-          maxlength="12000"
-          placeholder="Message QTM AI"
-          autocomplete="off"
-        ></textarea>
+          <span class="online-dot"></span>
 
-        <button
-          id="sendBtn"
-          class="send-btn"
-          type="submit"
-        >
-          <span id="sendText">Send</span>
+          <span>QTM AI</span>
+
+          <span class="model-arrow">⌄</span>
+
         </button>
 
-      </form>
+        <div class="topbar-right">
 
-      <div class="composer-note">
-        QTM AI can make mistakes. Verify important information.
+          <button id="shareBtn" class="share-button" type="button">
+            Share
+          </button>
+
+        </div>
+
+      </header>
+
+
+      <!-- ==============================
+           CHAT AREA
+      =============================== -->
+      <section id="chatScroll" class="chat-scroll">
+
+        <div id="chatContent" class="chat-content">
+
+          <!-- Welcome screen -->
+          <div id="welcome" class="welcome">
+
+            <div class="welcome-logo">
+              <div class="welcome-logo-letter">Q</div>
+            </div>
+
+            <h1>What can I help you with?</h1>
+
+            <p>
+              Ask questions, solve problems, learn, code or create.
+            </p>
+
+
+            <!-- Quick prompts -->
+            <div class="prompt-grid">
+
+              <button
+                class="prompt-card"
+                type="button"
+                data-prompt="Explain this topic clearly and simply.">
+
+                <span class="prompt-title">
+                  Explain
+                </span>
+
+                <span class="prompt-description">
+                  Understand difficult ideas step by step.
+                </span>
+
+              </button>
+
+
+              <button
+                class="prompt-card"
+                type="button"
+                data-prompt="Help me solve this problem step by step and explain the reasoning.">
+
+                <span class="prompt-title">
+                  Solve
+                </span>
+
+                <span class="prompt-description">
+                  Work through problems carefully.
+                </span>
+
+              </button>
+
+
+              <button
+                class="prompt-card"
+                type="button"
+                data-prompt="Write clean and efficient code for me and explain how it works.">
+
+                <span class="prompt-title">
+                  Code
+                </span>
+
+                <span class="prompt-description">
+                  Build and debug your projects.
+                </span>
+
+              </button>
+
+
+              <button
+                class="prompt-card"
+                type="button"
+                data-prompt="Create a practical study plan for me.">
+
+                <span class="prompt-title">
+                  Study
+                </span>
+
+                <span class="prompt-description">
+                  Build a focused learning plan.
+                </span>
+
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <!-- Messages appear here -->
+          <div id="messages" class="messages"></div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ==============================
+           MESSAGE COMPOSER
+      =============================== -->
+      <div class="composer-area">
+
+        <!-- Selected files -->
+        <div
+          id="attachmentPreview"
+          class="attachment-preview">
+        </div>
+
+
+        <form id="composer" class="composer">
+
+          <!-- Attach -->
+          <button
+            id="attachBtn"
+            class="attach-button"
+            type="button"
+            aria-label="Attach files">
+            +
+          </button>
+
+          <input
+            id="fileInput"
+            type="file"
+            multiple
+            hidden>
+
+
+          <!-- Message input -->
+          <textarea
+            id="chatInput"
+            rows="1"
+            maxlength="12000"
+            placeholder="Message QTM AI"
+            autocomplete="off"
+            spellcheck="true"></textarea>
+
+
+          <!-- Send -->
+          <button
+            id="sendBtn"
+            class="send-button"
+            type="submit"
+            disabled>
+
+            <span id="sendLabel">
+              Send
+            </span>
+
+          </button>
+
+        </form>
+
+
+        <div class="composer-warning">
+          QTM AI can make mistakes. Check important information.
+        </div>
+
+      </div>
+
+    </main>
+
+
+    <!-- ==============================
+         SEARCH MODAL
+    =============================== -->
+    <div
+      id="searchModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true">
+
+      <div class="modal-card">
+
+        <div class="modal-header">
+
+          <div>
+            <div class="modal-title">
+              Search conversations
+            </div>
+
+            <div class="modal-subtitle">
+              Find a previous QTM AI conversation.
+            </div>
+          </div>
+
+          <button
+            class="modal-close"
+            type="button"
+            data-close="searchModal">
+            ×
+          </button>
+
+        </div>
+
+
+        <div class="search-input-box">
+
+          <span>⌕</span>
+
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Search chats..."
+            autocomplete="off">
+
+        </div>
+
+
+        <div
+          id="searchResults"
+          class="search-results">
+        </div>
+
       </div>
 
     </div>
 
-  </main>
+
+    <!-- ==============================
+         SETTINGS MODAL
+    =============================== -->
+    <div
+      id="settingsModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true">
+
+      <div class="modal-card settings-card">
+
+        <div class="modal-header">
+
+          <div>
+
+            <div class="modal-title">
+              Settings
+            </div>
+
+            <div class="modal-subtitle">
+              Manage your QTM AI account.
+            </div>
+
+          </div>
+
+          <button
+            class="modal-close"
+            type="button"
+            data-close="settingsModal">
+            ×
+          </button>
+
+        </div>
 
 
-  <!-- SEARCH -->
-  <div id="searchPanel" class="modal hidden">
+        <!-- Google -->
+        <div class="setting-row">
 
-    <div class="modal-box">
+          <div class="setting-info">
 
-      <div class="modal-header">
-        <strong>Search chats</strong>
+            <strong>
+              Google account
+            </strong>
 
-        <button id="closeSearchBtn">×</button>
+            <p id="settingsAccountText">
+              Not signed in.
+            </p>
+
+          </div>
+
+          <button
+            id="googleBtn"
+            class="primary-button"
+            type="button">
+
+            Continue with Google
+
+          </button>
+
+        </div>
+
+
+        <!-- Sign out -->
+        <div class="setting-row">
+
+          <div class="setting-info">
+
+            <strong>
+              Sign out
+            </strong>
+
+            <p>
+              Sign out of this QTM AI session.
+            </p>
+
+          </div>
+
+          <button
+            id="signOutBtn"
+            class="secondary-button"
+            type="button">
+
+            Sign out
+
+          </button>
+
+        </div>
+
+
+        <!-- Clear -->
+        <div class="setting-row">
+
+          <div class="setting-info">
+
+            <strong>
+              Local chat cache
+            </strong>
+
+            <p>
+              Remove conversations saved on this device.
+            </p>
+
+          </div>
+
+          <button
+            id="clearLocalBtn"
+            class="danger-button"
+            type="button">
+
+            Clear
+
+          </button>
+
+        </div>
+
       </div>
 
-      <div class="search-input-wrap">
-        <span>⌕</span>
+    </div>
 
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Search conversations..."
-        >
-      </div>
 
-      <div id="searchResults" class="search-results">
-        No conversations yet.
-      </div>
-
+    <!-- ==============================
+         TOAST
+    =============================== -->
+    <div
+      id="toast"
+      class="toast">
     </div>
 
   </div>
 
 
-  <!-- SETTINGS -->
-  <div id="settingsPanel" class="modal hidden">
-
-    <div class="modal-box settings-box">
-
-      <div class="modal-header">
-        <strong>Settings</strong>
-
-        <button id="closeSettingsBtn">×</button>
-      </div>
-
-      <div class="setting">
-
-        <div>
-          <strong>Account</strong>
-          <p>Connect your Google account.</p>
-        </div>
-
-        <button id="settingsGoogleBtn" class="google-btn">
-          Continue with Google
-        </button>
-
-      </div>
-
-      <div class="setting">
-
-        <div>
-          <strong>Conversation data</strong>
-          <p>Clear the current conversation.</p>
-        </div>
-
-        <button id="clearBtn" class="danger-btn">
-          Clear
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-</div>
-
-<script src="app.js"></script>
+  <!-- ==============================
+       JAVASCRIPT
+  =============================== -->
+  <script
+    type="module"
+    src="app.js">
+  </script>
 
 </body>
-              </html>
+  </html>
