@@ -1,1830 +1,1107 @@
 /* =========================================================
    QTM AI — APP.JS
-   Chat + Firebase Google Login + Local History
-========================================================= */
+   Frontend controller
+   Connected to:
+   https://ck.qtmkiller6.workers.dev
+   ========================================================= */
 
-import { initializeApp } from
-  "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+"use strict";
 
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged
-} from
-  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+/* =========================
+   CONFIG
+========================= */
 
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp
-} from
-  "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+const API_URL = "https://ck.qtmkiller6.workers.dev";
+const CHAT_ENDPOINT = `${API_URL}/v1/chat`;
 
-
-/* =========================================================
-   CONFIGURATION
-========================================================= */
-
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
-  authDomain: "logic-leaf.firebaseapp.com",
-  projectId: "logic-leaf",
-  storageBucket: "logic-leaf.firebasestorage.app",
-  messagingSenderId: "288673697563",
-  appId: "1:288673697563:web:c14d08452b01568d1c8dbe",
-  measurementId: "G-Z30K3K85LX"
+const STORAGE_KEYS = {
+    chats: "qtm_chats",
+    currentChat: "qtm_current_chat",
+    apiUrl: "qtm_api_url"
 };
 
 
-/*
-   CHANGE ONLY THIS VALUE.
+/* =========================
+   DOM HELPERS
+========================= */
 
-   Example:
-   https://ck.qtmkiller6.workers.dev
-   Do NOT add /api/chat here.
-*/
-const WORKER_URL =
-  "ck.qtmkiller6.workers.dev";
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => document.querySelectorAll(selector);
 
 
-/* =========================================================
-   FIREBASE
-========================================================= */
+/* =========================
+   STATE
+========================= */
 
-const firebaseApp =
-  initializeApp(FIREBASE_CONFIG);
+let chats = [];
+let currentChatId = null;
+let isGenerating = false;
 
-const auth =
-  getAuth(firebaseApp);
 
-const db =
-  getFirestore(firebaseApp);
+/* =========================
+   INITIALIZE
+========================= */
 
-const googleProvider =
-  new GoogleAuthProvider();
+document.addEventListener("DOMContentLoaded", () => {
 
-googleProvider.setCustomParameters({
-  prompt: "select_account"
+    loadChats();
+
+    setupInterface();
+
+    if (!currentChatId) {
+        createNewChat(false);
+    } else {
+        renderCurrentChat();
+    }
+
 });
 
 
-/* =========================================================
-   DOM
-========================================================= */
-
-const sidebar =
-  document.getElementById("sidebar");
-
-const mobileOverlay =
-  document.getElementById("mobileOverlay");
-
-const menuBtn =
-  document.getElementById("menuBtn");
-
-const newChatBtn =
-  document.getElementById("newChatBtn");
-
-const searchBtn =
-  document.getElementById("searchBtn");
-
-const settingsBtn =
-  document.getElementById("settingsBtn");
-
-const accountBtn =
-  document.getElementById("accountBtn");
-
-const googleBtn =
-  document.getElementById("googleBtn");
-
-const signOutBtn =
-  document.getElementById("signOutBtn");
-
-const clearLocalBtn =
-  document.getElementById("clearLocalBtn");
-
-const chatHistory =
-  document.getElementById("chatHistory");
-
-const chatScroll =
-  document.getElementById("chatScroll");
-
-const chatContent =
-  document.getElementById("chatContent");
-
-const welcome =
-  document.getElementById("welcome");
-
-const messages =
-  document.getElementById("messages");
-
-const composer =
-  document.getElementById("composer");
-
-const chatInput =
-  document.getElementById("chatInput");
-
-const sendBtn =
-  document.getElementById("sendBtn");
-
-const attachBtn =
-  document.getElementById("attachBtn");
-
-const fileInput =
-  document.getElementById("fileInput");
-
-const attachmentPreview =
-  document.getElementById("attachmentPreview");
-
-const searchModal =
-  document.getElementById("searchModal");
-
-const searchInput =
-  document.getElementById("searchInput");
-
-const searchResults =
-  document.getElementById("searchResults");
-
-const settingsModal =
-  document.getElementById("settingsModal");
-
-const accountAvatar =
-  document.getElementById("accountAvatar");
-
-const accountName =
-  document.getElementById("accountName");
-
-const accountEmail =
-  document.getElementById("accountEmail");
-
-const settingsAccountText =
-  document.getElementById("settingsAccountText");
-
-const toast =
-  document.getElementById("toast");
-
-
-/* =========================================================
-   STATE
-========================================================= */
-
-let currentUser = null;
-
-let sending = false;
-
-let unsubscribeChats = null;
-
-let selectedFiles = [];
-
-let localChats =
-  loadLocalChats();
-
-
-/* =========================================================
-   INITIAL STATE
-========================================================= */
-
-updateSendButton();
-
-renderLocalHistory();
-
-
-/* =========================================================
-   MOBILE SIDEBAR
-========================================================= */
-
-function openSidebar() {
-
-  sidebar.classList.add("open");
-
-  mobileOverlay.classList.add("show");
-}
-
-function closeSidebar() {
-
-  sidebar.classList.remove("open");
-
-  mobileOverlay.classList.remove("show");
-}
-
-menuBtn.addEventListener(
-  "click",
-  openSidebar
-);
-
-mobileOverlay.addEventListener(
-  "click",
-  closeSidebar
-);
-
-
-/* =========================================================
-   MODALS
-========================================================= */
-
-function openModal(modal) {
-
-  modal.classList.remove("hidden");
-}
-
-function closeModal(modal) {
-
-  modal.classList.add("hidden");
-}
-
-document
-  .querySelectorAll("[data-close]")
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        const id =
-          button.dataset.close;
-
-        const modal =
-          document.getElementById(id);
-
-        if (modal) {
-          closeModal(modal);
-        }
-      }
-    );
-
-  });
-
-
-searchBtn.addEventListener(
-  "click",
-  () => {
-
-    closeSidebar();
-
-    openModal(searchModal);
-
-    setTimeout(
-      () => searchInput.focus(),
-      50
-    );
-  }
-);
-
-
-settingsBtn.addEventListener(
-  "click",
-  () => {
-
-    closeSidebar();
-
-    updateSettingsAccount();
-
-    openModal(settingsModal);
-  }
-);
-
-
-accountBtn.addEventListener(
-  "click",
-  () => {
-
-    closeSidebar();
-
-    updateSettingsAccount();
-
-    openModal(settingsModal);
-  }
-);
-
-
-/* =========================================================
-   ESCAPE KEY
-========================================================= */
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if (event.key !== "Escape") {
-      return;
-    }
-
-    closeModal(searchModal);
-
-    closeModal(settingsModal);
-
-    closeSidebar();
-  }
-);
-
-
-/* =========================================================
-   GOOGLE LOGIN
-========================================================= */
-
-googleBtn.addEventListener(
-  "click",
-  async () => {
-
-    if (currentUser) {
-      showToast("Already signed in.");
-      return;
-    }
-
-    googleBtn.disabled = true;
-
-    googleBtn.textContent =
-      "Signing in...";
+/* =========================
+   STORAGE
+========================= */
+
+function loadChats() {
 
     try {
 
-      await signInWithPopup(
-        auth,
-        googleProvider
-      );
+        const saved = localStorage.getItem(STORAGE_KEYS.chats);
 
-      showToast(
-        "Google sign-in successful."
-      );
+        chats = saved ? JSON.parse(saved) : [];
 
-      closeModal(settingsModal);
+        const savedCurrent =
+            localStorage.getItem(STORAGE_KEYS.currentChat);
+
+        currentChatId = savedCurrent || null;
 
     } catch (error) {
 
-      console.error(
-        "Google login error:",
-        error
-      );
+        console.error("Storage error:", error);
 
-      showToast(
-        firebaseAuthError(error)
-      );
+        chats = [];
+        currentChatId = null;
 
-    } finally {
-
-      googleBtn.disabled = false;
-
-      googleBtn.textContent =
-        currentUser
-          ? "Signed in"
-          : "Continue with Google";
-    }
-  }
-);
-
-
-/* =========================================================
-   SIGN OUT
-========================================================= */
-
-signOutBtn.addEventListener(
-  "click",
-  async () => {
-
-    try {
-
-      await signOut(auth);
-
-      showToast("Signed out.");
-
-    } catch (error) {
-
-      console.error(error);
-
-      showToast(
-        "Could not sign out."
-      );
-    }
-  }
-);
-
-
-/* =========================================================
-   AUTH STATE
-========================================================= */
-
-onAuthStateChanged(
-  auth,
-  user => {
-
-    currentUser = user;
-
-    updateAccountUI();
-
-    updateSettingsAccount();
-
-    if (unsubscribeChats) {
-
-      unsubscribeChats();
-
-      unsubscribeChats = null;
     }
 
-    if (user) {
-
-      subscribeToCloudChats(user);
-
-    } else {
-
-      renderLocalHistory();
-    }
-  }
-);
-
-
-/* =========================================================
-   ACCOUNT UI
-========================================================= */
-
-function updateAccountUI() {
-
-  if (!currentUser) {
-
-    accountName.textContent =
-      "Sign in";
-
-    accountEmail.textContent =
-      "Google account";
-
-    accountAvatar.textContent =
-      "G";
-
-    accountAvatar.innerHTML =
-      "G";
-
-    googleBtn.textContent =
-      "Continue with Google";
-
-    return;
-  }
-
-  const name =
-    currentUser.displayName ||
-    "Google user";
-
-  const email =
-    currentUser.email ||
-    "";
-
-  accountName.textContent =
-    name;
-
-  accountEmail.textContent =
-    email;
-
-  settingsAccountText.textContent =
-    email
-      ? `Signed in as ${email}`
-      : "Google account connected.";
-
-  googleBtn.textContent =
-    "Signed in";
-
-  if (currentUser.photoURL) {
-
-    accountAvatar.innerHTML =
-      `<img src="${escapeAttribute(
-        currentUser.photoURL
-      )}" alt="">`;
-
-  } else {
-
-    accountAvatar.textContent =
-      getInitial(name);
-  }
 }
 
 
-function updateSettingsAccount() {
+function saveChats() {
 
-  if (!currentUser) {
+    localStorage.setItem(
+        STORAGE_KEYS.chats,
+        JSON.stringify(chats)
+    );
 
-    settingsAccountText.textContent =
-      "Not signed in.";
+    if (currentChatId) {
 
-    googleBtn.textContent =
-      "Continue with Google";
+        localStorage.setItem(
+            STORAGE_KEYS.currentChat,
+            currentChatId
+        );
 
-    return;
-  }
+    }
 
-  settingsAccountText.textContent =
-    currentUser.email
-      ? `Signed in as ${currentUser.email}`
-      : "Google account connected.";
-
-  googleBtn.textContent =
-    "Signed in";
 }
 
 
-/* =========================================================
+/* =========================
+   CHAT OBJECT
+========================= */
+
+function createChatObject() {
+
+    return {
+        id:
+            "chat_" +
+            Date.now() +
+            "_" +
+            Math.random()
+                .toString(36)
+                .substring(2, 8),
+
+        title: "New conversation",
+
+        createdAt: Date.now(),
+
+        messages: []
+    };
+
+}
+
+
+/* =========================
    NEW CHAT
-========================================================= */
+========================= */
 
-newChatBtn.addEventListener(
-  "click",
-  () => {
+function createNewChat(save = true) {
 
-    messages.innerHTML = "";
+    const chat = createChatObject();
 
-    welcome.style.display = "";
+    chats.unshift(chat);
 
-    chatInput.value = "";
+    currentChatId = chat.id;
 
-    selectedFiles = [];
-
-    renderAttachments();
-
-    updateSendButton();
-
-    chatInput.focus();
-
-    closeSidebar();
-
-    scrollToBottom();
-  }
-);
-
-
-/* =========================================================
-   QUICK PROMPTS
-========================================================= */
-
-document
-  .querySelectorAll(".prompt-card")
-  .forEach(card => {
-
-    card.addEventListener(
-      "click",
-      () => {
-
-        const prompt =
-          card.dataset.prompt || "";
-
-        chatInput.value =
-          prompt;
-
-        autoResize();
-
-        updateSendButton();
-
-        chatInput.focus();
-      }
-    );
-  });
-
-
-/* =========================================================
-   TEXT INPUT
-========================================================= */
-
-chatInput.addEventListener(
-  "input",
-  () => {
-
-    autoResize();
-
-    updateSendButton();
-  }
-);
-
-
-chatInput.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-
-      event.preventDefault();
-
-      if (!sending) {
-        composer.requestSubmit();
-      }
+    if (save) {
+        saveChats();
     }
-  }
-);
 
+    renderSidebar();
+    renderCurrentChat();
 
-/* =========================================================
-   AUTO RESIZE
-========================================================= */
-
-function autoResize() {
-
-  chatInput.style.height =
-    "auto";
-
-  chatInput.style.height =
-    Math.min(
-      chatInput.scrollHeight,
-      140
-    ) + "px";
 }
 
 
-/* =========================================================
-   SEND BUTTON
-========================================================= */
+/* =========================
+   CURRENT CHAT
+========================= */
 
-function updateSendButton() {
+function getCurrentChat() {
 
-  const hasText =
-    chatInput.value.trim().length > 0;
+    return chats.find(
+        chat => chat.id === currentChatId
+    );
 
-  sendBtn.disabled =
-    !hasText ||
-    sending;
 }
 
 
-/* =========================================================
+/* =========================
+   SETUP UI
+========================= */
+
+function setupInterface() {
+
+    /* New chat */
+
+    const newChatButtons = $$(
+        "#newChat, .new-chat, [data-action='new-chat']"
+    );
+
+    newChatButtons.forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            if (isGenerating) return;
+
+            createNewChat();
+
+        });
+
+    });
+
+
+    /* Send buttons */
+
+    const sendButtons = $$(
+        "#sendBtn, .send-btn, [data-action='send']"
+    );
+
+    sendButtons.forEach(button => {
+
+        button.addEventListener("click", sendCurrentMessage);
+
+    });
+
+
+    /* Textarea */
+
+    const input =
+        $("#messageInput") ||
+        $("#prompt") ||
+        $("textarea");
+
+
+    if (input) {
+
+        input.addEventListener("keydown", (event) => {
+
+            if (event.key === "Enter" && !event.shiftKey) {
+
+                event.preventDefault();
+
+                sendCurrentMessage();
+
+            }
+
+        });
+
+
+        input.addEventListener("input", () => {
+
+            autoResize(input);
+
+        });
+
+    }
+
+
+    renderSidebar();
+
+}
+
+
+/* =========================
    SEND MESSAGE
-========================================================= */
+========================= */
 
-composer.addEventListener(
-  "submit",
-  async event => {
+async function sendCurrentMessage() {
 
-    event.preventDefault();
+    if (isGenerating) return;
 
-    if (sending) {
-      return;
-    }
+    const input =
+        $("#messageInput") ||
+        $("#prompt") ||
+        $("textarea");
 
-    const message =
-      chatInput.value.trim();
+    if (!input) {
 
-    if (!message) {
-      return;
-    }
-
-    if (
-      !WORKER_URL ||
-      WORKER_URL.includes(
-        "ck.qtmkiller6.workers.dev"
-      )
-    ) {
-
-      showToast(
-        "Add your Cloudflare Worker URL in app.js."
-      );
-
-      return;
-    }
-
-    sending = true;
-
-    updateSendButton();
-
-    welcome.style.display =
-      "none";
-
-
-    /* User message */
-
-    addMessage(
-      "user",
-      message
-    );
-
-
-    chatInput.value = "";
-
-    autoResize();
-
-    updateSendButton();
-
-    scrollToBottom();
-
-
-    /* AI typing */
-
-    const typing =
-      addTypingMessage();
-
-
-    try {
-
-      const answer =
-        await askQtmAI(message);
-
-
-      typing.remove();
-
-
-      if (!answer) {
-
-        addMessage(
-          "error",
-          "QTM AI returned an empty response."
+        console.error(
+            "QTM AI: Message input not found."
         );
 
         return;
-      }
 
-
-      addMessage(
-        "assistant",
-        answer
-      );
-
-
-      saveLocalChat(
-        message,
-        answer
-      );
-
-
-      if (currentUser) {
-
-        await saveCloudChat(
-          message,
-          answer
-        );
-      }
-
-    } catch (error) {
-
-      console.error(
-        "QTM AI:",
-        error
-      );
-
-      typing.remove();
-
-      addMessage(
-        "error",
-        error.message ||
-        "QTM AI encountered a server error."
-      );
-
-    } finally {
-
-      sending = false;
-
-      updateSendButton();
-
-      scrollToBottom();
     }
-  }
-);
 
+    const message = input.value.trim();
 
-/* =========================================================
-   CLOUDFLARE AI REQUEST
-========================================================= */
+    if (!message) return;
 
-async function askQtmAI(message) {
+    const chat = getCurrentChat();
 
-  const endpoint =
-    WORKER_URL.replace(
-      /\/+$/,
-      ""
-    ) + "/api/chat";
+    if (!chat) return;
 
 
-  let response;
+    /* Clear input */
 
-  try {
+    input.value = "";
 
-    response =
-      await fetch(
-        endpoint,
-        {
-          method: "POST",
+    autoResize(input);
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
 
-          body: JSON.stringify({
-            message
-          })
-        }
-      );
+    /* Add user message */
 
-  } catch (error) {
+    chat.messages.push({
+        role: "user",
+        content: message,
+        timestamp: Date.now()
+    });
 
-    throw new Error(
-      "Could not connect to QTM AI."
-    );
-  }
 
+    /* Automatically create title */
 
-  const text =
-    await response.text();
+    if (
+        chat.title === "New conversation" ||
+        !chat.title
+    ) {
 
+        chat.title = createTitle(message);
 
-  let data;
-
-  try {
-
-    data =
-      JSON.parse(text);
-
-  } catch {
-
-    throw new Error(
-      `Server returned invalid JSON (${response.status}).`
-    );
-  }
-
-
-  if (!response.ok) {
-
-    throw new Error(
-      data?.detail ||
-      data?.error ||
-      `Server error ${response.status}.`
-    );
-  }
-
-
-  if (!data.ok) {
-
-    throw new Error(
-      data.error ||
-      "QTM AI request failed."
-    );
-  }
-
-
-  return (
-    data.response ||
-    data.answer ||
-    ""
-  );
-}
-
-
-/* =========================================================
-   MESSAGE RENDERING
-========================================================= */
-
-function addMessage(
-  role,
-  text
-) {
-
-  const wrapper =
-    document.createElement("div");
-
-  wrapper.className =
-    `message message-${role}`;
-
-
-  const row =
-    document.createElement("div");
-
-  row.className =
-    `message-row ${role}`;
-
-
-  if (role === "assistant") {
-
-    const avatar =
-      document.createElement("div");
-
-    avatar.className =
-      "message-avatar";
-
-    avatar.textContent =
-      "Q";
-
-    row.appendChild(
-      avatar
-    );
-  }
-
-
-  const body =
-    document.createElement("div");
-
-  body.className =
-    "message-body";
-
-
-  if (role === "assistant") {
-
-    body.innerHTML =
-      formatAIText(text);
-
-  } else {
-
-    body.textContent =
-      text;
-  }
-
-
-  row.appendChild(body);
-
-  wrapper.appendChild(row);
-
-  messages.appendChild(wrapper);
-
-  scrollToBottom();
-
-  return wrapper;
-}
-
-
-/* =========================================================
-   TYPING
-========================================================= */
-
-function addTypingMessage() {
-
-  const wrapper =
-    document.createElement("div");
-
-  wrapper.className =
-    "message";
-
-
-  const row =
-    document.createElement("div");
-
-  row.className =
-    "message-row";
-
-
-  const avatar =
-    document.createElement("div");
-
-  avatar.className =
-    "message-avatar";
-
-  avatar.textContent =
-    "Q";
-
-
-  const body =
-    document.createElement("div");
-
-  body.className =
-    "message-body";
-
-
-  const typing =
-    document.createElement("div");
-
-  typing.className =
-    "typing";
-
-  typing.innerHTML =
-    "<span></span><span></span><span></span>";
-
-
-  body.appendChild(
-    typing
-  );
-
-  row.appendChild(
-    avatar
-  );
-
-  row.appendChild(
-    body
-  );
-
-  wrapper.appendChild(
-    row
-  );
-
-  messages.appendChild(
-    wrapper
-  );
-
-  scrollToBottom();
-
-  return wrapper;
-}
-
-
-/* =========================================================
-   BASIC AI TEXT FORMATTER
-========================================================= */
-
-function formatAIText(text) {
-
-  let safe =
-    escapeHTML(text);
-
-
-  /*
-     Convert fenced code blocks.
-  */
-
-  safe =
-    safe.replace(
-      /```([\s\S]*?)```/g,
-      "<pre><code>$1</code></pre>"
-    );
-
-
-  /*
-     Convert bold.
-  */
-
-  safe =
-    safe.replace(
-      /\*\*(.*?)\*\*/g,
-      "<strong>$1</strong>"
-    );
-
-
-  /*
-     Convert line breaks outside code.
-  */
-
-  safe =
-    safe.replace(
-      /\n/g,
-      "<br>"
-    );
-
-
-  return safe;
-}
-
-
-/* =========================================================
-   SCROLL
-========================================================= */
-
-function scrollToBottom() {
-
-  requestAnimationFrame(
-    () => {
-
-      chatScroll.scrollTop =
-        chatScroll.scrollHeight;
-    }
-  );
-}
-
-
-/* =========================================================
-   FILE ATTACHMENT UI
-========================================================= */
-
-attachBtn.addEventListener(
-  "click",
-  () => {
-
-    fileInput.click();
-  }
-);
-
-
-fileInput.addEventListener(
-  "change",
-  () => {
-
-    selectedFiles =
-      Array.from(
-        fileInput.files || []
-      );
-
-    renderAttachments();
-  }
-);
-
-
-function renderAttachments() {
-
-  attachmentPreview.innerHTML =
-    "";
-
-  selectedFiles.forEach(
-    file => {
-
-      const chip =
-        document.createElement(
-          "div"
-        );
-
-      chip.className =
-        "attachment-chip";
-
-      chip.textContent =
-        file.name;
-
-      attachmentPreview.appendChild(
-        chip
-      );
-    }
-  );
-}
-
-
-/* =========================================================
-   LOCAL CHAT STORAGE
-========================================================= */
-
-function loadLocalChats() {
-
-  try {
-
-    const raw =
-      localStorage.getItem(
-        "qtm_ai_chats"
-      );
-
-    return raw
-      ? JSON.parse(raw)
-      : [];
-
-  } catch {
-
-    return [];
-  }
-}
-
-
-function saveLocalChat(
-  userMessage,
-  aiMessage
-) {
-
-  const item = {
-
-    id:
-      Date.now(),
-
-    title:
-      userMessage.slice(
-        0,
-        60
-      ),
-
-    userMessage,
-
-    aiMessage,
-
-    createdAt:
-      Date.now()
-  };
-
-
-  localChats.unshift(
-    item
-  );
-
-
-  localChats =
-    localChats.slice(
-      0,
-      50
-    );
-
-
-  try {
-
-    localStorage.setItem(
-      "qtm_ai_chats",
-      JSON.stringify(
-        localChats
-      )
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "Local storage unavailable:",
-      error
-    );
-  }
-
-
-  renderLocalHistory();
-}
-
-
-/* =========================================================
-   LOCAL HISTORY
-========================================================= */
-
-function renderLocalHistory() {
-
-  if (
-    currentUser
-  ) {
-    return;
-  }
-
-
-  if (!localChats.length) {
-
-    chatHistory.innerHTML =
-      `<div class="history-empty">
-        Your conversations will appear here.
-      </div>`;
-
-    return;
-  }
-
-
-  chatHistory.innerHTML =
-    "";
-
-
-  localChats.forEach(
-    chat => {
-
-      const button =
-        document.createElement(
-          "button"
-        );
-
-      button.className =
-        "history-item";
-
-      button.type =
-        "button";
-
-      button.textContent =
-        chat.title ||
-        "New conversation";
-
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          loadChat(
-            chat
-          );
-
-          closeSidebar();
-        }
-      );
-
-
-      chatHistory.appendChild(
-        button
-      );
-    }
-  );
-}
-
-
-/* =========================================================
-   LOAD CHAT
-========================================================= */
-
-function loadChat(chat) {
-
-  welcome.style.display =
-    "none";
-
-  messages.innerHTML =
-    "";
-
-
-  if (chat.userMessage) {
-
-    addMessage(
-      "user",
-      chat.userMessage
-    );
-  }
-
-
-  if (chat.aiMessage) {
-
-    addMessage(
-      "assistant",
-      chat.aiMessage
-    );
-  }
-
-
-  scrollToBottom();
-}
-
-
-/* =========================================================
-   FIRESTORE SAVE
-========================================================= */
-
-async function saveCloudChat(
-  userMessage,
-  aiMessage
-) {
-
-  if (!currentUser) {
-    return;
-  }
-
-
-  try {
-
-    await addDoc(
-      collection(
-        db,
-        "users",
-        currentUser.uid,
-        "chats"
-      ),
-      {
-        title:
-          userMessage.slice(
-            0,
-            60
-          ),
-
-        userMessage,
-
-        aiMessage,
-
-        createdAt:
-          serverTimestamp()
-      }
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "Cloud history save failed:",
-      error
-    );
-
-    /*
-       Chat still works even if
-       Firestore isn't configured.
-    */
-  }
-}
-
-
-/* =========================================================
-   FIRESTORE HISTORY
-========================================================= */
-
-function subscribeToCloudChats(
-  user
-) {
-
-  const chatsRef =
-    collection(
-      db,
-      "users",
-      user.uid,
-      "chats"
-    );
-
-
-  const chatsQuery =
-    query(
-      chatsRef,
-      orderBy(
-        "createdAt",
-        "desc"
-      )
-    );
-
-
-  unsubscribeChats =
-    onSnapshot(
-      chatsQuery,
-
-      snapshot => {
-
-        if (
-          snapshot.empty
-        ) {
-
-          chatHistory.innerHTML =
-            `<div class="history-empty">
-              No cloud conversations yet.
-            </div>`;
-
-          return;
-        }
-
-
-        chatHistory.innerHTML =
-          "";
-
-
-        snapshot.docs
-          .slice(0, 50)
-          .forEach(
-            docSnap => {
-
-              const data =
-                docSnap.data();
-
-
-              const button =
-                document.createElement(
-                  "button"
-                );
-
-              button.type =
-                "button";
-
-              button.className =
-                "history-item";
-
-              button.textContent =
-                data.title ||
-                "Conversation";
-
-
-              button.addEventListener(
-                "click",
-                () => {
-
-                  loadChat(
-                    data
-                  );
-
-                  closeSidebar();
-                }
-              );
-
-
-              chatHistory.appendChild(
-                button
-              );
-            }
-          );
-      },
-
-      error => {
-
-        console.warn(
-          "Firestore history error:",
-          error
-        );
-
-        renderLocalHistory();
-      }
-    );
-}
-
-
-/* =========================================================
-   SEARCH
-========================================================= */
-
-searchInput.addEventListener(
-  "input",
-  () => {
-
-    const term =
-      searchInput.value
-        .trim()
-        .toLowerCase();
-
-
-    if (!term) {
-
-      searchResults.innerHTML =
-        `<div class="search-empty">
-          Start typing to search your conversations.
-        </div>`;
-
-      return;
     }
 
 
-    const matches =
-      localChats.filter(
-        chat =>
-          String(
-            chat.title || ""
-          )
-            .toLowerCase()
-            .includes(term) ||
+    saveChats();
 
-          String(
-            chat.userMessage || ""
-          )
-            .toLowerCase()
-            .includes(term) ||
-
-          String(
-            chat.aiMessage || ""
-          )
-            .toLowerCase()
-            .includes(term)
-      );
+    renderCurrentChat();
+    renderSidebar();
 
 
-    if (!matches.length) {
+    /* Generate */
 
-      searchResults.innerHTML =
-        `<div class="search-empty">
-          No conversations found.
-        </div>`;
+    isGenerating = true;
 
-      return;
-    }
+    setGeneratingState(true);
 
-
-    searchResults.innerHTML =
-      "";
-
-
-    matches.forEach(
-      chat => {
-
-        const button =
-          document.createElement(
-            "button"
-          );
-
-        button.type =
-          "button";
-
-        button.className =
-          "history-item";
-
-        button.textContent =
-          chat.title;
-
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            closeModal(
-              searchModal
-            );
-
-            loadChat(
-              chat
-            );
-          }
-        );
-
-
-        searchResults.appendChild(
-          button
-        );
-      }
-    );
-  }
-);
-
-
-/* =========================================================
-   CLEAR LOCAL CACHE
-========================================================= */
-
-clearLocalBtn.addEventListener(
-  "click",
-  () => {
-
-    const confirmed =
-      window.confirm(
-        "Clear conversations saved on this device?"
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-
-    localChats = [];
-
-
-    localStorage.removeItem(
-      "qtm_ai_chats"
-    );
-
-
-    if (!currentUser) {
-      renderLocalHistory();
-    }
-
-
-    showToast(
-      "Local chat cache cleared."
-    );
-  }
-);
-
-
-/* =========================================================
-   SHARE
-========================================================= */
-
-shareBtn.addEventListener(
-  "click",
-  async () => {
-
-    const text =
-      "QTM AI — Intelligent AI Workspace";
+    const loadingId = addLoadingMessage();
 
 
     try {
 
-      if (
-        navigator.share
-      ) {
+        const reply = await requestQTM(message, chat);
 
-        await navigator.share({
-          title: "QTM AI",
-          text,
-          url: location.href
+        removeLoadingMessage(loadingId);
+
+        chat.messages.push({
+            role: "assistant",
+            content: reply,
+            timestamp: Date.now()
         });
 
-      } else if (
-        navigator.clipboard
-      ) {
+        saveChats();
 
-        await navigator.clipboard.writeText(
-          location.href
-        );
+        renderCurrentChat();
 
-        showToast(
-          "QTM AI link copied."
-        );
-      }
+        renderSidebar();
 
-    } catch {
-      /* User cancelled share. */
+    } catch (error) {
+
+        console.error(error);
+
+        removeLoadingMessage(loadingId);
+
+        const errorMessage =
+            getFriendlyError(error);
+
+        chat.messages.push({
+            role: "assistant",
+            content: errorMessage,
+            timestamp: Date.now(),
+            error: true
+        });
+
+        saveChats();
+
+        renderCurrentChat();
+
+    } finally {
+
+        isGenerating = false;
+
+        setGeneratingState(false);
+
     }
-  }
-);
+
+}
 
 
-/* =========================================================
-   TOAST
-========================================================= */
+/* =========================
+   API REQUEST
+========================= */
 
-let toastTimer = null;
+async function requestQTM(message, chat) {
 
-function showToast(
-  message
-) {
+    const controller = new AbortController();
 
-  toast.textContent =
-    message;
-
-  toast.classList.add(
-    "show"
-  );
+    const timeout = setTimeout(
+        () => controller.abort(),
+        60000
+    );
 
 
-  clearTimeout(
-    toastTimer
-  );
+    try {
 
+        const response = await fetch(
+            CHAT_ENDPOINT,
+            {
+                method: "POST",
 
-  toastTimer =
-    setTimeout(
-      () => {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
 
-        toast.classList.remove(
-          "show"
+                body: JSON.stringify({
+
+                    message: message,
+
+                    messages: chat.messages.map(item => ({
+                        role: item.role,
+                        content: item.content
+                    })),
+
+                    conversation_id: chat.id
+
+                }),
+
+                signal: controller.signal
+
+            }
         );
 
-      },
-      3000
+
+        const text = await response.text();
+
+        let data = null;
+
+        try {
+
+            data = text ? JSON.parse(text) : null;
+
+        } catch {
+
+            throw new Error(
+                "The QTM AI server returned an invalid response."
+            );
+
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data?.error ||
+                data?.message ||
+                `Server error ${response.status}`
+            );
+
+        }
+
+
+        return extractAssistantReply(data);
+
+    } finally {
+
+        clearTimeout(timeout);
+
+    }
+
+}
+
+
+/* =========================
+   RESPONSE PARSER
+========================= */
+
+function extractAssistantReply(data) {
+
+    if (!data) {
+
+        throw new Error(
+            "QTM AI returned an empty response."
+        );
+
+    }
+
+
+    /* Common response formats */
+
+    if (typeof data === "string") {
+        return data;
+    }
+
+
+    if (typeof data.response === "string") {
+        return data.response;
+    }
+
+
+    if (typeof data.reply === "string") {
+        return data.reply;
+    }
+
+
+    if (typeof data.message === "string") {
+        return data.message;
+    }
+
+
+    if (typeof data.answer === "string") {
+        return data.answer;
+    }
+
+
+    if (typeof data.content === "string") {
+        return data.content;
+    }
+
+
+    if (
+        data.result &&
+        typeof data.result === "string"
+    ) {
+        return data.result;
+    }
+
+
+    if (
+        data.result &&
+        typeof data.result.response === "string"
+    ) {
+        return data.result.response;
+    }
+
+
+    if (
+        data.result &&
+        typeof data.result.message === "string"
+    ) {
+        return data.result.message;
+    }
+
+
+    if (
+        data.choices &&
+        Array.isArray(data.choices) &&
+        data.choices.length
+    ) {
+
+        const choice = data.choices[0];
+
+        if (
+            choice.message &&
+            typeof choice.message.content === "string"
+        ) {
+
+            return choice.message.content;
+
+        }
+
+        if (typeof choice.text === "string") {
+
+            return choice.text;
+
+        }
+
+    }
+
+
+    throw new Error(
+        "QTM AI returned an unknown response format."
     );
+
 }
 
 
-/* =========================================================
-   HELPERS
-========================================================= */
+/* =========================
+   SIDEBAR
+========================= */
 
-function getInitial(
-  name
-) {
+function renderSidebar() {
 
-  return (
-    name
-      ?.trim()
-      ?.charAt(0)
-      ?.toUpperCase() ||
-    "G"
-  );
+    const container =
+        $("#chatList") ||
+        $(".chat-list") ||
+        $("#chats");
+
+
+    if (!container) return;
+
+
+    container.innerHTML = "";
+
+
+    chats.forEach(chat => {
+
+        const item = document.createElement("button");
+
+        item.className =
+            "chat-item" +
+            (
+                chat.id === currentChatId
+                    ? " active"
+                    : ""
+            );
+
+        item.type = "button";
+
+
+        const title =
+            chat.title ||
+            "New conversation";
+
+
+        item.innerHTML = `
+            <span class="chat-item-icon">✦</span>
+            <span class="chat-item-title"></span>
+        `;
+
+
+        const titleElement =
+            item.querySelector(
+                ".chat-item-title"
+            );
+
+        titleElement.textContent = title;
+
+
+        item.addEventListener("click", () => {
+
+            if (isGenerating) return;
+
+            currentChatId = chat.id;
+
+            saveChats();
+
+            renderSidebar();
+            renderCurrentChat();
+
+        });
+
+
+        container.appendChild(item);
+
+    });
+
 }
 
 
-function escapeHTML(
-  value
-) {
+/* =========================
+   CHAT RENDER
+========================= */
 
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
+function renderCurrentChat() {
+
+    const chat = getCurrentChat();
+
+    if (!chat) return;
+
+
+    const container =
+        $("#messages") ||
+        $("#chatMessages") ||
+        $(".messages") ||
+        $(".chat-messages");
+
+
+    if (!container) return;
+
+
+    container.innerHTML = "";
+
+
+    if (chat.messages.length === 0) {
+
+        renderWelcome(container);
+
+        return;
+
+    }
+
+
+    chat.messages.forEach(message => {
+
+        renderMessage(
+            container,
+            message
+        );
+
+    });
+
+
+    scrollToBottom();
+
+}
+
+
+/* =========================
+   WELCOME
+========================= */
+
+function renderWelcome(container) {
+
+    const welcome = document.createElement("div");
+
+    welcome.className = "qtm-welcome";
+
+    welcome.innerHTML = `
+        <div class="welcome-orb">
+            <span>Q</span>
+        </div>
+
+        <h1>What can I help you with?</h1>
+
+        <p>
+            Ask QTM AI anything. Start a conversation
+            and explore what you can create.
+        </p>
+    `;
+
+    container.appendChild(welcome);
+
+}
+
+
+/* =========================
+   RENDER MESSAGE
+========================= */
+
+function renderMessage(container, message) {
+
+    const wrapper =
+        document.createElement("div");
+
+
+    wrapper.className =
+        "message-row " +
+        (
+            message.role === "user"
+                ? "user-message"
+                : "assistant-message"
+        );
+
+
+    const bubble =
+        document.createElement("div");
+
+
+    bubble.className = "message-bubble";
+
+
+    if (message.error) {
+
+        bubble.classList.add(
+            "message-error"
+        );
+
+    }
+
+
+    bubble.innerHTML =
+        formatMessage(message.content);
+
+
+    wrapper.appendChild(bubble);
+
+    container.appendChild(wrapper);
+
+}
+
+
+/* =========================
+   MESSAGE FORMATTER
+========================= */
+
+function formatMessage(text) {
+
+    if (!text) return "";
+
+
+    let safe = escapeHTML(text);
+
+
+    /* Code blocks */
+
+    safe = safe.replace(
+        /```([\s\S]*?)```/g,
+        (match, code) => {
+
+            return `
+                <pre class="code-block">
+                    <code>${code.trim()}</code>
+                </pre>
+            `;
+
+        }
     );
-}
 
 
-function escapeAttribute(
-  value
-) {
+    /* Inline code */
 
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
+    safe = safe.replace(
+        /`([^`]+)`/g,
+        "<code>$1</code>"
     );
+
+
+    /* Bold */
+
+    safe = safe.replace(
+        /\*\*(.*?)\*\*/g,
+        "<strong>$1</strong>"
+    );
+
+
+    /* Italic */
+
+    safe = safe.replace(
+        /\*(.*?)\*/g,
+        "<em>$1</em>"
+    );
+
+
+    /* Line breaks */
+
+    safe = safe.replace(
+        /\n/g,
+        "<br>"
+    );
+
+
+    return safe;
+
 }
 
 
-function firebaseAuthError(
-  error
-) {
+/* =========================
+   ESCAPE HTML
+========================= */
 
-  const code =
-    error?.code || "";
+function escapeHTML(value) {
 
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
-  if (
-    code ===
-    "auth/popup-blocked"
-  ) {
-    return "Google sign-in popup was blocked.";
-  }
-
-
-  if (
-    code ===
-    "auth/popup-closed-by-user"
-  ) {
-    return "Google sign-in was cancelled.";
-  }
-
-
-  if (
-    code ===
-    "auth/unauthorized-domain"
-  ) {
-    return "This website domain is not authorized in Firebase.";
-  }
-
-
-  if (
-    code ===
-    "auth/operation-not-allowed"
-  ) {
-    return "Google Sign-In is not enabled in Firebase.";
-  }
-
-
-  return (
-    error?.message ||
-    "Google sign-in failed."
-  );
 }
 
 
-/* =========================================================
-   STARTUP
-========================================================= */
+/* =========================
+   LOADING MESSAGE
+========================= */
 
-chatInput.focus();
+function addLoadingMessage() {
 
-autoResize();
+    const container =
+        $("#messages") ||
+        $("#chatMessages") ||
+        $(".messages") ||
+        $(".chat-messages");
+
+
+    if (!container) return null;
+
+
+    const id =
+        "loading_" +
+        Date.now();
+
+
+    const element =
+        document.createElement("div");
+
+
+    element.id = id;
+
+    element.className =
+        "message-row assistant-message qtm-loading";
+
+
+    element.innerHTML = `
+        <div class="message-bubble loading-bubble">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    `;
+
+
+    container.appendChild(element);
+
+    scrollToBottom();
+
+
+    return id;
+
+}
+
+
+function removeLoadingMessage(id) {
+
+    if (!id) return;
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+
+        element.remove();
+
+    }
+
+}
+
+
+/* =========================
+   GENERATING STATE
+========================= */
+
+function setGeneratingState(active) {
+
+    const buttons = $$(
+        "#sendBtn, .send-btn, [data-action='send']"
+    );
+
+
+    buttons.forEach(button => {
+
+        button.disabled = active;
+
+        button.classList.toggle(
+            "generating",
+            active
+        );
+
+    });
+
+
+    const input =
+        $("#messageInput") ||
+        $("#prompt") ||
+        $("textarea");
+
+
+    if (input) {
+
+        input.disabled = active;
+
+        input.placeholder =
+            active
+                ? "QTM AI is thinking..."
+                : "Ask QTM AI anything...";
+
+    }
+
+}
+
+
+/* =========================
+   AUTO RESIZE
+========================= */
+
+function autoResize(element) {
+
+    element.style.height = "auto";
+
+    element.style.height =
+        Math.min(
+            element.scrollHeight,
+            180
+        ) + "px";
+
+}
+
+
+/* =========================
+   SCROLL
+========================= */
+
+function scrollToBottom() {
+
+    const container =
+        $("#messages") ||
+        $("#chatMessages") ||
+        $(".messages") ||
+        $(".chat-messages");
+
+
+    if (!container) return;
+
+
+    requestAnimationFrame(() => {
+
+        container.scrollTop =
+            container.scrollHeight;
+
+    });
+
+}
+
+
+/* =========================
+   CHAT TITLE
+========================= */
+
+function createTitle(message) {
+
+    let title =
+        message
+            .replace(/\s+/g, " ")
+            .trim();
+
+
+    if (title.length > 36) {
+
+        title =
+            title.substring(0, 36)
+            .trim() +
+            "…";
+
+    }
+
+
+    return title || "New conversation";
+
+}
+
+
+/* =========================
+   ERROR HANDLING
+========================= */
+
+function getFriendlyError(error) {
+
+    if (
+        error?.name ===
+        "AbortError"
+    ) {
+
+        return "QTM AI took too long to respond. Please try again.";
+
+    }
+
+
+    const message =
+        error?.message || "";
+
+
+    if (
+        message.includes(
+            "Failed to fetch"
+        )
+    ) {
+
+        return `
+QTM AI could not connect to the server.
+
+Please check that the Cloudflare Worker is online and that the /v1/chat endpoint is available.
+        `.trim();
+
+    }
+
+
+    return (
+        "QTM AI encountered an error: " +
+        message
+    );
+
+}
+
+
+/* =========================
+   GLOBAL API
+========================= */
+
+window.QTM = {
+
+    send: sendCurrentMessage,
+
+    newChat: createNewChat,
+
+    getCurrentChat,
+
+    getChats: () => chats,
+
+    clearChats: () => {
+
+        chats = [];
+
+        currentChatId = null;
+
+        localStorage.removeItem(
+            STORAGE_KEYS.chats
+        );
+
+        localStorage.removeItem(
+            STORAGE_KEYS.currentChat
+        );
+
+        createNewChat();
+
+    },
+
+    api: API_URL
+
+};
+
+
+/* =========================
+   DEBUG
+========================= */
 
 console.log(
-  "QTM AI frontend loaded."
+    "%c QTM AI ",
+    "font-weight:bold;font-size:18px"
+);
+
+console.log(
+    "Worker:",
+    API_URL
+);
+
+console.log(
+    "Chat endpoint:",
+    CHAT_ENDPOINT
 );
