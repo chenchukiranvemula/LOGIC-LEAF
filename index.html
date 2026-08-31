@@ -2,47 +2,86 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#050807">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#050807"
+    >
+
+    <meta
+        name="description"
+        content="LOGIC-LEAF AI — intelligent AI for learning, creating and problem solving."
+    >
 
     <title>LOGIC-LEAF AI</title>
 
+    <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
         rel="stylesheet"
     >
 
-    <link rel="stylesheet" href="style.css">
+    <!-- Main CSS -->
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
 </head>
+
 
 <body>
 
-    <!-- BACKGROUND -->
+    <!-- =====================================================
+         BACKGROUND
+         ===================================================== -->
 
-    <div class="background" aria-hidden="true">
+    <div
+        class="background"
+        aria-hidden="true"
+    >
+
         <div class="leaf-glow"></div>
+
         <div class="leaf"></div>
 
         <div class="particle particle-1"></div>
         <div class="particle particle-2"></div>
         <div class="particle particle-3"></div>
         <div class="particle particle-4"></div>
+
     </div>
 
 
-    <!-- APP -->
+    <!-- =====================================================
+         APPLICATION
+         ===================================================== -->
 
     <div class="app">
 
 
-        <!-- SIDEBAR -->
+        <!-- =================================================
+             SIDEBAR
+             ================================================= -->
 
-        <aside class="sidebar" id="sidebar">
+        <aside
+            class="sidebar"
+            id="sidebar"
+        >
 
             <div class="sidebar-top">
+
 
                 <!-- BRAND -->
 
@@ -53,8 +92,15 @@
                     </div>
 
                     <div class="brand-text">
-                        <strong>LOGIC-LEAF</strong>
-                        <span>AI</span>
+
+                        <strong>
+                            LOGIC-LEAF
+                        </strong>
+
+                        <span>
+                            AI
+                        </span>
+
                     </div>
 
                 </div>
@@ -67,13 +113,23 @@
                     id="newChatBtn"
                     type="button"
                 >
-                    <span class="new-chat-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M12 5v14M5 12h14"></path>
+
+                    <span class="new-chat-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path d="M12 5v14"></path>
+                            <path d="M5 12h14"></path>
                         </svg>
+
                     </span>
 
-                    <span>New chat</span>
+                    <span>
+                        New chat
+                    </span>
+
                 </button>
 
 
@@ -84,14 +140,19 @@
                 </div>
 
 
-                <!-- HISTORY -->
+                <!-- CHAT HISTORY -->
 
-                <div class="history" id="history">
+                <div
+                    class="history"
+                    id="history"
+                >
 
                     <div class="empty-history">
+
                         Your conversations
                         <br>
                         will appear here.
+
                     </div>
 
                 </div>
@@ -99,42 +160,92 @@
             </div>
 
 
-            <!-- SIDEBAR BOTTOM -->
+            <!-- =================================================
+                 SIDEBAR BOTTOM
+                 ================================================= -->
 
             <div class="sidebar-bottom">
 
-                <button
-                    class="side-item"
-                    type="button"
-                >
-                    <span class="side-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path>
-                            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.9 1.9-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56v.09h-2.68V20a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.9-1.9.06-.06A1.7 1.7 0 0 0 7.8 15a1.7 1.7 0 0 0-1.56-1.03h-.09v-2.68h.09A1.7 1.7 0 0 0 7.8 10a1.7 1.7 0 0 0-.34-1.88L7.4 8.06l1.9-1.9.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56v-.09h2.68V5a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.9 1.9-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.56 1.03h.09v2.68h-.09A1.7 1.7 0 0 0 19.4 15Z"></path>
-                        </svg>
-                    </span>
 
-                    <span>Settings</span>
-                </button>
-
+                <!-- SETTINGS -->
 
                 <button
                     class="side-item"
                     type="button"
+                    id="settingsBtn"
                 >
-                    <span class="side-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <path d="M9.6 9a2.5 2.5 0 1 1 4.5 1.5c-.7.9-2.1 1.2-2.1 2.5"></path>
-                            <path d="M12 16.5h.01"></path>
+
+                    <span class="side-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="3.2"
+                            ></circle>
+
+                            <path
+                                d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.1h-2.6v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1A1.7 1.7 0 0 0 7.4 15a1.7 1.7 0 0 0-1.5-1H5.8v-2.6h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L7 8.4l1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5v-.1h2.6v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1V14h-.1a1.7 1.7 0 0 0-1.5 1Z"
+                            ></path>
+
                         </svg>
+
                     </span>
 
-                    <span>Help</span>
+                    <span>
+                        Settings
+                    </span>
+
                 </button>
 
 
-                <!-- DEVELOPER -->
+                <!-- HELP -->
+
+                <button
+                    class="side-item"
+                    type="button"
+                    id="helpBtn"
+                >
+
+                    <span class="side-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="9"
+                            ></circle>
+
+                            <path
+                                d="M9.7 9.2a2.5 2.5 0 1 1 4.4 1.6c-.7.8-2 1.1-2 2.3"
+                            ></path>
+
+                            <path
+                                d="M12 16.5h.01"
+                            ></path>
+
+                        </svg>
+
+                    </span>
+
+                    <span>
+                        Help
+                    </span>
+
+                </button>
+
+
+                <!-- =================================================
+                     DEVELOPER
+                     ================================================= -->
 
                 <div class="developer-card">
 
@@ -157,12 +268,14 @@
                 </div>
 
 
-                <!-- ACCOUNT -->
+                <!-- =================================================
+                     GOOGLE ACCOUNT
+                     ================================================= -->
 
                 <button
                     class="account"
-                    type="button"
                     id="loginBtn"
+                    type="button"
                 >
 
                     <div class="account-avatar">
@@ -181,13 +294,15 @@
 
                     </div>
 
-                    <span
-                        class="account-arrow"
-                        aria-hidden="true"
-                    >
-                        <svg viewBox="0 0 24 24">
+                    <span class="account-arrow">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
                             <path d="m9 18 6-6-6-6"></path>
                         </svg>
+
                     </span>
 
                 </button>
@@ -197,24 +312,34 @@
         </aside>
 
 
-        <!-- MAIN -->
+        <!-- =====================================================
+             MAIN
+             ===================================================== -->
 
         <main class="main">
 
 
-            <!-- TOPBAR -->
+            <!-- =================================================
+                 TOP BAR
+                 ================================================= -->
 
             <header class="topbar">
+
+
+                <!-- MOBILE MENU -->
 
                 <button
                     class="menu-btn"
                     id="menuBtn"
                     type="button"
                     aria-label="Open menu"
+                    aria-controls="sidebar"
                 >
+
                     <span></span>
                     <span></span>
                     <span></span>
+
                 </button>
 
 
@@ -227,49 +352,91 @@
                     </div>
 
                     <div>
-                        <strong>LOGIC-LEAF</strong>
-                        <span>AI</span>
+
+                        <strong>
+                            LOGIC-LEAF
+                        </strong>
+
+                        <span>
+                            AI
+                        </span>
+
                     </div>
 
                 </div>
 
 
-                <!-- RIGHT -->
+                <!-- TOP RIGHT -->
 
                 <div class="topbar-right">
 
+
+                    <!-- SEARCH -->
+
                     <button
                         class="top-icon"
+                        id="searchBtn"
                         type="button"
                         title="Search"
                         aria-label="Search"
                     >
-                        <svg viewBox="0 0 24 24">
-                            <circle cx="11" cy="11" r="6.5"></circle>
-                            <path d="m16 16 5 5"></path>
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <circle
+                                cx="11"
+                                cy="11"
+                                r="6.5"
+                            ></circle>
+
+                            <path
+                                d="m16 16 5 5"
+                            ></path>
+
                         </svg>
+
                     </button>
 
 
+                    <!-- NOTIFICATIONS -->
+
                     <button
                         class="top-icon"
+                        id="notificationBtn"
                         type="button"
                         title="Notifications"
                         aria-label="Notifications"
                     >
-                        <svg viewBox="0 0 24 24">
-                            <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
-                            <path d="M10 21h4"></path>
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+
+                            <path
+                                d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"
+                            ></path>
+
+                            <path
+                                d="M10 21h4"
+                            ></path>
+
                         </svg>
+
                     </button>
 
 
+                    <!-- PROFILE -->
+
                     <button
                         class="profile-button"
+                        id="profileButton"
                         type="button"
                         title="Google Login"
                         aria-label="Google Login"
-                        id="profileButton"
                     >
                         G
                     </button>
@@ -279,12 +446,16 @@
             </header>
 
 
-            <!-- CHAT -->
+            <!-- =================================================
+                 CHAT MESSAGES
+                 ================================================= -->
 
             <section
                 class="chat-messages"
                 id="chatMessages"
+                aria-live="polite"
             >
+
 
                 <!-- WELCOME -->
 
@@ -312,11 +483,17 @@
             </section>
 
 
-            <!-- COMPOSER -->
+            <!-- =================================================
+                 COMPOSER
+                 ================================================= -->
 
             <div class="composer-area">
 
+
                 <div class="composer">
+
+
+                    <!-- MESSAGE INPUT -->
 
                     <textarea
                         id="messageInput"
@@ -324,17 +501,21 @@
                         rows="1"
                         autocomplete="off"
                         spellcheck="true"
+                        aria-label="Message LOGIC-LEAF AI"
                     ></textarea>
 
+
+                    <!-- COMPOSER BOTTOM -->
 
                     <div class="composer-bottom">
 
 
-                        <!-- TOOLS -->
+                        <!-- LEFT TOOLS -->
 
                         <div class="composer-tools">
 
-                            <!-- ATTACHMENT -->
+
+                            <!-- ATTACH -->
 
                             <button
                                 class="tool-btn"
@@ -343,9 +524,18 @@
                                 title="Attach file"
                                 aria-label="Attach file"
                             >
-                                <svg viewBox="0 0 24 24">
-                                    <path d="m20.5 11.5-8.7 8.7a6 6 0 0 1-8.5-8.5l9.1-9.1a4 4 0 0 1 5.7 5.7l-9.1 9.1a2 2 0 1 1-2.8-2.8l8.4-8.4"></path>
+
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+
+                                    <path
+                                        d="m20.5 11.5-8.7 8.7a6 6 0 0 1-8.5-8.5l9.1-9.1a4 4 0 0 1 5.7 5.7l-9.1 9.1a2 2 0 1 1-2.8-2.8l8.4-8.4"
+                                    ></path>
+
                                 </svg>
+
                             </button>
 
 
@@ -358,10 +548,24 @@
                                 title="Camera"
                                 aria-label="Camera"
                             >
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M4 7h4l1.5-2h5L16 7h4v12H4Z"></path>
-                                    <circle cx="12" cy="13" r="3.5"></circle>
+
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+
+                                    <path
+                                        d="M4 7h4l1.5-2h5L16 7h4v12H4Z"
+                                    ></path>
+
+                                    <circle
+                                        cx="12"
+                                        cy="13"
+                                        r="3.5"
+                                    ></circle>
+
                                 </svg>
+
                             </button>
 
 
@@ -374,12 +578,34 @@
                                 title="Create image"
                                 aria-label="Create image"
                             >
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M12 3v18M3 12h18"></path>
-                                    <path d="m5.5 5.5 13 13M18.5 5.5l-13 13"></path>
+
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+
+                                    <path
+                                        d="M12 3v18"
+                                    ></path>
+
+                                    <path
+                                        d="M3 12h18"
+                                    ></path>
+
+                                    <path
+                                        d="m5.5 5.5 13 13"
+                                    ></path>
+
+                                    <path
+                                        d="m18.5 5.5-13 13"
+                                    ></path>
+
                                 </svg>
+
                             </button>
 
+
+                            <!-- FILE INPUT -->
 
                             <input
                                 type="file"
@@ -390,14 +616,17 @@
                         </div>
 
 
-                        <!-- ACTIONS -->
+                        <!-- RIGHT ACTIONS -->
 
                         <div class="composer-actions">
+
 
                             <span class="shortcut">
                                 Enter ↵
                             </span>
 
+
+                            <!-- SEND -->
 
                             <button
                                 class="send-btn"
@@ -406,10 +635,22 @@
                                 title="Send message"
                                 aria-label="Send message"
                             >
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M12 19V5"></path>
-                                    <path d="m6 11 6-6 6 6"></path>
+
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+
+                                    <path
+                                        d="M12 19V5"
+                                    ></path>
+
+                                    <path
+                                        d="m6 11 6-6 6 6"
+                                    ></path>
+
                                 </svg>
+
                             </button>
 
                         </div>
@@ -418,6 +659,8 @@
 
                 </div>
 
+
+                <!-- DISCLAIMER -->
 
                 <p class="disclaimer">
                     LOGIC-LEAF AI may make mistakes.
@@ -431,7 +674,9 @@
     </div>
 
 
-    <!-- MOBILE OVERLAY -->
+    <!-- =====================================================
+         MOBILE OVERLAY
+         ===================================================== -->
 
     <div
         class="overlay"
@@ -439,7 +684,9 @@
     ></div>
 
 
-    <!-- APP -->
+    <!-- =====================================================
+         JAVASCRIPT
+         ===================================================== -->
 
     <script
         type="module"
