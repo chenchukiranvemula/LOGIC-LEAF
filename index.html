@@ -2,24 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
-    
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#050807">
 
-    <title>QTM AI</title>
+    <title>LOGIC-LEAF AI</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-
-    <link
-        rel="preconnect"
-        href="https://fonts.gstatic.com"
-        crossorigin
-    >
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
@@ -31,55 +20,41 @@
 
 <body>
 
-    <!-- ================= BACKGROUND ================= -->
+    <!-- BACKGROUND -->
 
-    <div class="background">
-
+    <div class="background" aria-hidden="true">
         <div class="leaf-glow"></div>
-
         <div class="leaf"></div>
 
         <div class="particle particle-1"></div>
         <div class="particle particle-2"></div>
         <div class="particle particle-3"></div>
         <div class="particle particle-4"></div>
-
     </div>
 
 
-    <!-- ================= APP ================= -->
+    <!-- APP -->
 
     <div class="app">
 
 
-        <!-- ================= SIDEBAR ================= -->
+        <!-- SIDEBAR -->
 
-        <aside
-            class="sidebar"
-            id="sidebar"
-        >
+        <aside class="sidebar" id="sidebar">
 
             <div class="sidebar-top">
-
 
                 <!-- BRAND -->
 
                 <div class="brand">
 
                     <div class="brand-logo">
-                        Q
+                        L
                     </div>
 
                     <div class="brand-text">
-
-                        <strong>
-                            QTM AI
-                        </strong>
-
-                        <span>
-                            Intelligence redefined
-                        </span>
-
+                        <strong>LOGIC-LEAF</strong>
+                        <span>AI</span>
                     </div>
 
                 </div>
@@ -92,15 +67,13 @@
                     id="newChatBtn"
                     type="button"
                 >
-
-                    <span class="new-chat-icon">
-                        ＋
+                    <span class="new-chat-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
                     </span>
 
-                    <span>
-                        New chat
-                    </span>
-
+                    <span>New chat</span>
                 </button>
 
 
@@ -113,18 +86,12 @@
 
                 <!-- HISTORY -->
 
-                <div
-                    class="history"
-                    id="history"
-                >
+                <div class="history" id="history">
 
                     <div class="empty-history">
-
                         Your conversations
                         <br>
-
                         will appear here.
-
                     </div>
 
                 </div>
@@ -136,18 +103,18 @@
 
             <div class="sidebar-bottom">
 
-
                 <button
                     class="side-item"
                     type="button"
                 >
-
-                    <span>⚙</span>
-
-                    <span>
-                        Settings
+                    <span class="side-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path>
+                            <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.9 1.9-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56v.09h-2.68V20a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.9-1.9.06-.06A1.7 1.7 0 0 0 7.8 15a1.7 1.7 0 0 0-1.56-1.03h-.09v-2.68h.09A1.7 1.7 0 0 0 7.8 10a1.7 1.7 0 0 0-.34-1.88L7.4 8.06l1.9-1.9.06.06a1.7 1.7 0 0 0 1.88.34 1.7 1.7 0 0 0 1.03-1.56v-.09h2.68V5a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.9 1.9-.06.06A1.7 1.7 0 0 0 19.4 10a1.7 1.7 0 0 0 1.56 1.03h.09v2.68h-.09A1.7 1.7 0 0 0 19.4 15Z"></path>
+                        </svg>
                     </span>
 
+                    <span>Settings</span>
                 </button>
 
 
@@ -155,19 +122,48 @@
                     class="side-item"
                     type="button"
                 >
-
-                    <span>?</span>
-
-                    <span>
-                        Help
+                    <span class="side-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <path d="M9.6 9a2.5 2.5 0 1 1 4.5 1.5c-.7.9-2.1 1.2-2.1 2.5"></path>
+                            <path d="M12 16.5h.01"></path>
+                        </svg>
                     </span>
 
+                    <span>Help</span>
                 </button>
 
 
-                <!-- GOOGLE ACCOUNT -->
+                <!-- DEVELOPER -->
 
-                <div class="account">
+                <div class="developer-card">
+
+                    <div class="developer-mark">
+                        VC
+                    </div>
+
+                    <div class="developer-info">
+
+                        <strong>
+                            V. CHENCHUKIRAN
+                        </strong>
+
+                        <span>
+                            Cloud Security &amp; DevSecOps Developer
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ACCOUNT -->
+
+                <button
+                    class="account"
+                    type="button"
+                    id="loginBtn"
+                >
 
                     <div class="account-avatar">
                         G
@@ -185,28 +181,30 @@
 
                     </div>
 
-                    <span class="account-arrow">
-                        ›
+                    <span
+                        class="account-arrow"
+                        aria-hidden="true"
+                    >
+                        <svg viewBox="0 0 24 24">
+                            <path d="m9 18 6-6-6-6"></path>
+                        </svg>
                     </span>
 
-                </div>
+                </button>
 
             </div>
 
         </aside>
 
 
-        <!-- ================= MAIN ================= -->
+        <!-- MAIN -->
 
         <main class="main">
 
 
-            <!-- ================= TOP BAR ================= -->
+            <!-- TOPBAR -->
 
             <header class="topbar">
-
-
-                <!-- MOBILE MENU -->
 
                 <button
                     class="menu-btn"
@@ -214,11 +212,9 @@
                     type="button"
                     aria-label="Open menu"
                 >
-
                     <span></span>
                     <span></span>
                     <span></span>
-
                 </button>
 
 
@@ -227,17 +223,18 @@
                 <div class="mobile-brand">
 
                     <div class="mobile-logo">
-                        Q
+                        L
                     </div>
 
-                    <strong>
-                        QTM AI
-                    </strong>
+                    <div>
+                        <strong>LOGIC-LEAF</strong>
+                        <span>AI</span>
+                    </div>
 
                 </div>
 
 
-                <!-- TOP RIGHT -->
+                <!-- RIGHT -->
 
                 <div class="topbar-right">
 
@@ -245,8 +242,12 @@
                         class="top-icon"
                         type="button"
                         title="Search"
+                        aria-label="Search"
                     >
-                        ⌕
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="11" cy="11" r="6.5"></circle>
+                            <path d="m16 16 5 5"></path>
+                        </svg>
                     </button>
 
 
@@ -254,8 +255,12 @@
                         class="top-icon"
                         type="button"
                         title="Notifications"
+                        aria-label="Notifications"
                     >
-                        ♢
+                        <svg viewBox="0 0 24 24">
+                            <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path>
+                            <path d="M10 21h4"></path>
+                        </svg>
                     </button>
 
 
@@ -263,6 +268,8 @@
                         class="profile-button"
                         type="button"
                         title="Google Login"
+                        aria-label="Google Login"
+                        id="profileButton"
                     >
                         G
                     </button>
@@ -272,46 +279,62 @@
             </header>
 
 
-            <!-- ================= CHAT ================= -->
+            <!-- CHAT -->
 
             <section
                 class="chat-messages"
                 id="chatMessages"
             >
 
+                <!-- WELCOME -->
+
+                <div class="welcome">
+
+                    <div class="welcome-logo">
+                        L
+                    </div>
+
+                    <div class="welcome-label">
+                        LOGIC-LEAF AI
+                    </div>
+
+                    <h1>
+                        How can I help you?
+                    </h1>
+
+                    <p>
+                        Ask anything. Learn, create, analyze,
+                        solve problems and explore ideas with AI.
+                    </p>
+
+                </div>
+
             </section>
 
 
-            <!-- ================= COMPOSER ================= -->
+            <!-- COMPOSER -->
 
             <div class="composer-area">
 
-
                 <div class="composer">
-
-
-                    <!-- TEXT -->
 
                     <textarea
                         id="messageInput"
-                        placeholder="Message QTM AI..."
+                        placeholder="Message LOGIC-LEAF AI..."
                         rows="1"
                         autocomplete="off"
                         spellcheck="true"
                     ></textarea>
 
 
-                    <!-- CONTROLS -->
-
                     <div class="composer-bottom">
 
 
-                        <!-- LEFT TOOLS -->
+                        <!-- TOOLS -->
 
                         <div class="composer-tools">
 
-
-                            <!-- FILE -->
+                            <!-- ATTACHMENT -->
 
                             <button
                                 class="tool-btn"
@@ -320,7 +343,9 @@
                                 title="Attach file"
                                 aria-label="Attach file"
                             >
-                                📎
+                                <svg viewBox="0 0 24 24">
+                                    <path d="m20.5 11.5-8.7 8.7a6 6 0 0 1-8.5-8.5l9.1-9.1a4 4 0 0 1 5.7 5.7l-9.1 9.1a2 2 0 1 1-2.8-2.8l8.4-8.4"></path>
+                                </svg>
                             </button>
 
 
@@ -333,7 +358,10 @@
                                 title="Camera"
                                 aria-label="Camera"
                             >
-                                📷
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M4 7h4l1.5-2h5L16 7h4v12H4Z"></path>
+                                    <circle cx="12" cy="13" r="3.5"></circle>
+                                </svg>
                             </button>
 
 
@@ -346,11 +374,12 @@
                                 title="Create image"
                                 aria-label="Create image"
                             >
-                                ✦
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 3v18M3 12h18"></path>
+                                    <path d="m5.5 5.5 13 13M18.5 5.5l-13 13"></path>
+                                </svg>
                             </button>
 
-
-                            <!-- HIDDEN FILE INPUT -->
 
                             <input
                                 type="file"
@@ -361,7 +390,7 @@
                         </div>
 
 
-                        <!-- RIGHT TOOLS -->
+                        <!-- ACTIONS -->
 
                         <div class="composer-actions">
 
@@ -377,7 +406,10 @@
                                 title="Send message"
                                 aria-label="Send message"
                             >
-                                ↑
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 19V5"></path>
+                                    <path d="m6 11 6-6 6 6"></path>
+                                </svg>
                             </button>
 
                         </div>
@@ -388,7 +420,7 @@
 
 
                 <p class="disclaimer">
-                    QTM AI can make mistakes.
+                    LOGIC-LEAF AI may make mistakes.
                     Check important information.
                 </p>
 
@@ -399,7 +431,7 @@
     </div>
 
 
-    <!-- ================= MOBILE OVERLAY ================= -->
+    <!-- MOBILE OVERLAY -->
 
     <div
         class="overlay"
@@ -407,12 +439,7 @@
     ></div>
 
 
-    <!-- ================= APP JS ================= -->
-
-    <!-- IMPORTANT:
-         type="module" is required
-         because app.js imports Firebase.
-    -->
+    <!-- APP -->
 
     <script
         type="module"
