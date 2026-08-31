@@ -1,11 +1,10 @@
-/* =========================================================
-   QTM AI — APP.JS
-   Firebase Google Authentication
-   ========================================================= */
+// ============================================================
+// QTM AI - app.js
+// Google Login + QTM AI Chat
+// Worker: https://ck.qtmkiller6.workers.dev
+// ============================================================
 
-import {
-    initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
     getAuth,
@@ -13,1307 +12,894 @@ import {
     signInWithPopup,
     signOut,
     onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 
-/* =========================================================
-   FIREBASE CONFIG
-========================================================= */
+// ============================================================
+// FIREBASE
+// ============================================================
 
 const firebaseConfig = {
-
-    apiKey:
-        "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
-
-    authDomain:
-        "logic-leaf.firebaseapp.com",
-
-    databaseURL:
-        "https://logic-leaf-default-rtdb.firebaseio.com",
-
-    projectId:
-        "logic-leaf",
-
-    storageBucket:
-        "logic-leaf.firebasestorage.app",
-
-    messagingSenderId:
-        "288673697563",
-
-    appId:
-        "1:288673697563:web:c14d08452b01568d1c8dbe",
-
-    measurementId:
-        "G-Z30K3K85LX"
+    apiKey: "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
+    authDomain: "logic-leaf.firebaseapp.com",
+    databaseURL: "https://logic-leaf-default-rtdb.firebaseio.com",
+    projectId: "logic-leaf",
+    storageBucket: "logic-leaf.firebasestorage.app",
+    messagingSenderId: "288673697563",
+    appId: "1:288673697563:web:c14d08452b01568d1c8dbe",
+    measurementId: "G-Z30K3K85LX"
 };
 
+const firebaseApp = initializeApp(firebaseConfig);
 
-/* =========================================================
-   FIREBASE
-========================================================= */
+const auth = getAuth(firebaseApp);
 
-const firebaseApp =
-    initializeApp(firebaseConfig);
-
-const auth =
-    getAuth(firebaseApp);
-
-const provider =
-    new GoogleAuthProvider();
+const googleProvider = new GoogleAuthProvider();
 
 
-provider.setCustomParameters({
-    prompt: "select_account"
-});
+// ============================================================
+// QTM AI WORKER
+// ============================================================
+
+const API_URL =
+    "https://ck.qtmkiller6.workers.dev/v1/chat";
 
 
-/* =========================================================
-   QTM API
-========================================================= */
+// ============================================================
+// ELEMENTS
+// ============================================================
 
-const API =
-    "https://ck.qtmkiller6.workers.dev";
+const chatMessages =
+    document.getElementById("chatMessages");
 
-const CHAT_API =
-    API + "/v1/chat";
+const messageInput =
+    document.getElementById("messageInput");
+
+const sendBtn =
+    document.getElementById("sendBtn");
+
+const newChatBtn =
+    document.getElementById("newChatBtn");
+
+const attachmentBtn =
+    document.getElementById("attachmentBtn");
+
+const fileInput =
+    document.getElementById("fileInput");
+
+const cameraBtn =
+    document.getElementById("cameraBtn");
+
+const imageBtn =
+    document.getElementById("imageBtn");
+
+const sidebar =
+    document.getElementById("sidebar");
+
+const overlay =
+    document.getElementById("overlay");
+
+const menuBtn =
+    document.getElementById("menuBtn");
+
+const profileButton =
+    document.querySelector(".profile-button");
+
+const account =
+    document.querySelector(".account");
 
 
-/* =========================================================
-   STORAGE
-========================================================= */
+// ============================================================
+// STATE
+// ============================================================
 
-const CHATS_KEY =
-    "qtm_ai_chats";
+let isThinking = false;
 
-const CURRENT_KEY =
-    "qtm_ai_current";
-
-
-let chats = [];
-let currentChatId = null;
 let currentUser = null;
-let generating = false;
 
 
-/* =========================================================
-   DOM
-========================================================= */
+// ============================================================
+// WELCOME
+// ============================================================
 
-const loginScreen =
-    document.getElementById(
-        "loginScreen"
-    );
+function addWelcomeMessage() {
 
-const app =
-    document.getElementById(
-        "app"
-    );
+    if (!chatMessages) return;
 
-const googleLogin =
-    document.getElementById(
-        "googleLogin"
-    );
+    chatMessages.innerHTML = "";
 
-const loginError =
-    document.getElementById(
-        "loginError"
-    );
+    const welcome =
+        document.createElement("div");
 
-const messages =
-    document.getElementById(
-        "messages"
-    );
+    welcome.className =
+        "welcome-message";
 
-const chatList =
-    document.getElementById(
-        "chatList"
-    );
+    welcome.innerHTML = `
+        <div class="welcome-logo">Q</div>
 
-const input =
-    document.getElementById(
-        "input"
-    );
+        <h1>How can I help you?</h1>
 
-const send =
-    document.getElementById(
-        "send"
-    );
+        <p>
+            Ask QTM AI anything — study,
+            coding, problem solving,
+            ideas and more.
+        </p>
+    `;
 
-const newChat =
-    document.getElementById(
-        "newChat"
-    );
-
-const logout =
-    document.getElementById(
-        "logout"
-    );
-
-
-/* =========================================================
-   GOOGLE LOGIN
-========================================================= */
-
-googleLogin.addEventListener(
-    "click",
-    async () => {
-
-        setLoginState(true);
-
-        clearLoginError();
-
-        try {
-
-            await signInWithPopup(
-                auth,
-                provider
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Google Login:",
-                error
-            );
-
-            showLoginError(
-                getAuthError(error)
-            );
-
-            setLoginState(false);
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   AUTH STATE
-========================================================= */
-
-onAuthStateChanged(
-    auth,
-    user => {
-
-        if (user) {
-
-            currentUser = user;
-
-            showApplication();
-
-        } else {
-
-            currentUser = null;
-
-            showLogin();
-
-        }
-
-    }
-);
-
-
-/* =========================================================
-   SHOW LOGIN
-========================================================= */
-
-function showLogin() {
-
-    loginScreen.classList.remove(
-        "hidden"
-    );
-
-    app.classList.add(
-        "hidden"
-    );
-
-    setLoginState(false);
-
+    chatMessages.appendChild(welcome);
 }
 
 
-/* =========================================================
-   SHOW APPLICATION
-========================================================= */
+// ============================================================
+// ADD MESSAGE
+// ============================================================
 
-function showApplication() {
+function addMessage(text, type, thinking = false) {
 
-    loginScreen.classList.add(
-        "hidden"
-    );
+    const message =
+        document.createElement("div");
 
-    app.classList.remove(
-        "hidden"
-    );
+    message.className =
+        `message ${type}`;
 
+    if (thinking) {
+        message.classList.add("thinking");
+    }
 
-    updateProfile();
+    const avatar =
+        document.createElement("div");
 
+    avatar.className =
+        "message-avatar";
 
-    loadChats();
+    if (type === "user") {
 
+        avatar.textContent = "You";
 
-    if (
-        !currentChatId ||
-        !getCurrentChat()
-    ) {
+    } else if (type === "error") {
 
-        createChat();
+        avatar.textContent = "!";
 
     } else {
 
-        render();
-
+        avatar.textContent = "Q";
     }
 
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "message-content";
+
+    const textElement =
+        document.createElement("div");
+
+    textElement.className =
+        "message-text";
+
+    textElement.textContent =
+        text;
+
+    content.appendChild(textElement);
+
+    message.appendChild(avatar);
+
+    message.appendChild(content);
+
+    chatMessages.appendChild(message);
+
+    scrollToBottom();
+
+    return message;
 }
 
 
-/* =========================================================
-   PROFILE
-========================================================= */
+// ============================================================
+// SCROLL
+// ============================================================
 
-function updateProfile() {
+function scrollToBottom() {
 
-    if (!currentUser)
-        return;
-
-
-    const username =
-        document.getElementById(
-            "username"
-        );
-
-    const email =
-        document.getElementById(
-            "email"
-        );
-
-    const avatar =
-        document.getElementById(
-            "avatar"
-        );
-
-
-    username.textContent =
-        currentUser.displayName ||
-        "Google User";
-
-
-    email.textContent =
-        currentUser.email ||
-        "";
-
-
-    avatar.src =
-        currentUser.photoURL ||
-        makeAvatar(
-            currentUser.displayName
-        );
-
+    chatMessages.scrollTo({
+        top: chatMessages.scrollHeight,
+        behavior: "smooth"
+    });
 }
 
 
-/* =========================================================
-   LOGOUT
-========================================================= */
+// ============================================================
+// SEND MESSAGE TO QTM AI
+// ============================================================
 
-logout.addEventListener(
-    "click",
-    async () => {
+async function sendMessage() {
 
-        if (generating)
-            return;
+    if (isThinking) return;
 
+    const message =
+        messageInput.value.trim();
 
-        try {
-
-            await signOut(auth);
-
-        } catch (error) {
-
-            console.error(
-                error
-            );
-
-        }
-
-    }
-);
+    if (!message) return;
 
 
-/* =========================================================
-   NEW CHAT
-========================================================= */
-
-newChat.addEventListener(
-    "click",
-    () => {
-
-        if (!generating) {
-
-            createChat();
-
-        }
-
-    }
-);
-
-
-function createChat() {
-
-    const chat = {
-
-        id:
-            "chat_" +
-            Date.now() +
-            "_" +
-            Math.random()
-                .toString(36)
-                .slice(2,8),
-
-        title:
-            "New conversation",
-
-        messages: [],
-
-        created:
-            Date.now()
-
-    };
-
-
-    chats.unshift(
-        chat
+    addMessage(
+        message,
+        "user"
     );
 
+    messageInput.value = "";
 
-    currentChatId =
-        chat.id;
-
-
-    saveChats();
-
-    render();
-
-}
+    messageInput.style.height =
+        "auto";
 
 
-/* =========================================================
-   GET CHAT
-========================================================= */
+    isThinking = true;
 
-function getCurrentChat() {
-
-    return chats.find(
-        chat =>
-            chat.id ===
-            currentChatId
-    );
-
-}
+    sendBtn.disabled = true;
 
 
-/* =========================================================
-   LOAD / SAVE
-========================================================= */
+    const thinking =
+        addMessage(
+            "QTM AI is thinking...",
+            "ai",
+            true
+        );
 
-function loadChats() {
 
     try {
 
-        chats =
-            JSON.parse(
-                localStorage.getItem(
-                    CHATS_KEY
-                )
-            ) || [];
+        const response =
+            await fetch(API_URL, {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    message: message,
+
+                    user: currentUser
+                        ? {
+                            uid: currentUser.uid,
+                            name: currentUser.displayName || "",
+                            email: currentUser.email || ""
+                        }
+                        : null
+                })
+            });
 
 
-        currentChatId =
-            localStorage.getItem(
-                CURRENT_KEY
+        const data =
+            await response.json();
+
+
+        if (!response.ok || !data.ok) {
+
+            throw new Error(
+                data.error ||
+                "AI request failed"
             );
-
-    } catch {
-
-        chats = [];
-
-        currentChatId = null;
-
-    }
-
-}
+        }
 
 
-function saveChats() {
-
-    localStorage.setItem(
-        CHATS_KEY,
-        JSON.stringify(
-            chats
-        )
-    );
+        thinking.remove();
 
 
-    if (currentChatId) {
+        addMessage(
+            data.reply ||
+            "I couldn't generate a response.",
+            "ai"
+        );
 
-        localStorage.setItem(
-            CURRENT_KEY,
-            currentChatId
+
+    } catch (error) {
+
+        console.error(
+            "QTM AI Error:",
+            error
+        );
+
+
+        thinking.remove();
+
+
+        addMessage(
+            "⚠️ QTM AI could not connect right now.\n\n" +
+            "Please try again.",
+            "error"
         );
 
     }
 
+
+    isThinking = false;
+
+    sendBtn.disabled = false;
+
+    messageInput.focus();
 }
 
 
-/* =========================================================
-   SEND
-========================================================= */
+// ============================================================
+// ENTER TO SEND
+// ============================================================
 
-send.addEventListener(
-    "click",
-    sendMessage
-);
-
-
-input.addEventListener(
+messageInput.addEventListener(
     "keydown",
-    event => {
+    function(event) {
 
         if (
-            event.key ===
-                "Enter" &&
+            event.key === "Enter" &&
             !event.shiftKey
         ) {
 
             event.preventDefault();
 
             sendMessage();
-
         }
 
     }
 );
 
 
-input.addEventListener(
-    "input",
-    () => {
+// ============================================================
+// AUTO RESIZE
+// ============================================================
 
-        input.style.height =
+messageInput.addEventListener(
+    "input",
+    function() {
+
+        this.style.height =
             "auto";
 
-        input.style.height =
+        this.style.height =
             Math.min(
-                input.scrollHeight,
-                180
+                this.scrollHeight,
+                160
             ) + "px";
 
     }
 );
 
 
-/* =========================================================
-   SEND MESSAGE
-========================================================= */
+// ============================================================
+// SEND BUTTON
+// ============================================================
 
-async function sendMessage() {
-
-    if (
-        generating ||
-        !currentUser
-    )
-        return;
+sendBtn.addEventListener(
+    "click",
+    sendMessage
+);
 
 
-    const text =
-        input.value.trim();
+// ============================================================
+// NEW CHAT
+// ============================================================
 
+newChatBtn.addEventListener(
+    "click",
+    function() {
 
-    if (!text)
-        return;
+        addWelcomeMessage();
 
+        messageInput.focus();
 
-    const chat =
-        getCurrentChat();
-
-
-    if (!chat)
-        return;
-
-
-    input.value = "";
-
-    input.style.height =
-        "auto";
-
-
-    chat.messages.push({
-
-        role:
-            "user",
-
-        content:
-            text
-
-    });
-
-
-    if (
-        chat.title ===
-        "New conversation"
-    ) {
-
-        chat.title =
-            text.length > 40
-                ? text.slice(0,40) + "..."
-                : text;
+        closeMobileMenu();
 
     }
+);
 
 
-    saveChats();
+// ============================================================
+// GOOGLE LOGIN UI
+// ============================================================
 
-    render();
+function updateUserUI(user) {
 
-
-    generating = true;
-
-    send.disabled = true;
-
-    input.disabled = true;
-
-    input.placeholder =
-        "QTM AI is thinking...";
+    currentUser = user;
 
 
-    const loading =
-        addLoading();
+    const avatarElements =
+        document.querySelectorAll(
+            ".account-avatar, .profile-button"
+        );
 
 
-    try {
+    if (user) {
 
-        const answer =
-            await askAI(
-                text,
-                chat
+        const photo =
+            user.photoURL;
+
+        avatarElements.forEach(
+            element => {
+
+                if (photo) {
+
+                    element.innerHTML = `
+                        <img
+                            src="${escapeHTML(photo)}"
+                            alt="Profile"
+                        >
+                    `;
+
+                } else {
+
+                    element.textContent =
+                        (
+                            user.displayName ||
+                            "U"
+                        )
+                        .charAt(0)
+                        .toUpperCase();
+                }
+
+            }
+        );
+
+
+        const accountName =
+            document.querySelector(
+                ".account-info strong"
+            );
+
+        const accountEmail =
+            document.querySelector(
+                ".account-info span"
             );
 
 
-        loading.remove();
+        if (accountName) {
+
+            accountName.textContent =
+                user.displayName ||
+                "Google User";
+        }
 
 
-        chat.messages.push({
+        if (accountEmail) {
 
-            role:
-                "assistant",
-
-            content:
-                answer
-
-        });
+            accountEmail.textContent =
+                user.email ||
+                "Signed in with Google";
+        }
 
 
-        saveChats();
+    } else {
 
-        render();
+        avatarElements.forEach(
+            element => {
+
+                element.textContent =
+                    "G";
+
+            }
+        );
+
+
+        const accountName =
+            document.querySelector(
+                ".account-info strong"
+            );
+
+        const accountEmail =
+            document.querySelector(
+                ".account-info span"
+            );
+
+
+        if (accountName) {
+
+            accountName.textContent =
+                "Guest";
+        }
+
+
+        if (accountEmail) {
+
+            accountEmail.textContent =
+                "Sign in with Google";
+        }
+
+    }
+}
+
+
+// ============================================================
+// GOOGLE SIGN IN
+// ============================================================
+
+async function googleLogin() {
+
+    try {
+
+        const result =
+            await signInWithPopup(
+                auth,
+                googleProvider
+            );
+
+
+        updateUserUI(
+            result.user
+        );
+
+
+        closeMobileMenu();
 
 
     } catch (error) {
 
         console.error(
+            "Google Login Error:",
             error
         );
 
 
-        loading.remove();
-
-
-        chat.messages.push({
-
-            role:
-                "assistant",
-
-            content:
-                "⚠️ " +
-                error.message
-
-        });
-
-
-        saveChats();
-
-        render();
-
-    } finally {
-
-        generating = false;
-
-        send.disabled = false;
-
-        input.disabled = false;
-
-        input.placeholder =
-            "Ask QTM AI anything...";
-
+        alert(
+            "Google Login failed.\n\n" +
+            error.message
+        );
     }
-
 }
 
 
-/* =========================================================
-   CALL CLOUDFLARE WORKER
-========================================================= */
+// ============================================================
+// LOGOUT
+// ============================================================
 
-async function askAI(
-    text,
-    chat
-) {
-
-    /*
-       Get Firebase ID token.
-
-       This token proves that the user
-       is authenticated with Firebase.
-    */
-
-    const idToken =
-        await currentUser.getIdToken(
-            true
-        );
-
-
-    const response =
-        await fetch(
-            CHAT_API,
-            {
-
-                method:
-                    "POST",
-
-                headers: {
-
-                    "Content-Type":
-                        "application/json",
-
-                    "Authorization":
-                        "Bearer " +
-                        idToken
-
-                },
-
-                body:
-                    JSON.stringify({
-
-                        message:
-                            text,
-
-                        messages:
-                            chat.messages
-                                .slice(-12)
-                                .map(
-                                    item => ({
-
-                                        role:
-                                            item.role,
-
-                                        content:
-                                            item.content
-
-                                    })
-                                ),
-
-                        conversation_id:
-                            chat.id
-
-                    })
-
-            }
-        );
-
-
-    const raw =
-        await response.text();
-
-
-    let data;
-
+async function googleLogout() {
 
     try {
 
-        data =
-            JSON.parse(
-                raw
-            );
+        await signOut(auth);
 
-    } catch {
+        updateUserUI(null);
 
-        throw new Error(
-            "QTM Worker returned invalid JSON."
+    } catch (error) {
+
+        console.error(
+            "Logout Error:",
+            error
         );
-
     }
-
-
-    if (!response.ok) {
-
-        throw new Error(
-            data.error ||
-            data.message ||
-            "AI request failed."
-        );
-
-    }
-
-
-    return extractAnswer(
-        data
-    );
-
 }
 
 
-/* =========================================================
-   EXTRACT ANSWER
-========================================================= */
+// ============================================================
+// ACCOUNT CLICK
+// ============================================================
 
-function extractAnswer(data) {
+if (account) {
 
-    if (
-        typeof data ===
-        "string"
-    ) {
+    account.addEventListener(
+        "click",
+        function() {
 
-        return data;
+            if (currentUser) {
 
-    }
+                const logout =
+                    confirm(
+                        "Sign out of QTM AI?"
+                    );
 
-
-    if (
-        typeof data.response ===
-        "string"
-    ) {
-
-        return data.response;
-
-    }
-
-
-    if (
-        typeof data.answer ===
-        "string"
-    ) {
-
-        return data.answer;
-
-    }
-
-
-    if (
-        typeof data.reply ===
-        "string"
-    ) {
-
-        return data.reply;
-
-    }
-
-
-    if (
-        data.result &&
-        typeof data.result.response ===
-        "string"
-    ) {
-
-        return data.result.response;
-
-    }
-
-
-    if (
-        data.choices &&
-        data.choices[0]
-    ) {
-
-        return (
-            data.choices[0]
-                ?.message
-                ?.content ||
-            data.choices[0]
-                ?.text
-        );
-
-    }
-
-
-    throw new Error(
-        "AI returned an unknown response."
-    );
-
-}
-
-
-/* =========================================================
-   RENDER
-========================================================= */
-
-function render() {
-
-    renderChats();
-
-    renderMessages();
-
-}
-
-
-/* =========================================================
-   CHAT LIST
-========================================================= */
-
-function renderChats() {
-
-    chatList.innerHTML = "";
-
-
-    chats.forEach(
-        chat => {
-
-            const item =
-                document.createElement(
-                    "button"
-                );
-
-
-            item.className =
-                "chat-item" +
-                (
-                    chat.id ===
-                    currentChatId
-                        ? " active"
-                        : ""
-                );
-
-
-            item.innerHTML = `
-                <span class="chat-icon">✦</span>
-                <span class="chat-title"></span>
-            `;
-
-
-            item.querySelector(
-                ".chat-title"
-            ).textContent =
-                chat.title;
-
-
-            item.addEventListener(
-                "click",
-                () => {
-
-                    if (generating)
-                        return;
-
-                    currentChatId =
-                        chat.id;
-
-                    saveChats();
-
-                    render();
-
+                if (logout) {
+                    googleLogout();
                 }
-            );
 
+            } else {
 
-            chatList.appendChild(
-                item
-            );
-
-        }
-    );
-
-}
-
-
-/* =========================================================
-   MESSAGES
-========================================================= */
-
-function renderMessages() {
-
-    messages.innerHTML = "";
-
-
-    const chat =
-        getCurrentChat();
-
-
-    if (!chat)
-        return;
-
-
-    if (
-        chat.messages.length === 0
-    ) {
-
-        messages.innerHTML = `
-
-            <div class="welcome">
-
-                <div class="welcome-logo">
-                    Q
-                </div>
-
-                <h2>
-                    What can I help you with?
-                </h2>
-
-                <p>
-                    Ask QTM AI anything and start
-                    your next conversation.
-                </p>
-
-            </div>
-
-        `;
-
-        return;
-
-    }
-
-
-    chat.messages.forEach(
-        message => {
-
-            const row =
-                document.createElement(
-                    "div"
-                );
-
-
-            row.className =
-                "message-row " +
-                (
-                    message.role ===
-                    "user"
-                        ? "user"
-                        : "assistant"
-                );
-
-
-            const bubble =
-                document.createElement(
-                    "div"
-                );
-
-
-            bubble.className =
-                "message";
-
-
-            bubble.innerHTML =
-                formatMessage(
-                    message.content
-                );
-
-
-            row.appendChild(
-                bubble
-            );
-
-
-            messages.appendChild(
-                row
-            );
-
-        }
-    );
-
-
-    scrollBottom();
-
-}
-
-
-/* =========================================================
-   FORMAT MESSAGE
-========================================================= */
-
-function escapeHTML(text) {
-
-    return String(text)
-        .replaceAll(
-            "&",
-            "&amp;"
-        )
-        .replaceAll(
-            "<",
-            "&lt;"
-        )
-        .replaceAll(
-            ">",
-            "&gt;"
-        )
-        .replaceAll(
-            '"',
-            "&quot;"
-        )
-        .replaceAll(
-            "'",
-            "&#039;"
-        );
-
-}
-
-
-function formatMessage(text) {
-
-    let value =
-        escapeHTML(
-            text || ""
-        );
-
-
-    value =
-        value.replace(
-            /```([\s\S]*?)```/g,
-            (_, code) => {
-
-                return `
-                    <pre><code>${code.trim()}</code></pre>
-                `;
+                googleLogin();
 
             }
-        );
 
-
-    value =
-        value.replace(
-            /`([^`]+)`/g,
-            "<code>$1</code>"
-        );
-
-
-    value =
-        value.replace(
-            /\*\*(.*?)\*\*/g,
-            "<strong>$1</strong>"
-        );
-
-
-    value =
-        value.replace(
-            /\n/g,
-            "<br>"
-        );
-
-
-    return value;
-
-}
-
-
-/* =========================================================
-   LOADING
-========================================================= */
-
-function addLoading() {
-
-    const row =
-        document.createElement(
-            "div"
-        );
-
-
-    row.className =
-        "message-row assistant";
-
-
-    row.innerHTML = `
-
-        <div class="message loading">
-
-            <span></span>
-            <span></span>
-            <span></span>
-
-        </div>
-
-    `;
-
-
-    messages.appendChild(
-        row
+        }
     );
-
-
-    scrollBottom();
-
-
-    return row;
-
 }
 
 
-/* =========================================================
-   SCROLL
-========================================================= */
+// ============================================================
+// PROFILE BUTTON
+// ============================================================
 
-function scrollBottom() {
+if (profileButton) {
 
-    requestAnimationFrame(
-        () => {
+    profileButton.addEventListener(
+        "click",
+        function() {
 
-            messages.scrollTop =
-                messages.scrollHeight;
+            if (currentUser) {
+
+                const logout =
+                    confirm(
+                        "Sign out of QTM AI?"
+                    );
+
+                if (logout) {
+                    googleLogout();
+                }
+
+            } else {
+
+                googleLogin();
+
+            }
+
+        }
+    );
+}
+
+
+// ============================================================
+// FIREBASE AUTH STATE
+// ============================================================
+
+onAuthStateChanged(
+    auth,
+    function(user) {
+
+        updateUserUI(user);
+
+    }
+);
+
+
+// ============================================================
+// ATTACH FILE
+// ============================================================
+
+if (
+    attachmentBtn &&
+    fileInput
+) {
+
+    attachmentBtn.addEventListener(
+        "click",
+        function() {
+
+            fileInput.removeAttribute(
+                "capture"
+            );
+
+            fileInput.setAttribute(
+                "accept",
+                ".pdf,.txt,.csv,.json,.doc,.docx,image/*"
+            );
+
+            fileInput.click();
 
         }
     );
 
-}
+
+    fileInput.addEventListener(
+        "change",
+        function() {
+
+            const file =
+                this.files[0];
+
+            if (!file) return;
 
 
-/* =========================================================
-   LOGIN HELPERS
-========================================================= */
-
-function setLoginState(
-    loading
-) {
-
-    googleLogin.disabled =
-        loading;
-
-
-    googleLogin.style.opacity =
-        loading ? ".6" : "1";
-
-
-    googleLogin.innerHTML =
-        loading
-            ? "Signing in..."
-            : `
-                <span class="google-icon">G</span>
-                <span>Continue with Google</span>
-            `;
-
-}
-
-
-function showLoginError(
-    text
-) {
-
-    loginError.textContent =
-        text;
-
-}
-
-
-function clearLoginError() {
-
-    loginError.textContent =
-        "";
-
-}
-
-
-function getAuthError(
-    error
-) {
-
-    switch (
-        error?.code
-    ) {
-
-        case
-            "auth/popup-closed-by-user":
-
-            return "Google sign-in was cancelled.";
-
-        case
-            "auth/popup-blocked":
-
-            return "Your browser blocked the Google sign-in popup.";
-
-        case
-            "auth/unauthorized-domain":
-
-            return "This website is not authorized in Firebase Authentication.";
-
-        case
-            "auth/network-request-failed":
-
-            return "Network error. Check your internet connection.";
-
-        default:
-
-            return (
-                error?.message ||
-                "Google sign-in failed."
+            addMessage(
+                `📎 ${file.name}\n\n` +
+                "File selected. Full AI file analysis will be connected in the next backend feature.",
+                "ai"
             );
 
+
+            this.value = "";
+
+        }
+    );
+}
+
+
+// ============================================================
+// CAMERA
+// ============================================================
+
+if (cameraBtn) {
+
+    cameraBtn.addEventListener(
+        "click",
+        function() {
+
+            if (!fileInput) return;
+
+
+            fileInput.setAttribute(
+                "accept",
+                "image/*"
+            );
+
+
+            fileInput.setAttribute(
+                "capture",
+                "environment"
+            );
+
+
+            fileInput.click();
+
+        }
+    );
+}
+
+
+// ============================================================
+// IMAGE GENERATION
+// ============================================================
+
+if (imageBtn) {
+
+    imageBtn.addEventListener(
+        "click",
+        function() {
+
+            messageInput.value =
+                "Create an image of ";
+
+            messageInput.focus();
+
+        }
+    );
+}
+
+
+// ============================================================
+// MOBILE MENU
+// ============================================================
+
+function closeMobileMenu() {
+
+    if (sidebar) {
+        sidebar.classList.remove(
+            "open"
+        );
     }
 
-}
-
-
-/* =========================================================
-   AVATAR
-========================================================= */
-
-function makeAvatar(
-    name
-) {
-
-    const letter =
-        encodeURIComponent(
-            (
-                name ||
-                "Q"
-            )
-                .charAt(0)
-                .toUpperCase()
+    if (overlay) {
+        overlay.classList.remove(
+            "show"
         );
-
-
-    return (
-        "https://ui-avatars.com/api/" +
-        "?name=" +
-        letter +
-        "&background=10251a" +
-        "&color=72e8a0"
-    );
-
+    }
 }
 
 
-/* =========================================================
-   DEBUG
-========================================================= */
+if (menuBtn) {
 
-window.QTM = {
+    menuBtn.addEventListener(
+        "click",
+        function() {
 
-    API,
+            sidebar.classList.toggle(
+                "open"
+            );
 
-    CHAT_API,
+            overlay.classList.toggle(
+                "show"
+            );
 
-    getUser:
-        () => currentUser,
+        }
+    );
+}
 
-    newChat:
-        createChat
 
-};
+if (overlay) {
 
+    overlay.addEventListener(
+        "click",
+        closeMobileMenu
+    );
+}
+
+
+// ============================================================
+// COPY AI RESPONSE
+// ============================================================
+
+chatMessages.addEventListener(
+    "click",
+    async function(event) {
+
+        const target =
+            event.target;
+
+
+        if (
+            !target.classList.contains(
+                "message-text"
+            )
+        ) {
+            return;
+        }
+
+
+        const message =
+            target.closest(
+                ".message"
+            );
+
+
+        if (
+            !message ||
+            !message.classList.contains(
+                "ai"
+            )
+        ) {
+            return;
+        }
+
+
+        try {
+
+            await navigator.clipboard
+                .writeText(
+                    target.textContent
+                );
+
+
+            target.setAttribute(
+                "data-copied",
+                "Copied!"
+            );
+
+
+            setTimeout(
+                function() {
+
+                    target.removeAttribute(
+                        "data-copied"
+                    );
+
+                },
+                1200
+            );
+
+        } catch (error) {
+
+            console.log(
+                "Copy failed."
+            );
+        }
+
+    }
+);
+
+
+// ============================================================
+// BASIC HTML ESCAPE
+// ============================================================
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+// ============================================================
+// START
+// ============================================================
+
+addWelcomeMessage();
+
+messageInput.focus();
 
 console.log(
-    "QTM AI loaded."
+    "QTM AI ready."
 );
 
 console.log(
-    "QTM API:",
-    API
+    "Worker:",
+    API_URL
 );
