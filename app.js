@@ -1,59 +1,191 @@
 /* =========================================================
    LOGIC-LEAF AI
-   Main application
+   Firebase + Google Login + Cloudflare AI
    Developer: V. CHENCHUKIRAN
    Cloud Security & DevSecOps
    ========================================================= */
 
-const API_URL = "https://ck.qtmkiller6.workers.dev";
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signOut,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
 
 /* =========================================================
-   ELEMENTS
+   CONFIG
    ========================================================= */
 
-const sidebar = document.getElementById("sidebar");
-const overlay = document.getElementById("overlay");
-const menuBtn = document.getElementById("menuBtn");
+const API_URL =
+    "https://ck.qtmkiller6.workers.dev";
 
-const newChatBtn = document.getElementById("newChatBtn");
-const history = document.getElementById("history");
 
-const messageInput = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
+const firebaseConfig = {
 
-const chatMessages = document.getElementById("chatMessages");
+    apiKey:
+        "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
+
+    authDomain:
+        "logic-leaf.firebaseapp.com",
+
+    databaseURL:
+        "https://logic-leaf-default-rtdb.firebaseio.com",
+
+    projectId:
+        "logic-leaf",
+
+    storageBucket:
+        "logic-leaf.firebasestorage.app",
+
+    messagingSenderId:
+        "288673697563",
+
+    appId:
+        "1:288673697563:web:c14d08452b01568d1c8dbe",
+
+    measurementId:
+        "G-Z30K3K85LX"
+};
+
+
+/* =========================================================
+   FIREBASE
+   ========================================================= */
+
+const firebaseApp =
+    initializeApp(firebaseConfig);
+
+
+const auth =
+    getAuth(firebaseApp);
+
+
+const googleProvider =
+    new GoogleAuthProvider();
+
+
+googleProvider.setCustomParameters({
+    prompt: "select_account"
+});
+
+
+/* =========================================================
+   DOM
+   ========================================================= */
+
+const $ = (id) =>
+    document.getElementById(id);
+
+
+const sidebar =
+    $("sidebar");
+
+const overlay =
+    $("overlay");
+
+const menuBtn =
+    $("menuBtn");
+
+const closeSidebarBtn =
+    $("closeSidebar");
+
+const newChatBtn =
+    $("newChatBtn");
+
+const sidebarSearch =
+    $("sidebarSearch");
+
+const searchBtn =
+    $("searchBtn");
+
+const notificationBtn =
+    $("notificationBtn");
+
+const profileButton =
+    $("profileButton");
+
+const accountCard =
+    $("accountCard");
+
+const accountMore =
+    $("accountMore");
+
+const accountMenu =
+    $("accountMenu");
+
+const accountLoginBtn =
+    $("accountLoginBtn");
+
+const accountLogoutBtn =
+    $("accountLogoutBtn");
+
+const settingsBtn =
+    $("settingsBtn");
+
+const settingsModal =
+    $("settingsModal");
+
+const closeSettings =
+    $("closeSettings");
+
+const settingsLoginBtn =
+    $("settingsLoginBtn");
+
+const logoutBtn =
+    $("logoutBtn");
+
+const helpBtn =
+    $("helpBtn");
+
+const chatMessages =
+    $("chatMessages");
+
+const messageInput =
+    $("messageInput");
+
+const sendBtn =
+    $("sendBtn");
 
 const attachmentBtn =
-    document.getElementById("attachmentBtn");
+    $("attachmentBtn");
 
 const cameraBtn =
-    document.getElementById("cameraBtn");
+    $("cameraBtn");
 
 const imageBtn =
-    document.getElementById("imageBtn");
+    $("imageBtn");
 
 const fileInput =
-    document.getElementById("fileInput");
+    $("fileInput");
+
+const history =
+    $("history");
+
+const userName =
+    $("userName");
+
+const userStatus =
+    $("userStatus");
+
+const userAvatar =
+    $("userAvatar");
 
 
 /* =========================================================
    STATE
    ========================================================= */
 
-let messages = [];
+let conversation = [];
+
 let isSending = false;
 
-
-/* =========================================================
-   SAFE EVENT HELPER
-   ========================================================= */
-
-function on(element, event, handler) {
-
-    if (!element) return;
-
-    element.addEventListener(event, handler);
-}
+let currentUser = null;
 
 
 /* =========================================================
@@ -62,84 +194,72 @@ function on(element, event, handler) {
 
 function openSidebar() {
 
-    if (sidebar) {
-        sidebar.classList.add("open");
-    }
+    sidebar?.classList.add("open");
 
-    if (overlay) {
-        overlay.classList.add("active");
-    }
+    overlay?.classList.add("active");
 
 }
 
 
-function closeSidebar() {
+function closeSidebarMenu() {
 
-    if (sidebar) {
-        sidebar.classList.remove("open");
-    }
+    sidebar?.classList.remove("open");
 
-    if (overlay) {
-        overlay.classList.remove("active");
-    }
+    overlay?.classList.remove("active");
 
 }
 
 
-on(menuBtn, "click", openSidebar);
+menuBtn?.addEventListener(
+    "click",
+    openSidebar
+);
 
-on(overlay, "click", closeSidebar);
+
+closeSidebarBtn?.addEventListener(
+    "click",
+    closeSidebarMenu
+);
 
 
-document.addEventListener("keydown", function (event) {
+overlay?.addEventListener(
+    "click",
+    closeSidebarMenu
+);
 
-    if (event.key === "Escape") {
-        closeSidebar();
+
+document.addEventListener(
+    "keydown",
+    (event) => {
+
+        if (event.key === "Escape") {
+
+            closeSidebarMenu();
+
+            closeSettingsModal();
+
+            closeAccountMenu();
+
+        }
+
     }
-
-});
+);
 
 
 /* =========================================================
-   NEW CHAT
-   ========================================================= */
-
-function startNewChat() {
-
-    messages = [];
-
-    if (chatMessages) {
-        chatMessages.innerHTML = "";
-    }
-
-    showWelcome();
-
-    if (messageInput) {
-        messageInput.value = "";
-        messageInput.style.height = "auto";
-        messageInput.focus();
-    }
-
-    closeSidebar();
-
-}
-
-
-on(newChatBtn, "click", startNewChat);
-
-
-/* =========================================================
-   WELCOME SCREEN
+   WELCOME
    ========================================================= */
 
 function showWelcome() {
 
     if (!chatMessages) return;
 
+
     chatMessages.innerHTML = `
+
         <div class="welcome">
 
-            <div class="welcome-logo">
+            <div class="welcome-mark">
                 L
             </div>
 
@@ -155,57 +275,54 @@ function showWelcome() {
 
                 <button
                     class="suggestion"
-                    data-prompt="Explain this topic to me clearly and step by step."
+                    data-prompt="Explain this topic clearly and step by step."
                     type="button"
                 >
-                    <div class="suggestion-icon">+</div>
+                    <span class="suggestion-icon">+</span>
 
-                    <div class="suggestion-content">
+                    <span>
                         <strong>Explain something</strong>
-                        <span>Learn a topic step by step</span>
-                    </div>
+                        <small>Learn a topic step by step</small>
+                    </span>
                 </button>
-
 
                 <button
                     class="suggestion"
                     data-prompt="Help me solve this problem step by step."
                     type="button"
                 >
-                    <div class="suggestion-icon">?</div>
+                    <span class="suggestion-icon">?</span>
 
-                    <div class="suggestion-content">
+                    <span>
                         <strong>Solve a problem</strong>
-                        <span>Work through a difficult question</span>
-                    </div>
+                        <small>Work through the solution</small>
+                    </span>
                 </button>
-
 
                 <button
                     class="suggestion"
                     data-prompt="Help me write and debug code."
                     type="button"
                 >
-                    <div class="suggestion-icon">&lt;/&gt;</div>
+                    <span class="suggestion-icon">&lt;/&gt;</span>
 
-                    <div class="suggestion-content">
+                    <span>
                         <strong>Write code</strong>
-                        <span>Build, explain and debug code</span>
-                    </div>
+                        <small>Build and debug projects</small>
+                    </span>
                 </button>
-
 
                 <button
                     class="suggestion"
-                    data-prompt="Give me some creative ideas for a project."
+                    data-prompt="Give me creative ideas for a project."
                     type="button"
                 >
-                    <div class="suggestion-icon">*</div>
+                    <span class="suggestion-icon">*</span>
 
-                    <div class="suggestion-content">
-                        <strong>Brainstorm ideas</strong>
-                        <span>Explore new possibilities</span>
-                    </div>
+                    <span>
+                        <strong>Brainstorm</strong>
+                        <small>Explore new possibilities</small>
+                    </span>
                 </button>
 
             </div>
@@ -214,72 +331,62 @@ function showWelcome() {
     `;
 
 
-    const suggestionButtons =
-        document.querySelectorAll(".suggestion");
+    document
+        .querySelectorAll(".suggestion")
+        .forEach((button) => {
 
+            button.addEventListener(
+                "click",
+                () => {
 
-    suggestionButtons.forEach(function (button) {
+                    messageInput.value =
+                        button.dataset.prompt || "";
 
-        button.addEventListener(
-            "click",
-            function () {
+                    resizeInput();
 
-                const prompt =
-                    button.getAttribute("data-prompt");
+                    messageInput.focus();
 
-                if (!messageInput) return;
+                }
+            );
 
-                messageInput.value = prompt || "";
-
-                resizeInput();
-
-                messageInput.focus();
-
-            }
-        );
-
-    });
+        });
 
 }
 
 
+showWelcome();
+
+
 /* =========================================================
-   INPUT AUTO RESIZE
+   INPUT
    ========================================================= */
 
 function resizeInput() {
 
     if (!messageInput) return;
 
-    messageInput.style.height = "auto";
+    messageInput.style.height =
+        "auto";
 
-    const newHeight =
+
+    messageInput.style.height =
         Math.min(
             messageInput.scrollHeight,
             180
-        );
-
-    messageInput.style.height =
-        newHeight + "px";
+        ) + "px";
 
 }
 
 
-on(
-    messageInput,
+messageInput?.addEventListener(
     "input",
     resizeInput
 );
 
 
-/* =========================================================
-   ENTER TO SEND
-   ========================================================= */
-
-on(
-    messageInput,
+messageInput?.addEventListener(
     "keydown",
-    function (event) {
+    (event) => {
 
         if (
             event.key === "Enter" &&
@@ -297,35 +404,30 @@ on(
 
 
 /* =========================================================
-   SEND BUTTON
+   SEND
    ========================================================= */
 
-on(
-    sendBtn,
+sendBtn?.addEventListener(
     "click",
     sendMessage
 );
 
 
-/* =========================================================
-   SEND MESSAGE
-   ========================================================= */
-
 async function sendMessage() {
 
     if (isSending) return;
 
-    if (!messageInput) return;
 
     const text =
-        messageInput.value.trim();
+        messageInput?.value.trim();
+
 
     if (!text) return;
 
 
     isSending = true;
 
-    setSendingState(true);
+    sendBtn.disabled = true;
 
 
     removeWelcome();
@@ -345,41 +447,37 @@ async function sendMessage() {
 
     try {
 
-        const answer =
-            await callWorker(text);
+        const response =
+            await callAI(text);
 
 
-        if (
-            answer &&
-            answer.trim()
-        ) {
+        if (response) {
 
-            setAssistantText(
+            setAssistantMessage(
                 assistant,
-                answer
+                response
             );
 
         } else {
 
-            setAssistantText(
+            setAssistantMessage(
                 assistant,
-                "I received an empty response from the AI."
+                "The AI returned an empty response."
             );
 
         }
 
-
     } catch (error) {
 
         console.error(
-            "LOGIC-LEAF AI error:",
+            "LOGIC-LEAF AI:",
             error
         );
 
 
-        setAssistantText(
+        setAssistantMessage(
             assistant,
-            "I couldn't connect to LOGIC-LEAF AI right now. Please try again."
+            "LOGIC-LEAF AI could not connect right now. Please try again."
         );
 
     }
@@ -387,18 +485,18 @@ async function sendMessage() {
 
     isSending = false;
 
-    setSendingState(false);
+    sendBtn.disabled = false;
 
-    scrollToBottom();
+    scrollBottom();
 
 }
 
 
 /* =========================================================
-   WORKER API
+   CLOUDflare WORKER
    ========================================================= */
 
-async function callWorker(text) {
+async function callAI(text) {
 
     const response =
         await fetch(
@@ -426,12 +524,8 @@ async function callWorker(text) {
 
 
     console.log(
-        "Worker status:",
-        response.status
-    );
-
-    console.log(
-        "Worker response:",
+        "LOGIC-LEAF Worker:",
+        response.status,
         raw
     );
 
@@ -439,7 +533,7 @@ async function callWorker(text) {
     if (!response.ok) {
 
         throw new Error(
-            "Worker returned HTTP " +
+            "Worker HTTP " +
             response.status
         );
 
@@ -448,42 +542,48 @@ async function callWorker(text) {
 
     let data;
 
+
     try {
 
         data =
             JSON.parse(raw);
 
-    } catch (error) {
+    } catch {
 
         throw new Error(
-            "Worker did not return JSON."
+            "Worker returned invalid JSON"
         );
 
     }
 
 
-    return extractResponse(data);
+    return extractAIResponse(data);
 
 }
 
 
 /* =========================================================
-   RESPONSE EXTRACTION
+   RESPONSE PARSER
    ========================================================= */
 
-function extractResponse(data) {
+function extractAIResponse(data) {
 
     if (!data) {
         return "";
     }
 
 
-    if (typeof data === "string") {
+    if (
+        typeof data ===
+        "string"
+    ) {
+
         return data;
+
     }
 
 
-    const values = [
+    const possible = [
 
         data.response,
 
@@ -515,13 +615,8 @@ function extractResponse(data) {
 
 
     for (
-        let i = 0;
-        i < values.length;
-        i++
+        const value of possible
     ) {
-
-        const value = values[i];
-
 
         if (
             typeof value === "string" &&
@@ -535,11 +630,9 @@ function extractResponse(data) {
     }
 
 
-    /* OpenAI-style response */
-
     if (
         Array.isArray(data.choices) &&
-        data.choices.length > 0
+        data.choices.length
     ) {
 
         const choice =
@@ -547,9 +640,8 @@ function extractResponse(data) {
 
 
         if (
-            choice.message &&
-            typeof choice.message.content ===
-                "string"
+            typeof choice?.message?.content ===
+            "string"
         ) {
 
             return choice.message.content;
@@ -558,39 +650,11 @@ function extractResponse(data) {
 
 
         if (
-            typeof choice.text ===
-                "string"
+            typeof choice?.text ===
+            "string"
         ) {
 
             return choice.text;
-
-        }
-
-    }
-
-
-    /* AI response object */
-
-    if (
-        data.result &&
-        typeof data.result === "object"
-    ) {
-
-        if (
-            typeof data.result.response ===
-                "string"
-        ) {
-
-            return data.result.response;
-
-        }
-
-        if (
-            typeof data.result.text ===
-                "string"
-        ) {
-
-            return data.result.text;
 
         }
 
@@ -602,69 +666,47 @@ function extractResponse(data) {
 
 
 /* =========================================================
-   REMOVE WELCOME
+   MESSAGES
    ========================================================= */
 
 function removeWelcome() {
 
-    if (!chatMessages) return;
-
-    const welcome =
-        chatMessages.querySelector(
-            ".welcome"
-        );
-
-
-    if (welcome) {
-        welcome.remove();
-    }
+    chatMessages
+        ?.querySelector(".welcome")
+        ?.remove();
 
 }
 
 
-/* =========================================================
-   USER MESSAGE
-   ========================================================= */
-
 function addUserMessage(text) {
-
-    if (!chatMessages) return;
-
 
     const wrapper =
         document.createElement("div");
+
 
     wrapper.className =
         "message user-message";
 
 
-    const avatar =
-        document.createElement("div");
+    wrapper.innerHTML = `
 
-    avatar.className =
-        "message-avatar";
+        <div class="message-avatar">
+            ${currentUser ? "Y" : "G"}
+        </div>
 
-    avatar.textContent = "Y";
-
-
-    const content =
-        document.createElement("div");
-
-    content.className =
-        "message-content";
-
-    content.textContent = text;
+        <div class="message-content"></div>
+    `;
 
 
-    wrapper.appendChild(avatar);
-
-    wrapper.appendChild(content);
+    wrapper
+        .querySelector(".message-content")
+        .textContent = text;
 
 
     chatMessages.appendChild(wrapper);
 
 
-    messages.push({
+    conversation.push({
         role: "user",
         content: text
     });
@@ -672,80 +714,66 @@ function addUserMessage(text) {
 
     addHistory(text);
 
-    scrollToBottom();
+    scrollBottom();
 
 }
 
 
-/* =========================================================
-   ASSISTANT MESSAGE
-   ========================================================= */
-
 function addAssistantMessage() {
-
-    if (!chatMessages) return null;
-
 
     const wrapper =
         document.createElement("div");
+
 
     wrapper.className =
         "message assistant-message";
 
 
-    const avatar =
-        document.createElement("div");
+    wrapper.innerHTML = `
 
-    avatar.className =
-        "message-avatar";
+        <div class="message-avatar">
+            L
+        </div>
 
-    avatar.textContent = "L";
-
-
-    const content =
-        document.createElement("div");
-
-    content.className =
-        "message-content";
-
-    content.textContent =
-        "Thinking";
-
-
-    wrapper.appendChild(avatar);
-
-    wrapper.appendChild(content);
+        <div class="message-content">
+            Thinking...
+        </div>
+    `;
 
 
     chatMessages.appendChild(wrapper);
 
 
-    scrollToBottom();
+    scrollBottom();
 
 
-    return {
-        wrapper: wrapper,
-        content: content
-    };
+    return wrapper;
 
 }
 
 
-/* =========================================================
-   ASSISTANT TEXT
-   ========================================================= */
+function setAssistantMessage(
+    wrapper,
+    text
+) {
 
-function setAssistantText(assistant, text) {
-
-    if (!assistant || !assistant.content) {
-        return;
-    }
+    if (!wrapper) return;
 
 
-    assistant.content.textContent = text;
+    const content =
+        wrapper.querySelector(
+            ".message-content"
+        );
 
 
-    messages.push({
+    if (!content) return;
+
+
+    content.textContent =
+        text;
+
+
+    conversation.push({
         role: "assistant",
         content: text
     });
@@ -754,7 +782,7 @@ function setAssistantText(assistant, text) {
 
 
 /* =========================================================
-   CHAT HISTORY
+   HISTORY
    ========================================================= */
 
 function addHistory(text) {
@@ -764,53 +792,43 @@ function addHistory(text) {
 
     const empty =
         history.querySelector(
-            ".empty-history"
+            ".history-empty"
         );
 
 
-    if (empty) {
-        empty.remove();
-    }
+    empty?.remove();
 
 
     const item =
         document.createElement("button");
 
-    item.type = "button";
 
     item.className =
         "history-item";
 
 
-    const title =
-        document.createElement("span");
+    item.type =
+        "button";
 
 
-    title.textContent =
-        text.length > 35
-            ? text.substring(0, 35) + "..."
+    item.textContent =
+        text.length > 42
+            ? text.slice(0, 42) + "..."
             : text;
-
-
-    item.appendChild(title);
 
 
     item.addEventListener(
         "click",
-        function () {
+        () => {
 
-            if (messageInput) {
+            messageInput.value =
+                text;
 
-                messageInput.value =
-                    text;
+            resizeInput();
 
-                resizeInput();
+            messageInput.focus();
 
-                messageInput.focus();
-
-            }
-
-            closeSidebar();
+            closeSidebarMenu();
 
         }
     );
@@ -822,27 +840,154 @@ function addHistory(text) {
 
 
 /* =========================================================
-   SEND BUTTON STATE
+   SCROLL
    ========================================================= */
 
-function setSendingState(sending) {
+function scrollBottom() {
 
-    if (!sendBtn) return;
+    requestAnimationFrame(
+        () => {
+
+            chatMessages.scrollTop =
+                chatMessages.scrollHeight;
+
+        }
+    );
+
+}
 
 
-    sendBtn.disabled = sending;
+/* =========================================================
+   NEW CHAT
+   ========================================================= */
+
+newChatBtn?.addEventListener(
+    "click",
+    () => {
+
+        conversation = [];
+
+        showWelcome();
+
+        messageInput.value = "";
+
+        resizeInput();
+
+        closeSidebarMenu();
+
+        messageInput.focus();
+
+    }
+);
 
 
-    if (sending) {
+/* =========================================================
+   SEARCH
+   ========================================================= */
 
-        sendBtn.classList.add(
-            "sending"
+function searchChats() {
+
+    const query =
+        prompt("Search chats");
+
+
+    if (!query) return;
+
+
+    const items =
+        history.querySelectorAll(
+            ".history-item"
         );
 
-    } else {
 
-        sendBtn.classList.remove(
-            "sending"
+    items.forEach(
+        (item) => {
+
+            item.style.display =
+                item.textContent
+                    .toLowerCase()
+                    .includes(
+                        query.toLowerCase()
+                    )
+                    ? "block"
+                    : "none";
+
+        }
+    );
+
+}
+
+
+sidebarSearch?.addEventListener(
+    "click",
+    searchChats
+);
+
+
+searchBtn?.addEventListener(
+    "click",
+    searchChats
+);
+
+
+/* =========================================================
+   NOTIFICATIONS
+   ========================================================= */
+
+notificationBtn?.addEventListener(
+    "click",
+    () => {
+
+        alert(
+            "LOGIC-LEAF AI notifications\n\nNo new notifications."
+        );
+
+    }
+);
+
+
+/* =========================================================
+   GOOGLE LOGIN
+   ========================================================= */
+
+async function loginWithGoogle() {
+
+    try {
+
+        const result =
+            await signInWithPopup(
+                auth,
+                googleProvider
+            );
+
+
+        currentUser =
+            result.user;
+
+
+        updateUserUI(
+            currentUser
+        );
+
+
+        closeAccountMenu();
+
+        closeSettingsModal();
+
+        closeSidebarMenu();
+
+
+    } catch (error) {
+
+        console.error(
+            "Google Login:",
+            error
+        );
+
+
+        alert(
+            "Google Login failed.\n\n" +
+            error.message
         );
 
     }
@@ -850,47 +995,369 @@ function setSendingState(sending) {
 }
 
 
+async function logoutGoogle() {
+
+    try {
+
+        await signOut(auth);
+
+        currentUser = null;
+
+        updateUserUI(null);
+
+        closeAccountMenu();
+
+        closeSettingsModal();
+
+    } catch (error) {
+
+        console.error(
+            "Sign out:",
+            error
+        );
+
+    }
+
+}
+
+
+profileButton?.addEventListener(
+    "click",
+    loginWithGoogle
+);
+
+
+accountLoginBtn?.addEventListener(
+    "click",
+    loginWithGoogle
+);
+
+
+settingsLoginBtn?.addEventListener(
+    "click",
+    loginWithGoogle
+);
+
+
+accountLogoutBtn?.addEventListener(
+    "click",
+    logoutGoogle
+);
+
+
+logoutBtn?.addEventListener(
+    "click",
+    logoutGoogle
+);
+
+
 /* =========================================================
-   FILE ATTACHMENT
+   AUTH STATE
    ========================================================= */
 
-on(
-    attachmentBtn,
-    "click",
-    function () {
+onAuthStateChanged(
+    auth,
+    (user) => {
 
-        if (fileInput) {
-            fileInput.click();
+        currentUser =
+            user || null;
+
+        updateUserUI(
+            currentUser
+        );
+
+    }
+);
+
+
+/* =========================================================
+   USER UI
+   ========================================================= */
+
+function updateUserUI(user) {
+
+    if (!user) {
+
+        if (userName) {
+            userName.textContent =
+                "Guest";
+        }
+
+
+        if (userStatus) {
+            userStatus.textContent =
+                "Sign in with Google";
+        }
+
+
+        if (userAvatar) {
+
+            userAvatar.innerHTML =
+                "G";
+
+        }
+
+
+        if (profileButton) {
+
+            profileButton.innerHTML =
+                "G";
+
+        }
+
+        return;
+
+    }
+
+
+    const name =
+        user.displayName ||
+        "Google User";
+
+
+    const email =
+        user.email ||
+        "";
+
+
+    if (userName) {
+
+        userName.textContent =
+            name;
+
+    }
+
+
+    if (userStatus) {
+
+        userStatus.textContent =
+            email;
+
+    }
+
+
+    if (user.photoURL) {
+
+        if (userAvatar) {
+
+            userAvatar.innerHTML = `
+
+                <img
+                    src="${escapeAttribute(user.photoURL)}"
+                    alt="Profile"
+                >
+
+            `;
+
+        }
+
+
+        if (profileButton) {
+
+            profileButton.innerHTML = `
+
+                <img
+                    src="${escapeAttribute(user.photoURL)}"
+                    alt="Profile"
+                >
+
+            `;
+
+        }
+
+    } else {
+
+        const letter =
+            name
+                .charAt(0)
+                .toUpperCase();
+
+
+        if (userAvatar) {
+
+            userAvatar.textContent =
+                letter;
+
+        }
+
+
+        if (profileButton) {
+
+            profileButton.textContent =
+                letter;
+
+        }
+
+    }
+
+}
+
+
+function escapeAttribute(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+}
+
+
+/* =========================================================
+   ACCOUNT MENU
+   ========================================================= */
+
+function openAccountMenu() {
+
+    accountMenu?.classList.add(
+        "open"
+    );
+
+}
+
+
+function closeAccountMenu() {
+
+    accountMenu?.classList.remove(
+        "open"
+    );
+
+}
+
+
+accountMore?.addEventListener(
+    "click",
+    (event) => {
+
+        event.stopPropagation();
+
+        accountMenu
+            ?.classList.toggle("open");
+
+    }
+);
+
+
+document.addEventListener(
+    "click",
+    (event) => {
+
+        if (
+            accountMenu &&
+            !accountMenu.contains(event.target) &&
+            event.target !== accountMore
+        ) {
+
+            closeAccountMenu();
+
         }
 
     }
 );
 
 
-on(
-    fileInput,
-    "change",
-    function () {
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+function openSettingsModal() {
+
+    settingsModal?.classList.add(
+        "open"
+    );
+
+    closeSidebarMenu();
+
+}
+
+
+function closeSettingsModal() {
+
+    settingsModal?.classList.remove(
+        "open"
+    );
+
+}
+
+
+settingsBtn?.addEventListener(
+    "click",
+    openSettingsModal
+);
+
+
+closeSettings?.addEventListener(
+    "click",
+    closeSettingsModal
+);
+
+
+settingsModal?.addEventListener(
+    "click",
+    (event) => {
 
         if (
-            !fileInput ||
-            !fileInput.files ||
-            !fileInput.files.length
+            event.target ===
+            settingsModal
         ) {
-            return;
+
+            closeSettingsModal();
+
         }
 
+    }
+);
+
+
+/* =========================================================
+   HELP
+   ========================================================= */
+
+helpBtn?.addEventListener(
+    "click",
+    () => {
+
+        alert(
+            "LOGIC-LEAF AI\n\n" +
+            "An AI assistant for learning, " +
+            "problem solving, coding and ideas.\n\n" +
+            "Developer:\n" +
+            "V. CHENCHUKIRAN\n" +
+            "Cloud Security & DevSecOps"
+        );
+
+    }
+);
+
+
+/* =========================================================
+   FILE ATTACHMENT
+   ========================================================= */
+
+attachmentBtn?.addEventListener(
+    "click",
+    () => {
+
+        fileInput?.click();
+
+    }
+);
+
+
+fileInput?.addEventListener(
+    "change",
+    () => {
 
         const file =
-            fileInput.files[0];
+            fileInput.files?.[0];
 
 
-        if (!messageInput) return;
+        if (!file) return;
 
 
         messageInput.value =
-            "Please help me with this file: " +
-            file.name;
+            `Please help me with the attached file: ${file.name}`;
 
 
         resizeInput();
@@ -905,19 +1372,21 @@ on(
    CAMERA
    ========================================================= */
 
-on(
-    cameraBtn,
+cameraBtn?.addEventListener(
     "click",
-    function () {
+    () => {
 
         const camera =
             document.createElement("input");
 
 
-        camera.type = "file";
+        camera.type =
+            "file";
+
 
         camera.accept =
             "image/*";
+
 
         camera.setAttribute(
             "capture",
@@ -927,21 +1396,40 @@ on(
 
         camera.click();
 
+
+        camera.addEventListener(
+            "change",
+            () => {
+
+                const file =
+                    camera.files?.[0];
+
+
+                if (!file) return;
+
+
+                messageInput.value =
+                    `Please help me with this camera image: ${file.name}`;
+
+
+                resizeInput();
+
+                messageInput.focus();
+
+            }
+        );
+
     }
 );
 
 
 /* =========================================================
-   IMAGE TOOL
+   IMAGE BUTTON
    ========================================================= */
 
-on(
-    imageBtn,
+imageBtn?.addEventListener(
     "click",
-    function () {
-
-        if (!messageInput) return;
-
+    () => {
 
         messageInput.value =
             "Create an image of ";
@@ -956,37 +1444,41 @@ on(
 
 
 /* =========================================================
-   SCROLL
+   MOBILE CLEANUP
    ========================================================= */
 
-function scrollToBottom() {
+window.addEventListener(
+    "resize",
+    () => {
 
-    if (!chatMessages) return;
+        if (
+            window.innerWidth > 760
+        ) {
 
-
-    requestAnimationFrame(
-        function () {
-
-            chatMessages.scrollTop =
-                chatMessages.scrollHeight;
+            closeSidebarMenu();
 
         }
-    );
 
-}
+    }
+);
 
 
 /* =========================================================
-   INITIALIZE
+   STARTUP
    ========================================================= */
 
-showWelcome();
-
 console.log(
-    "LOGIC-LEAF AI initialized."
+    "LOGIC-LEAF AI loaded"
 );
 
+
 console.log(
-    "API:",
+    "Cloudflare Worker:",
     API_URL
+);
+
+
+console.log(
+    "Firebase project:",
+    firebaseConfig.projectId
 );
