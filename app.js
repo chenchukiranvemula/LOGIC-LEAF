@@ -1,84 +1,631 @@
-/* =========================================================
-   QTM AI — APP.JS
-   Frontend controller
-   Connected to:
-   https://ck.qtmkiller6.workers.dev
-   ========================================================= */
-
 "use strict";
 
-/* =========================
-   CONFIG
-========================= */
+/* =========================================================
+   QTM AI — APP.JS
+   ========================================================= */
 
-const API_URL = "https://ck.qtmkiller6.workers.dev";
-const CHAT_ENDPOINT = `${API_URL}/v1/chat`;
+const API_URL =
+    "https://ck.qtmkiller6.workers.dev";
 
-const STORAGE_KEYS = {
-    chats: "qtm_chats",
-    currentChat: "qtm_current_chat",
-    apiUrl: "qtm_api_url"
-};
+const CHAT_URL =
+    API_URL + "/v1/chat";
 
+const AUTH_URL =
+    API_URL + "/api/auth/google";
 
-/* =========================
-   DOM HELPERS
-========================= */
+const ME_URL =
+    API_URL + "/api/auth/me";
 
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => document.querySelectorAll(selector);
+const LOGOUT_URL =
+    API_URL + "/api/auth/logout";
 
 
-/* =========================
-   STATE
-========================= */
+/*
+   IMPORTANT:
+   Replace this with your Google OAuth Web Client ID.
+
+   Example:
+   1234567890-abcdefg.apps.googleusercontent.com
+*/
+
+const GOOGLE_CLIENT_ID =
+    "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+
+
+const STORAGE_CHATS =
+    "qtm_ai_chats";
+
+const STORAGE_CURRENT =
+    "qtm_ai_current";
+
+const STORAGE_USER =
+    "qtm_ai_user";
+
 
 let chats = [];
 let currentChatId = null;
-let isGenerating = false;
+let currentUser = null;
+let generating = false;
 
 
-/* =========================
-   INITIALIZE
-========================= */
+/* =========================================================
+   START
+========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
 
-    loadChats();
+        loadLocalData();
 
-    setupInterface();
+        setupEvents();
 
-    if (!currentChatId) {
-        createNewChat(false);
-    } else {
-        renderCurrentChat();
+        initializeGoogle();
+
+        const authenticated =
+            await restoreSession();
+
+        if (authenticated) {
+
+            showApp();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   GOOGLE LOGIN
+========================================================= */
+
+function initializeGoogle() {
+
+    if (
+        GOOGLE_CLIENT_ID.includes(
+            "YOUR_GOOGLE_CLIENT_ID"
+        )
+    ) {
+
+        console.warn(
+            "QTM AI: Google Client ID has not been configured."
+        );
+
+        return;
+
     }
 
-});
+
+    const waitForGoogle =
+        setInterval(
+            () => {
+
+                if (
+                    window.google &&
+                    google.accounts &&
+                    google.accounts.id
+                ) {
+
+                    clearInterval(
+                        waitForGoogle
+                    );
+
+                    google.accounts.id.initialize({
+
+                        client_id:
+                            GOOGLE_CLIENT_ID,
+
+                        callback:
+                            handleGoogleCredential,
+
+                        auto_select:
+                            false,
+
+                        cancel_on_tap_outside:
+                            true
+
+                    });
 
 
-/* =========================
-   STORAGE
-========================= */
+                    const button =
+                        document.getElementById(
+                            "googleButton"
+                        );
 
-function loadChats() {
+
+                    if (button) {
+
+                        google.accounts.id.renderButton(
+
+                            button,
+
+                            {
+                                type:
+                                    "standard",
+
+                                theme:
+                                    "outline",
+
+                                size:
+                                    "large",
+
+                                text:
+                                    "signin_with",
+
+                                shape:
+                                    "rectangular",
+
+                                logo_alignment:
+                                    "left",
+
+                                width:
+                                    300
+
+                            }
+
+                        );
+
+                    }
+
+                }
+
+            },
+            100
+        );
+
+
+    setTimeout(
+        () => clearInterval(waitForGoogle),
+        10000
+    );
+
+}
+
+
+/* =========================================================
+   GOOGLE CREDENTIAL
+========================================================= */
+
+async function handleGoogleCredential(
+    response
+) {
+
+    if (
+        !response ||
+        !response.credential
+    ) {
+
+        showLoginError(
+            "Google did not return a valid credential."
+        );
+
+        return;
+
+    }
+
+
+    setLoginLoading(true);
+
 
     try {
 
-        const saved = localStorage.getItem(STORAGE_KEYS.chats);
+        const result =
+            await fetch(
+                AUTH_URL,
+                {
 
-        chats = saved ? JSON.parse(saved) : [];
+                    method:
+                        "POST",
 
-        const savedCurrent =
-            localStorage.getItem(STORAGE_KEYS.currentChat);
+                    headers: {
+                        "Content-Type":
+                            "application/json",
 
-        currentChatId = savedCurrent || null;
+                        "Accept":
+                            "application/json"
+                    },
+
+                    credentials:
+                        "include",
+
+                    body:
+                        JSON.stringify({
+
+                            credential:
+                                response.credential
+
+                        })
+
+                }
+            );
+
+
+        const data =
+            await readJSON(result);
+
+
+        if (!result.ok) {
+
+            throw new Error(
+                data.error ||
+                "Google sign-in failed."
+            );
+
+        }
+
+
+        currentUser =
+            data.user;
+
+
+        localStorage.setItem(
+            STORAGE_USER,
+            JSON.stringify(
+                currentUser
+            )
+        );
+
+
+        showApp();
+
 
     } catch (error) {
 
-        console.error("Storage error:", error);
+        console.error(
+            "Google login error:",
+            error
+        );
+
+        showLoginError(
+            error.message ||
+            "Unable to sign in."
+        );
+
+    } finally {
+
+        setLoginLoading(false);
+
+    }
+
+}
+
+
+/* =========================================================
+   RESTORE SESSION
+========================================================= */
+
+async function restoreSession() {
+
+    try {
+
+        const response =
+            await fetch(
+                ME_URL,
+                {
+                    method:
+                        "GET",
+
+                    credentials:
+                        "include",
+
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
+                }
+            );
+
+
+        if (!response.ok) {
+
+            return false;
+
+        }
+
+
+        const data =
+            await readJSON(response);
+
+
+        if (
+            data &&
+            data.authenticated &&
+            data.user
+        ) {
+
+            currentUser =
+                data.user;
+
+
+            localStorage.setItem(
+                STORAGE_USER,
+                JSON.stringify(
+                    currentUser
+                )
+            );
+
+
+            return true;
+
+        }
+
+
+    } catch (error) {
+
+        console.log(
+            "No active server session."
+        );
+
+    }
+
+
+    return false;
+
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+async function logout() {
+
+    try {
+
+        await fetch(
+            LOGOUT_URL,
+            {
+                method:
+                    "POST",
+
+                credentials:
+                    "include"
+            }
+        );
+
+    } catch (error) {
+
+        console.warn(error);
+
+    }
+
+
+    currentUser = null;
+
+    localStorage.removeItem(
+        STORAGE_USER
+    );
+
+
+    document
+        .getElementById("app")
+        ?.classList.add("hidden");
+
+
+    document
+        .getElementById("loginScreen")
+        ?.classList.remove("hidden");
+
+
+    if (
+        window.google &&
+        google.accounts &&
+        google.accounts.id
+    ) {
+
+        google.accounts.id.disableAutoSelect();
+
+    }
+
+}
+
+
+/* =========================================================
+   SHOW APP
+========================================================= */
+
+function showApp() {
+
+    document
+        .getElementById("loginScreen")
+        ?.classList.add("hidden");
+
+
+    document
+        .getElementById("app")
+        ?.classList.remove("hidden");
+
+
+    updateUserUI();
+
+
+    loadLocalData();
+
+
+    if (
+        !currentChatId ||
+        !getCurrentChat()
+    ) {
+
+        createNewChat();
+
+    } else {
+
+        renderAll();
+
+    }
+
+}
+
+
+/* =========================================================
+   USER UI
+========================================================= */
+
+function updateUserUI() {
+
+    if (!currentUser) return;
+
+
+    const name =
+        document.getElementById(
+            "userName"
+        );
+
+    const email =
+        document.getElementById(
+            "userEmail"
+        );
+
+    const avatar =
+        document.getElementById(
+            "userAvatar"
+        );
+
+
+    if (name) {
+
+        name.textContent =
+            currentUser.name ||
+            "Google User";
+
+    }
+
+
+    if (email) {
+
+        email.textContent =
+            currentUser.email ||
+            "Signed in";
+
+    }
+
+
+    if (avatar) {
+
+        avatar.src =
+            currentUser.picture ||
+            createAvatar(
+                currentUser.name
+            );
+
+    }
+
+}
+
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+function setupEvents() {
+
+    document
+        .getElementById("newChat")
+        ?.addEventListener(
+            "click",
+            () => {
+
+                if (!generating) {
+
+                    createNewChat();
+
+                }
+
+            }
+        );
+
+
+    document
+        .getElementById("sendBtn")
+        ?.addEventListener(
+            "click",
+            sendMessage
+        );
+
+
+    document
+        .getElementById("logoutButton")
+        ?.addEventListener(
+            "click",
+            logout
+        );
+
+
+    const input =
+        document.getElementById(
+            "messageInput"
+        );
+
+
+    if (input) {
+
+        input.addEventListener(
+            "keydown",
+            event => {
+
+                if (
+                    event.key === "Enter" &&
+                    !event.shiftKey
+                ) {
+
+                    event.preventDefault();
+
+                    sendMessage();
+
+                }
+
+            }
+        );
+
+
+        input.addEventListener(
+            "input",
+            () => {
+
+                input.style.height =
+                    "auto";
+
+                input.style.height =
+                    Math.min(
+                        input.scrollHeight,
+                        180
+                    ) + "px";
+
+            }
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   LOCAL DATA
+========================================================= */
+
+function loadLocalData() {
+
+    try {
+
+        chats =
+            JSON.parse(
+                localStorage.getItem(
+                    STORAGE_CHATS
+                )
+            ) || [];
+
+
+        currentChatId =
+            localStorage.getItem(
+                STORAGE_CURRENT
+            );
+
+
+    } catch {
 
         chats = [];
+
         currentChatId = null;
 
     }
@@ -86,17 +633,18 @@ function loadChats() {
 }
 
 
-function saveChats() {
+function saveData() {
 
     localStorage.setItem(
-        STORAGE_KEYS.chats,
+        STORAGE_CHATS,
         JSON.stringify(chats)
     );
+
 
     if (currentChatId) {
 
         localStorage.setItem(
-            STORAGE_KEYS.currentChat,
+            STORAGE_CURRENT,
             currentChatId
         );
 
@@ -105,438 +653,389 @@ function saveChats() {
 }
 
 
-/* =========================
-   CHAT OBJECT
-========================= */
+/* =========================================================
+   CHAT
+========================================================= */
 
-function createChatObject() {
+function createNewChat() {
 
-    return {
+    const chat = {
+
         id:
-            "chat_" +
+            "qtm_" +
             Date.now() +
             "_" +
             Math.random()
                 .toString(36)
-                .substring(2, 8),
+                .slice(2,8),
 
-        title: "New conversation",
+        title:
+            "New conversation",
 
-        createdAt: Date.now(),
+        messages: [],
 
-        messages: []
+        createdAt:
+            Date.now()
+
     };
 
-}
-
-
-/* =========================
-   NEW CHAT
-========================= */
-
-function createNewChat(save = true) {
-
-    const chat = createChatObject();
 
     chats.unshift(chat);
 
-    currentChatId = chat.id;
+    currentChatId =
+        chat.id;
 
-    if (save) {
-        saveChats();
-    }
 
-    renderSidebar();
-    renderCurrentChat();
+    saveData();
+
+    renderAll();
 
 }
 
-
-/* =========================
-   CURRENT CHAT
-========================= */
 
 function getCurrentChat() {
 
     return chats.find(
-        chat => chat.id === currentChatId
+        chat =>
+            chat.id ===
+            currentChatId
     );
 
 }
 
 
-/* =========================
-   SETUP UI
-========================= */
-
-function setupInterface() {
-
-    /* New chat */
-
-    const newChatButtons = $$(
-        "#newChat, .new-chat, [data-action='new-chat']"
-    );
-
-    newChatButtons.forEach(button => {
-
-        button.addEventListener("click", () => {
-
-            if (isGenerating) return;
-
-            createNewChat();
-
-        });
-
-    });
-
-
-    /* Send buttons */
-
-    const sendButtons = $$(
-        "#sendBtn, .send-btn, [data-action='send']"
-    );
-
-    sendButtons.forEach(button => {
-
-        button.addEventListener("click", sendCurrentMessage);
-
-    });
-
-
-    /* Textarea */
-
-    const input =
-        $("#messageInput") ||
-        $("#prompt") ||
-        $("textarea");
-
-
-    if (input) {
-
-        input.addEventListener("keydown", (event) => {
-
-            if (event.key === "Enter" && !event.shiftKey) {
-
-                event.preventDefault();
-
-                sendCurrentMessage();
-
-            }
-
-        });
-
-
-        input.addEventListener("input", () => {
-
-            autoResize(input);
-
-        });
-
-    }
-
-
-    renderSidebar();
-
-}
-
-
-/* =========================
+/* =========================================================
    SEND MESSAGE
-========================= */
+========================================================= */
 
-async function sendCurrentMessage() {
+async function sendMessage() {
 
-    if (isGenerating) return;
+    if (generating) return;
 
-    const input =
-        $("#messageInput") ||
-        $("#prompt") ||
-        $("textarea");
 
-    if (!input) {
+    if (!currentUser) {
 
-        console.error(
-            "QTM AI: Message input not found."
+        showLoginError(
+            "Please sign in first."
         );
 
         return;
 
     }
 
-    const message = input.value.trim();
 
-    if (!message) return;
+    const input =
+        document.getElementById(
+            "messageInput"
+        );
 
-    const chat = getCurrentChat();
+
+    if (!input) return;
+
+
+    const text =
+        input.value.trim();
+
+
+    if (!text) return;
+
+
+    const chat =
+        getCurrentChat();
+
 
     if (!chat) return;
 
 
-    /* Clear input */
-
     input.value = "";
 
-    autoResize(input);
+    input.style.height =
+        "auto";
 
-
-    /* Add user message */
 
     chat.messages.push({
-        role: "user",
-        content: message,
-        timestamp: Date.now()
+
+        role:
+            "user",
+
+        content:
+            text,
+
+        timestamp:
+            Date.now()
+
     });
 
 
-    /* Automatically create title */
-
     if (
-        chat.title === "New conversation" ||
-        !chat.title
+        chat.title ===
+        "New conversation"
     ) {
 
-        chat.title = createTitle(message);
+        chat.title =
+            text.length > 38
+                ? text.slice(0,38) + "..."
+                : text;
 
     }
 
 
-    saveChats();
+    saveData();
 
-    renderCurrentChat();
-    renderSidebar();
+    renderAll();
 
 
-    /* Generate */
+    generating = true;
 
-    isGenerating = true;
+    setGenerating(true);
 
-    setGeneratingState(true);
 
-    const loadingId = addLoadingMessage();
+    const loading =
+        showLoading();
 
 
     try {
 
-        const reply = await requestQTM(message, chat);
+        const answer =
+            await askQTM(
+                text,
+                chat
+            );
 
-        removeLoadingMessage(loadingId);
+
+        removeLoading(
+            loading
+        );
+
 
         chat.messages.push({
-            role: "assistant",
-            content: reply,
-            timestamp: Date.now()
+
+            role:
+                "assistant",
+
+            content:
+                answer,
+
+            timestamp:
+                Date.now()
+
         });
 
-        saveChats();
 
-        renderCurrentChat();
+        saveData();
 
-        renderSidebar();
+        renderAll();
+
 
     } catch (error) {
 
-        console.error(error);
+        removeLoading(
+            loading
+        );
 
-        removeLoadingMessage(loadingId);
-
-        const errorMessage =
-            getFriendlyError(error);
 
         chat.messages.push({
-            role: "assistant",
-            content: errorMessage,
-            timestamp: Date.now(),
-            error: true
+
+            role:
+                "assistant",
+
+            content:
+                "QTM AI error:\n\n" +
+                error.message,
+
+            error:
+                true,
+
+            timestamp:
+                Date.now()
+
         });
 
-        saveChats();
 
-        renderCurrentChat();
+        saveData();
+
+        renderAll();
 
     } finally {
 
-        isGenerating = false;
+        generating = false;
 
-        setGeneratingState(false);
+        setGenerating(false);
 
     }
 
 }
 
 
-/* =========================
-   API REQUEST
-========================= */
+/* =========================================================
+   QTM API
+========================================================= */
 
-async function requestQTM(message, chat) {
+async function askQTM(
+    text,
+    chat
+) {
 
-    const controller = new AbortController();
-
-    const timeout = setTimeout(
-        () => controller.abort(),
-        60000
-    );
-
-
-    try {
-
-        const response = await fetch(
-            CHAT_ENDPOINT,
+    const response =
+        await fetch(
+            CHAT_URL,
             {
-                method: "POST",
+
+                method:
+                    "POST",
+
+                credentials:
+                    "include",
 
                 headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
+                    "Content-Type":
+                        "application/json",
+
+                    "Accept":
+                        "application/json"
                 },
 
-                body: JSON.stringify({
+                body:
+                    JSON.stringify({
 
-                    message: message,
+                        message:
+                            text,
 
-                    messages: chat.messages.map(item => ({
-                        role: item.role,
-                        content: item.content
-                    })),
+                        messages:
+                            chat.messages.map(
+                                item => ({
 
-                    conversation_id: chat.id
+                                    role:
+                                        item.role,
 
-                }),
+                                    content:
+                                        item.content
 
-                signal: controller.signal
+                                })
+                            ),
+
+                        conversation_id:
+                            chat.id
+
+                    })
 
             }
         );
 
 
-        const text = await response.text();
-
-        let data = null;
-
-        try {
-
-            data = text ? JSON.parse(text) : null;
-
-        } catch {
-
-            throw new Error(
-                "The QTM AI server returned an invalid response."
-            );
-
-        }
+    const data =
+        await readJSON(
+            response
+        );
 
 
-        if (!response.ok) {
-
-            throw new Error(
-                data?.error ||
-                data?.message ||
-                `Server error ${response.status}`
-            );
-
-        }
-
-
-        return extractAssistantReply(data);
-
-    } finally {
-
-        clearTimeout(timeout);
-
-    }
-
-}
-
-
-/* =========================
-   RESPONSE PARSER
-========================= */
-
-function extractAssistantReply(data) {
-
-    if (!data) {
+    if (!response.ok) {
 
         throw new Error(
-            "QTM AI returned an empty response."
+            data.error ||
+            data.message ||
+            "AI request failed."
         );
 
     }
 
 
-    /* Common response formats */
+    return extractAnswer(
+        data
+    );
 
-    if (typeof data === "string") {
+}
+
+
+/* =========================================================
+   RESPONSE
+========================================================= */
+
+function extractAnswer(data) {
+
+    if (
+        typeof data ===
+        "string"
+    ) {
+
         return data;
+
     }
 
 
-    if (typeof data.response === "string") {
-        return data.response;
-    }
+    const values = [
+
+        data?.response,
+
+        data?.reply,
+
+        data?.answer,
+
+        data?.content,
+
+        data?.message
+
+    ];
 
 
-    if (typeof data.reply === "string") {
-        return data.reply;
-    }
-
-
-    if (typeof data.message === "string") {
-        return data.message;
-    }
-
-
-    if (typeof data.answer === "string") {
-        return data.answer;
-    }
-
-
-    if (typeof data.content === "string") {
-        return data.content;
-    }
-
-
-    if (
-        data.result &&
-        typeof data.result === "string"
+    for (
+        const value of values
     ) {
-        return data.result;
-    }
-
-
-    if (
-        data.result &&
-        typeof data.result.response === "string"
-    ) {
-        return data.result.response;
-    }
-
-
-    if (
-        data.result &&
-        typeof data.result.message === "string"
-    ) {
-        return data.result.message;
-    }
-
-
-    if (
-        data.choices &&
-        Array.isArray(data.choices) &&
-        data.choices.length
-    ) {
-
-        const choice = data.choices[0];
 
         if (
-            choice.message &&
-            typeof choice.message.content === "string"
+            typeof value ===
+            "string"
+        ) {
+
+            return value;
+
+        }
+
+    }
+
+
+    if (
+        data?.result &&
+        typeof data.result ===
+        "string"
+    ) {
+
+        return data.result;
+
+    }
+
+
+    if (
+        data?.result?.response
+    ) {
+
+        return data.result.response;
+
+    }
+
+
+    if (
+        Array.isArray(
+            data?.choices
+        )
+    ) {
+
+        const choice =
+            data.choices[0];
+
+
+        if (
+            choice?.message?.content
         ) {
 
             return choice.message.content;
 
         }
 
-        if (typeof choice.text === "string") {
+
+        if (
+            choice?.text
+        ) {
 
             return choice.text;
 
@@ -546,386 +1045,403 @@ function extractAssistantReply(data) {
 
 
     throw new Error(
-        "QTM AI returned an unknown response format."
+        "Unknown AI response format."
     );
 
 }
 
 
-/* =========================
-   SIDEBAR
-========================= */
+/* =========================================================
+   RENDER
+========================================================= */
 
-function renderSidebar() {
+function renderAll() {
 
-    const container =
-        $("#chatList") ||
-        $(".chat-list") ||
-        $("#chats");
+    renderSidebar();
 
-
-    if (!container) return;
-
-
-    container.innerHTML = "";
-
-
-    chats.forEach(chat => {
-
-        const item = document.createElement("button");
-
-        item.className =
-            "chat-item" +
-            (
-                chat.id === currentChatId
-                    ? " active"
-                    : ""
-            );
-
-        item.type = "button";
-
-
-        const title =
-            chat.title ||
-            "New conversation";
-
-
-        item.innerHTML = `
-            <span class="chat-item-icon">✦</span>
-            <span class="chat-item-title"></span>
-        `;
-
-
-        const titleElement =
-            item.querySelector(
-                ".chat-item-title"
-            );
-
-        titleElement.textContent = title;
-
-
-        item.addEventListener("click", () => {
-
-            if (isGenerating) return;
-
-            currentChatId = chat.id;
-
-            saveChats();
-
-            renderSidebar();
-            renderCurrentChat();
-
-        });
-
-
-        container.appendChild(item);
-
-    });
+    renderMessages();
 
 }
 
 
-/* =========================
-   CHAT RENDER
-========================= */
+/* SIDEBAR */
 
-function renderCurrentChat() {
+function renderSidebar() {
 
-    const chat = getCurrentChat();
+    const list =
+        document.getElementById(
+            "chatList"
+        );
+
+
+    if (!list) return;
+
+
+    list.innerHTML = "";
+
+
+    chats.forEach(
+        chat => {
+
+            const button =
+                document.createElement(
+                    "button"
+                );
+
+
+            button.className =
+                "chat-item" +
+                (
+                    chat.id ===
+                    currentChatId
+                        ? " active"
+                        : ""
+                );
+
+
+            button.innerHTML = `
+
+                <span class="chat-icon">
+                    ✦
+                </span>
+
+                <span class="chat-title"></span>
+
+            `;
+
+
+            button
+                .querySelector(
+                    ".chat-title"
+                )
+                .textContent =
+                    chat.title;
+
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    if (generating)
+                        return;
+
+                    currentChatId =
+                        chat.id;
+
+                    saveData();
+
+                    renderAll();
+
+                }
+            );
+
+
+            list.appendChild(
+                button
+            );
+
+        }
+    );
+
+}
+
+
+/* MESSAGES */
+
+function renderMessages() {
+
+    const area =
+        document.getElementById(
+            "messages"
+        );
+
+
+    if (!area) return;
+
+
+    area.innerHTML = "";
+
+
+    const chat =
+        getCurrentChat();
+
 
     if (!chat) return;
 
 
-    const container =
-        $("#messages") ||
-        $("#chatMessages") ||
-        $(".messages") ||
-        $(".chat-messages");
+    if (
+        chat.messages.length === 0
+    ) {
 
-
-    if (!container) return;
-
-
-    container.innerHTML = "";
-
-
-    if (chat.messages.length === 0) {
-
-        renderWelcome(container);
+        renderWelcome(
+            area
+        );
 
         return;
 
     }
 
 
-    chat.messages.forEach(message => {
+    chat.messages.forEach(
+        message => {
 
-        renderMessage(
-            container,
-            message
-        );
-
-    });
-
-
-    scrollToBottom();
-
-}
+            const row =
+                document.createElement(
+                    "div"
+                );
 
 
-/* =========================
-   WELCOME
-========================= */
-
-function renderWelcome(container) {
-
-    const welcome = document.createElement("div");
-
-    welcome.className = "qtm-welcome";
-
-    welcome.innerHTML = `
-        <div class="welcome-orb">
-            <span>Q</span>
-        </div>
-
-        <h1>What can I help you with?</h1>
-
-        <p>
-            Ask QTM AI anything. Start a conversation
-            and explore what you can create.
-        </p>
-    `;
-
-    container.appendChild(welcome);
-
-}
+            row.className =
+                "message-row " +
+                (
+                    message.role ===
+                    "user"
+                        ? "user"
+                        : "assistant"
+                );
 
 
-/* =========================
-   RENDER MESSAGE
-========================= */
-
-function renderMessage(container, message) {
-
-    const wrapper =
-        document.createElement("div");
+            const bubble =
+                document.createElement(
+                    "div"
+                );
 
 
-    wrapper.className =
-        "message-row " +
-        (
-            message.role === "user"
-                ? "user-message"
-                : "assistant-message"
-        );
+            bubble.className =
+                "message";
 
 
-    const bubble =
-        document.createElement("div");
+            bubble.innerHTML =
+                formatText(
+                    message.content
+                );
 
 
-    bubble.className = "message-bubble";
+            row.appendChild(
+                bubble
+            );
 
 
-    if (message.error) {
-
-        bubble.classList.add(
-            "message-error"
-        );
-
-    }
-
-
-    bubble.innerHTML =
-        formatMessage(message.content);
-
-
-    wrapper.appendChild(bubble);
-
-    container.appendChild(wrapper);
-
-}
-
-
-/* =========================
-   MESSAGE FORMATTER
-========================= */
-
-function formatMessage(text) {
-
-    if (!text) return "";
-
-
-    let safe = escapeHTML(text);
-
-
-    /* Code blocks */
-
-    safe = safe.replace(
-        /```([\s\S]*?)```/g,
-        (match, code) => {
-
-            return `
-                <pre class="code-block">
-                    <code>${code.trim()}</code>
-                </pre>
-            `;
+            area.appendChild(
+                row
+            );
 
         }
     );
 
 
-    /* Inline code */
-
-    safe = safe.replace(
-        /`([^`]+)`/g,
-        "<code>$1</code>"
-    );
-
-
-    /* Bold */
-
-    safe = safe.replace(
-        /\*\*(.*?)\*\*/g,
-        "<strong>$1</strong>"
-    );
-
-
-    /* Italic */
-
-    safe = safe.replace(
-        /\*(.*?)\*/g,
-        "<em>$1</em>"
-    );
-
-
-    /* Line breaks */
-
-    safe = safe.replace(
-        /\n/g,
-        "<br>"
-    );
-
-
-    return safe;
+    scrollBottom();
 
 }
 
 
-/* =========================
-   ESCAPE HTML
-========================= */
+/* WELCOME */
 
-function escapeHTML(value) {
+function renderWelcome(area) {
 
-    return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-
-}
+    const welcome =
+        document.createElement(
+            "div"
+        );
 
 
-/* =========================
-   LOADING MESSAGE
-========================= */
-
-function addLoadingMessage() {
-
-    const container =
-        $("#messages") ||
-        $("#chatMessages") ||
-        $(".messages") ||
-        $(".chat-messages");
+    welcome.className =
+        "welcome";
 
 
-    if (!container) return null;
+    welcome.innerHTML = `
 
-
-    const id =
-        "loading_" +
-        Date.now();
-
-
-    const element =
-        document.createElement("div");
-
-
-    element.id = id;
-
-    element.className =
-        "message-row assistant-message qtm-loading";
-
-
-    element.innerHTML = `
-        <div class="message-bubble loading-bubble">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div class="welcome-icon">
+            Q
         </div>
+
+        <h1>
+            What can I help you with?
+        </h1>
+
+        <p>
+            Ask QTM AI anything and
+            start your next conversation.
+        </p>
+
     `;
 
 
-    container.appendChild(element);
-
-    scrollToBottom();
-
-
-    return id;
+    area.appendChild(
+        welcome
+    );
 
 }
 
 
-function removeLoadingMessage(id) {
+/* =========================================================
+   FORMAT
+========================================================= */
 
-    if (!id) return;
+function escapeHTML(text) {
 
-    const element =
-        document.getElementById(id);
-
-    if (element) {
-
-        element.remove();
-
-    }
+    return String(text)
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
 
 }
 
 
-/* =========================
-   GENERATING STATE
-========================= */
+function formatText(text) {
 
-function setGeneratingState(active) {
+    let value =
+        escapeHTML(
+            text || ""
+        );
 
-    const buttons = $$(
-        "#sendBtn, .send-btn, [data-action='send']"
+
+    value =
+        value.replace(
+            /```([\s\S]*?)```/g,
+            (_, code) => {
+
+                return `
+                    <pre><code>
+                        ${code.trim()}
+                    </code></pre>
+                `;
+
+            }
+        );
+
+
+    value =
+        value.replace(
+            /`([^`]+)`/g,
+            "<code>$1</code>"
+        );
+
+
+    value =
+        value.replace(
+            /\*\*(.*?)\*\*/g,
+            "<strong>$1</strong>"
+        );
+
+
+    value =
+        value.replace(
+            /\n/g,
+            "<br>"
+        );
+
+
+    return value;
+
+}
+
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+function showLoading() {
+
+    const area =
+        document.getElementById(
+            "messages"
+        );
+
+
+    if (!area) return null;
+
+
+    const row =
+        document.createElement(
+            "div"
+        );
+
+
+    row.className =
+        "message-row assistant";
+
+
+    row.innerHTML = `
+
+        <div class="message loading">
+
+            <span></span>
+            <span></span>
+            <span></span>
+
+        </div>
+
+    `;
+
+
+    area.appendChild(
+        row
     );
 
 
-    buttons.forEach(button => {
+    scrollBottom();
 
-        button.disabled = active;
 
-        button.classList.toggle(
-            "generating",
-            active
+    return row;
+
+}
+
+
+function removeLoading(element) {
+
+    element?.remove();
+
+}
+
+
+/* =========================================================
+   UI STATE
+========================================================= */
+
+function setGenerating(active) {
+
+    const button =
+        document.getElementById(
+            "sendBtn"
         );
-
-    });
 
 
     const input =
-        $("#messageInput") ||
-        $("#prompt") ||
-        $("textarea");
+        document.getElementById(
+            "messageInput"
+        );
+
+
+    if (button) {
+
+        button.disabled =
+            active;
+
+    }
 
 
     if (input) {
 
-        input.disabled = active;
+        input.disabled =
+            active;
 
         input.placeholder =
             active
@@ -937,163 +1453,176 @@ function setGeneratingState(active) {
 }
 
 
-/* =========================
-   AUTO RESIZE
-========================= */
+/* =========================================================
+   HELPERS
+========================================================= */
 
-function autoResize(element) {
+async function readJSON(
+    response
+) {
 
-    element.style.height = "auto";
+    const text =
+        await response.text();
 
-    element.style.height =
-        Math.min(
-            element.scrollHeight,
-            180
-        ) + "px";
+
+    try {
+
+        return text
+            ? JSON.parse(text)
+            : {};
+
+    } catch {
+
+        throw new Error(
+            "Server returned invalid JSON."
+        );
+
+    }
 
 }
 
 
-/* =========================
-   SCROLL
-========================= */
+function scrollBottom() {
 
-function scrollToBottom() {
-
-    const container =
-        $("#messages") ||
-        $("#chatMessages") ||
-        $(".messages") ||
-        $(".chat-messages");
+    const area =
+        document.getElementById(
+            "messages"
+        );
 
 
-    if (!container) return;
+    if (!area) return;
 
 
-    requestAnimationFrame(() => {
+    requestAnimationFrame(
+        () => {
 
-        container.scrollTop =
-            container.scrollHeight;
+            area.scrollTop =
+                area.scrollHeight;
 
-    });
-
-}
-
-
-/* =========================
-   CHAT TITLE
-========================= */
-
-function createTitle(message) {
-
-    let title =
-        message
-            .replace(/\s+/g, " ")
-            .trim();
-
-
-    if (title.length > 36) {
-
-        title =
-            title.substring(0, 36)
-            .trim() +
-            "…";
-
-    }
-
-
-    return title || "New conversation";
-
-}
-
-
-/* =========================
-   ERROR HANDLING
-========================= */
-
-function getFriendlyError(error) {
-
-    if (
-        error?.name ===
-        "AbortError"
-    ) {
-
-        return "QTM AI took too long to respond. Please try again.";
-
-    }
-
-
-    const message =
-        error?.message || "";
-
-
-    if (
-        message.includes(
-            "Failed to fetch"
-        )
-    ) {
-
-        return `
-QTM AI could not connect to the server.
-
-Please check that the Cloudflare Worker is online and that the /v1/chat endpoint is available.
-        `.trim();
-
-    }
-
-
-    return (
-        "QTM AI encountered an error: " +
-        message
+        }
     );
 
 }
 
 
-/* =========================
-   GLOBAL API
-========================= */
+function createAvatar(name) {
 
-window.QTM = {
-
-    send: sendCurrentMessage,
-
-    newChat: createNewChat,
-
-    getCurrentChat,
-
-    getChats: () => chats,
-
-    clearChats: () => {
-
-        chats = [];
-
-        currentChatId = null;
-
-        localStorage.removeItem(
-            STORAGE_KEYS.chats
+    const letter =
+        encodeURIComponent(
+            (
+                name ||
+                "Q"
+            )
+                .charAt(0)
+                .toUpperCase()
         );
 
-        localStorage.removeItem(
-            STORAGE_KEYS.currentChat
+
+    return (
+        "https://ui-avatars.com/api/" +
+        "?name=" +
+        letter +
+        "&background=10251a" +
+        "&color=72e8a0"
+    );
+
+}
+
+
+/* =========================================================
+   LOGIN UI
+========================================================= */
+
+function setLoginLoading(
+    loading
+) {
+
+    const card =
+        document.querySelector(
+            ".login-card"
         );
 
-        createNewChat();
 
-    },
+    if (!card) return;
 
-    api: API_URL
+
+    card.classList.toggle(
+        "loading-login",
+        loading
+    );
+
+}
+
+
+function showLoginError(
+    message
+) {
+
+    let error =
+        document.getElementById(
+            "loginError"
+        );
+
+
+    if (!error) {
+
+        error =
+            document.createElement(
+                "div"
+            );
+
+        error.id =
+            "loginError";
+
+        error.style.cssText = `
+            color:#ff9a9a;
+            font-size:11px;
+            margin-top:14px;
+            line-height:1.5;
+        `;
+
+
+        document
+            .querySelector(
+                ".google-area"
+            )
+            ?.after(error);
+
+    }
+
+
+    error.textContent =
+        message;
+
+}
+
+
+/* =========================================================
+   DEBUG
+========================================================= */
+
+window.QTM_AI = {
+
+    api:
+        API_URL,
+
+    chat:
+        CHAT_URL,
+
+    newChat:
+        createNewChat,
+
+    send:
+        sendMessage,
+
+    logout:
+        logout
 
 };
 
 
-/* =========================
-   DEBUG
-========================= */
-
 console.log(
-    "%c QTM AI ",
-    "font-weight:bold;font-size:18px"
+    "QTM AI frontend loaded."
 );
 
 console.log(
@@ -1102,6 +1631,6 @@ console.log(
 );
 
 console.log(
-    "Chat endpoint:",
-    CHAT_ENDPOINT
+    "Chat:",
+    CHAT_URL
 );
