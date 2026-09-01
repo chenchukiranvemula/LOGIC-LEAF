@@ -1,61 +1,55 @@
-/* =====================================================
-   LOGIC-LEAF WORKER
-===================================================== */
+// ============================================================
+// LOGIC-LEAF UNIVERSAL AI WORKER
+// ============================================================
 
-const APP_NAME =
-  "LOGIC-LEAF";
-
+const APP_NAME = "LOGIC-LEAF";
 
 const CHAT_MODEL =
   "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
-
 const VISION_MODEL =
   "@cf/meta/llama-3.2-11b-vision-instruct";
-
 
 const IMAGE_MODEL =
   "@cf/black-forest-labs/flux-1-schnell";
 
-
 const SEARCH_INSTANCE =
   "logic-leaf-search";
 
+const MAX_FILE_BYTES =
+  15 * 1024 * 1024;
 
-/* =====================================================
-   WORKER
-===================================================== */
+
+// ============================================================
+// MAIN WORKER
+// ============================================================
 
 export default {
 
   async fetch(request, env) {
 
     const cors = {
-
       "Access-Control-Allow-Origin": "*",
-
       "Access-Control-Allow-Methods":
         "GET,POST,OPTIONS",
-
       "Access-Control-Allow-Headers":
         "Content-Type, Authorization",
-
       "Access-Control-Max-Age":
         "86400"
     };
 
 
-    if (
-      request.method === "OPTIONS"
-    ) {
+    // --------------------------------------------------------
+    // CORS
+    // --------------------------------------------------------
 
-      return new Response(
-        null,
-        {
-          status: 204,
-          headers: cors
-        }
-      );
+    if (request.method === "OPTIONS") {
+
+      return new Response(null, {
+        status: 204,
+        headers: cors
+      });
+
     }
 
 
@@ -66,9 +60,9 @@ export default {
     try {
 
 
-      /* =========================================
-         HEALTH
-      ========================================= */
+      // ======================================================
+      // HEALTH
+      // ======================================================
 
       if (
         url.pathname === "/" ||
@@ -79,14 +73,16 @@ export default {
 
           ok: true,
 
-          name:
-            APP_NAME,
+          name: APP_NAME,
 
-          status:
-            "online",
+          status: "online",
 
-          ai:
-            !!env.AI,
+          ai: !!env.AI,
+
+          ai_gateway: true,
+
+          ai_search:
+            !!env.AI_SEARCH,
 
           database:
             !!env.DB,
@@ -94,28 +90,51 @@ export default {
           kv:
             !!env.QTM_KEYS,
 
-          ai_search:
-            !!env.AI_SEARCH,
+          models: {
 
-          endpoint:
-            "/v1/chat",
+            chat: CHAT_MODEL,
 
-          image:
-            "/v1/image",
+            vision: VISION_MODEL,
 
-          pdf:
-            "/v1/pdf",
+            image: IMAGE_MODEL
 
-          history:
-            "/v1/history"
+          },
+
+          endpoints: {
+
+            chat: "/v1/chat",
+
+            vision: "/v1/vision",
+
+            search: "/v1/search",
+
+            image: "/v1/image",
+
+            pdf: "/v1/pdf",
+
+            file: "/v1/file",
+
+            history: "/v1/history",
+
+            conversation:
+              "/v1/conversation",
+
+            keys:
+              "/v1/keys/create",
+
+            api:
+              "/v1/api/chat"
+
+          }
 
         }, cors);
+
       }
 
 
-      /* =========================================
-         SEARCH
-      ========================================= */
+      // ======================================================
+      // SEARCH
+      // ======================================================
 
       if (
         url.pathname === "/v1/search" &&
@@ -123,8 +142,7 @@ export default {
       ) {
 
         const body =
-          await request.json();
-
+          await safeJSON(request);
 
         const query =
           String(
@@ -137,26 +155,22 @@ export default {
         if (!query) {
 
           return json({
-
             ok: false,
-
             error:
               "Search query required"
-
           }, cors, 400);
+
         }
 
 
         if (!env.AI_SEARCH) {
 
           return json({
-
             ok: false,
-
             error:
               "AI Search binding missing"
-
           }, cors, 500);
+
         }
 
 
@@ -170,15 +184,10 @@ export default {
           await instance.search({
 
             messages: [
-
               {
-                role:
-                  "user",
-
-                content:
-                  query
+                role: "user",
+                content: query
               }
-
             ]
 
           });
@@ -194,10 +203,9 @@ export default {
 
         const sources =
           chunks.map(
-            (chunk, i) => ({
+            (chunk, index) => ({
 
-              id:
-                i + 1,
+              id: index + 1,
 
               text:
                 chunk.text ||
@@ -225,8 +233,7 @@ export default {
 
         return json({
 
-          ok:
-            true,
+          ok: true,
 
           query,
 
@@ -237,12 +244,13 @@ export default {
             sources
 
         }, cors);
+
       }
 
 
-      /* =========================================
-         CHAT
-      ========================================= */
+      // ======================================================
+      // CHAT
+      // ======================================================
 
       if (
         url.pathname === "/v1/chat" &&
@@ -250,7 +258,7 @@ export default {
       ) {
 
         const body =
-          await request.json();
+          await safeJSON(request);
 
 
         const message =
@@ -279,93 +287,98 @@ export default {
           body.useSearch === true;
 
 
-        const file =
-          body.file || null;
-
-
-        if (
-          !message &&
-          !file
-        ) {
+        if (!message) {
 
           return json({
-
             ok: false,
-
             error:
               "Message required"
-
           }, cors, 400);
+
         }
 
 
-        /* =====================================
-           DATABASE
-        ===================================== */
+        if (!env.AI) {
 
-        let previousMessages =
-          [];
+          return json({
+            ok: false,
+            error:
+              "Workers AI binding missing"
+          }, cors, 500);
+
+        }
+
+
+        // ----------------------------------------------------
+        // LOAD PREVIOUS CONVERSATION
+        // ----------------------------------------------------
+
+        let previousMessages = [];
 
 
         if (env.DB) {
 
           try {
 
-            await ensureDatabase(env);
+            await ensureDatabase(
+              env
+            );
 
 
             const history =
-              await env.DB
-                .prepare(`
-                  SELECT
-                    role,
-                    content,
-                    created_at
-                  FROM messages
-                  WHERE conversation_id = ?
-                  AND user_id = ?
-                  ORDER BY id DESC
-                  LIMIT 20
-                `)
-                .bind(
-                  conversationId,
-                  userId
-                )
-                .all();
+              await env.DB.prepare(`
+                SELECT
+                  role,
+                  content
+                FROM messages
+                WHERE conversation_id = ?
+                ORDER BY id DESC
+                LIMIT 20
+              `)
+              .bind(
+                conversationId
+              )
+              .all();
 
 
             previousMessages =
-              (history.results || [])
-                .reverse()
-                .map(
-                  row => ({
+              (
+                history.results ||
+                []
+              )
+              .reverse()
+              .map(
+                item => ({
 
-                    role:
-                      row.role,
+                  role:
+                    item.role ===
+                    "assistant"
+                      ? "assistant"
+                      : "user",
 
-                    content:
-                      row.content
+                  content:
+                    item.content
 
-                  })
-                );
-
+                })
+              );
 
           } catch (error) {
 
             console.error(
-              "HISTORY ERROR",
+              "HISTORY LOAD ERROR",
               error
             );
+
           }
+
         }
 
 
-        /* =====================================
-           SEARCH
-        ===================================== */
+        // ----------------------------------------------------
+        // SEARCH
+        // ----------------------------------------------------
 
-        let sources =
-          [];
+        let sources = [];
 
         let searchContext =
           "";
@@ -388,15 +401,10 @@ export default {
               await instance.search({
 
                 messages: [
-
                   {
-                    role:
-                      "user",
-
-                    content:
-                      message
+                    role: "user",
+                    content: message
                   }
-
                 ]
 
               });
@@ -412,10 +420,10 @@ export default {
 
             sources =
               chunks.map(
-                (chunk, i) => ({
+                (chunk, index) => ({
 
                   id:
-                    i + 1,
+                    index + 1,
 
                   text:
                     chunk.text ||
@@ -452,121 +460,82 @@ ${source.text}`
                   "\n\n"
                 );
 
-
           } catch (error) {
 
             console.error(
               "SEARCH ERROR",
               error
             );
+
           }
+
         }
 
 
-        /* =====================================
-           SYSTEM PROMPT
-        ===================================== */
+        // ----------------------------------------------------
+        // SYSTEM PROMPT
+        // ----------------------------------------------------
 
-        const systemPrompt = `
+        let systemPrompt = `
 
 You are LOGIC-LEAF.
 
-You are a highly capable general AI assistant.
+You are a capable general-purpose AI assistant.
 
-Developer:
+Your developer is:
+
 V.CHENCHUKIRAN
-
-Project:
-LOGIC-LEAF
 
 Focus:
 CLOUD SECURITY
 
-You help users with:
+You can help with:
 
-- general questions
-- reasoning
-- mathematics
-- science
-- education
-- coding
-- debugging
-- programming
-- writing
-- project development
-- study assistance
-- technical questions
-- image understanding
-- document analysis
+- General questions
+- Reasoning
+- Mathematics
+- Science
+- Education
+- Study assistance
+- Coding
+- Debugging
+- Programming
+- HTML
+- CSS
+- JavaScript
+- Python
+- Java
+- C
+- C++
+- Projects
+- Writing
+- Technical explanations
+- Document analysis
+- Image understanding
 
-CONVERSATION CONTINUITY:
+IMPORTANT CONVERSATION RULES:
 
-The conversation history provided to you is important.
+1. Maintain continuity with the current conversation.
+2. Use previous messages when they are relevant.
+3. Do not restart the topic unnecessarily.
+4. If the user says "continue", continue the current topic.
+5. If the user says "explain more", expand the previous answer.
+6. If the user asks a follow-up question, understand its context.
+7. Do not pretend that every question is from a foreign country.
+8. Prefer the user's actual wording and context.
+9. Do not invent personal information about the user.
+10. Answer naturally and directly.
 
-Understand references such as:
+CODING RULES:
 
-"it"
-"that"
-"this"
-"the previous one"
-"continue"
-"as we discussed"
-"next"
-"what about that"
+- Provide complete usable code when requested.
+- Use Markdown code blocks.
+- Identify the programming language.
+- Do not intentionally omit important sections.
+- Explain important configuration requirements.
+- Never claim code is deployed unless it actually is.
 
-Maintain the topic naturally.
-
-Do NOT restart the conversation unnecessarily.
-
-If the user asks a follow-up question,
-use the previous messages to understand
-what they mean.
-
-INDIA CONTEXT:
-
-The user may be in India.
-
-When a question is clearly about India,
-prefer Indian context.
-
-Use:
-- INR / ₹
-- Indian education systems
-- Indian exams
-- Indian dates and conventions
-- Indian services
-- Indian examples
-
-Do not assume that every question is about
-a foreign country.
-
-However, if the user explicitly asks about
-another country, answer for that country.
-
-ACCURACY:
-
-Do not invent facts.
-
-If information is uncertain,
-say that it is uncertain.
-
-SEARCH:
-
-When search results are provided,
-use them when relevant.
-
-Do not pretend that indexed sources say
-something they do not say.
-
-CODE:
-
-When generating code:
-
-- use Markdown code blocks
-- identify the language
-- make code complete
-- avoid unnecessary placeholders
-- explain important parts when useful
+IDENTITY:
 
 You are LOGIC-LEAF.
 
@@ -580,133 +549,31 @@ Gemini, Claude, or another company's assistant.
 
           systemPrompt += `
 
-SEARCH MODE IS ACTIVE.
+SEARCH MODE:
 
-Use the supplied search results
-when they are relevant.
+Search results may be supplied below.
 
-`;
-        }
+Use them when relevant.
 
+Do not invent facts from search results.
 
-        /* =====================================
-           FILE PROCESSING
-        ===================================== */
-
-        let fileContext =
-          "";
-
-
-        let imageData =
-          null;
-
-
-        if (file) {
-
-          const fileName =
-            String(
-              file.name ||
-              "uploaded-file"
-            );
-
-
-          const fileType =
-            String(
-              file.type ||
-              ""
-            );
-
-
-          const fileData =
-            String(
-              file.data ||
-              ""
-            );
-
-
-          /*
-             IMAGE
-          */
-
-          if (
-            fileType.startsWith(
-              "image/"
-            )
-          ) {
-
-            imageData =
-              fileData;
-
-          }
-
-
-          /*
-             TEXT / CODE
-          */
-
-          else if (
-            fileType.startsWith("text/") ||
-            /\.(js|css|html|py|java|cpp|c|h|md|json|csv|xml|sql)$/i
-              .test(fileName)
-          ) {
-
-            try {
-
-              fileContext =
-                decodeDataURL(
-                  fileData
-                );
-
-            } catch {
-
-              fileContext =
-                "";
-            }
-
-          }
-
-
-          /*
-             PDF
-          */
-
-          else if (
-            fileName
-              .toLowerCase()
-              .endsWith(".pdf")
-          ) {
-
-            fileContext = `
-
-The user uploaded a PDF named:
-${fileName}
-
-The current Worker received the PDF,
-but PDF text extraction is not available
-in this lightweight Worker implementation.
-
-Do not invent the PDF contents.
-
-Ask the user to provide the relevant text
-if direct PDF extraction is unavailable.
+If the results are insufficient,
+say that the available indexed information
+was insufficient.
 
 `;
-
-          }
 
         }
 
 
-        /* =====================================
-           BUILD MODEL MESSAGES
-        ===================================== */
+        // ----------------------------------------------------
+        // BUILD MESSAGE ARRAY
+        // ----------------------------------------------------
 
-        const modelMessages = [
+        const aiMessages = [
 
           {
-            role:
-              "system",
-
+            role: "system",
             content:
               systemPrompt
           }
@@ -714,278 +581,172 @@ if direct PDF extraction is unavailable.
         ];
 
 
-        /*
-          Previous conversation
-        */
-
         for (
           const item of previousMessages
         ) {
 
-          if (
-            item.role === "user" ||
-            item.role === "assistant"
-          ) {
-
-            modelMessages.push({
-
-              role:
-                item.role,
-
-              content:
-                String(
-                  item.content || ""
-                ).slice(
-                  0,
-                  12000
-                )
-
-            });
-
-          }
+          aiMessages.push({
+            role:
+              item.role,
+            content:
+              item.content
+          });
 
         }
 
 
-        let finalUserMessage =
+        let finalMessage =
           message;
 
 
-        if (fileContext) {
+        if (
+          searchEnabled &&
+          searchContext
+        ) {
 
-          finalUserMessage += `
+          finalMessage = `
 
-UPLOADED FILE:
+QUESTION:
 
-${fileContext}
+${message}
 
-Please analyze the uploaded file
-as part of your answer.
-`;
-
-        }
-
-
-        if (searchContext) {
-
-          finalUserMessage += `
 
 SEARCH RESULTS:
 
 ${searchContext}
 
-Use these results when relevant.
+
+Use the search results only when
+they are relevant.
+
 `;
 
         }
 
 
-        /*
-          Vision request
-        */
+        aiMessages.push({
 
-        if (imageData) {
-
-          /*
-            Cloudflare's Llama Vision model
-            accepts image data alongside the
-            request.
-          */
-
-          const visionPrompt = {
-
-            role:
-              "user",
-
-            content:
-              finalUserMessage
-
-          };
-
-
-          let visionResult;
-
-
-          try {
-
-            visionResult =
-              await env.AI.run(
-                VISION_MODEL,
-                {
-                  messages: [
-                    {
-                      role:
-                        "system",
-
-                      content:
-                        systemPrompt
-                    },
-
-                    ...previousMessages.slice(
-                      -10
-                    ),
-
-                    visionPrompt
-                  ],
-
-                  image:
-                    imageData,
-
-                  max_tokens:
-                    4096
-                }
-              );
-
-
-          } catch (visionError) {
-
-            console.error(
-              "VISION ERROR",
-              visionError
-            );
-
-
-            return json({
-
-              ok:
-                false,
-
-              error:
-                "Image understanding failed. Make sure the Cloudflare Vision model is enabled for this Worker."
-
-            }, cors, 500);
-          }
-
-
-          const answer =
-            extractAIText(
-              visionResult
-            );
-
-
-          await saveMessages(
-            env,
-            conversationId,
-            userId,
-            message ||
-              `Analyze ${file?.name || "image"}`,
-            answer
-          );
-
-
-          return json({
-
-            ok:
-              true,
-
-            answer,
-
-            conversationId,
-
-            sources,
-
-            vision:
-              true,
-
-            model:
-              VISION_MODEL
-
-          }, cors);
-        }
-
-
-        /*
-          Normal text request
-        */
-
-        modelMessages.push({
-
-          role:
-            "user",
+          role: "user",
 
           content:
-            finalUserMessage
+            finalMessage
 
         });
 
 
-        let result;
+        // ----------------------------------------------------
+        // AI REQUEST
+        // ----------------------------------------------------
 
+        const result =
+          await env.AI.run(
+            CHAT_MODEL,
+            {
+              messages:
+                aiMessages,
 
-        try {
+              max_tokens:
+                4096,
 
-          result =
-            await env.AI.run(
-              CHAT_MODEL,
-              {
-                messages:
-                  modelMessages,
-
-                max_tokens:
-                  4096,
-
-                temperature:
-                  0.6
-              },
-              {
-                gateway: {
-                  id:
-                    "default",
-
-                  skipCache:
-                    false,
-
-                  collectLog:
-                    true
-                }
-              }
-            );
-
-
-        } catch (aiError) {
-
-          console.error(
-            "AI ERROR",
-            aiError
+              temperature:
+                0.6
+            },
+            gatewayOptions()
           );
-
-
-          return json({
-
-            ok:
-              false,
-
-            error:
-              aiError?.message ||
-              "Workers AI request failed"
-
-          }, cors, 500);
-        }
 
 
         const answer =
-          extractAIText(
-            result
-          );
+          result?.response ||
+          result?.result?.response ||
+          "";
 
 
-        /* =====================================
-           SAVE
-        ===================================== */
+        if (!answer) {
 
-        await saveMessages(
-          env,
-          conversationId,
-          userId,
-          message,
-          answer
-        );
+          return json({
+            ok: false,
+            error:
+              "AI returned an empty response"
+          }, cors, 502);
+
+        }
+
+
+        // ----------------------------------------------------
+        // SAVE USER + AI MESSAGE
+        // ----------------------------------------------------
+
+        if (env.DB) {
+
+          try {
+
+            await ensureDatabase(
+              env
+            );
+
+
+            const now =
+              new Date()
+                .toISOString();
+
+
+            await env.DB.prepare(`
+              INSERT INTO messages
+              (
+                conversation_id,
+                user_id,
+                role,
+                content,
+                created_at
+              )
+              VALUES (?, ?, ?, ?, ?)
+            `)
+            .bind(
+              conversationId,
+              userId,
+              "user",
+              message,
+              now
+            )
+            .run();
+
+
+            await env.DB.prepare(`
+              INSERT INTO messages
+              (
+                conversation_id,
+                user_id,
+                role,
+                content,
+                created_at
+              )
+              VALUES (?, ?, ?, ?, ?)
+            `)
+            .bind(
+              conversationId,
+              userId,
+              "assistant",
+              answer,
+              new Date()
+                .toISOString()
+            )
+            .run();
+
+          } catch (error) {
+
+            console.error(
+              "D1 SAVE ERROR",
+              error
+            );
+
+          }
+
+        }
 
 
         return json({
 
-          ok:
-            true,
+          ok: true,
 
           answer,
 
@@ -1007,17 +768,159 @@ Use these results when relevant.
       }
 
 
-      /* =========================================
-         IMAGE GENERATION
-      ========================================= */
+      // ======================================================
+      // VISION
+      // ======================================================
+
+      if (
+        url.pathname === "/v1/vision" &&
+        request.method === "POST"
+      ) {
+
+        if (!env.AI) {
+
+          return json({
+            ok: false,
+            error:
+              "Workers AI binding missing"
+          }, cors, 500);
+
+        }
+
+
+        const body =
+          await safeJSON(
+            request
+          );
+
+
+        const prompt =
+          String(
+            body.prompt ||
+            "Describe and analyze this image."
+          );
+
+
+        let image =
+          body.image ||
+          body.imageBase64 ||
+          null;
+
+
+        if (!image) {
+
+          return json({
+            ok: false,
+            error:
+              "Image data required"
+          }, cors, 400);
+
+        }
+
+
+        // Remove data URI prefix if supplied.
+
+        image =
+          stripDataUri(
+            image
+          );
+
+
+        const result =
+          await env.AI.run(
+            VISION_MODEL,
+            {
+
+              messages: [
+
+                {
+                  role: "system",
+
+                  content:
+                    "You are LOGIC-LEAF image analysis assistant. Analyze the supplied image accurately. Do not invent details that cannot be seen."
+                },
+
+                {
+                  role: "user",
+
+                  content:
+                    prompt,
+
+                  image
+
+                }
+
+              ],
+
+              max_tokens:
+                2048
+
+            }
+          );
+
+
+        const answer =
+          result?.response ||
+          result?.result?.response ||
+          "";
+
+
+        return json({
+
+          ok: true,
+
+          answer,
+
+          model:
+            VISION_MODEL
+
+        }, cors);
+
+      }
+
+
+      // ======================================================
+      // FILE UPLOAD / ANALYSIS
+      // ======================================================
+
+      if (
+        url.pathname === "/v1/file" &&
+        request.method === "POST"
+      ) {
+
+        return await handleFile(
+          request,
+          env,
+          cors
+        );
+
+      }
+
+
+      // ======================================================
+      // IMAGE GENERATION
+      // ======================================================
 
       if (
         url.pathname === "/v1/image" &&
         request.method === "POST"
       ) {
 
+        if (!env.AI) {
+
+          return json({
+            ok: false,
+            error:
+              "Workers AI binding missing"
+          }, cors, 500);
+
+        }
+
+
         const body =
-          await request.json();
+          await safeJSON(
+            request
+          );
 
 
         const prompt =
@@ -1030,53 +933,93 @@ Use these results when relevant.
         if (!prompt) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "Image prompt required"
-
           }, cors, 400);
+
         }
 
 
-        if (!env.AI) {
+        if (
+          prompt.length >
+          2048
+        ) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
-              "Workers AI binding is missing"
+              "Image prompt is too long"
+          }, cors, 400);
 
-          }, cors, 500);
         }
-
-
-        let result;
 
 
         try {
 
-          result =
+          const result =
             await env.AI.run(
               IMAGE_MODEL,
               {
+
                 prompt,
 
                 steps:
-                  4,
+                  Math.min(
+                    Math.max(
+                      Number(
+                        body.steps ||
+                        4
+                      ),
+                      1
+                    ),
+                    8
+                  ),
 
                 seed:
                   Math.floor(
                     Math.random() *
                     2147483647
                   )
+
               }
             );
 
+
+          const image =
+            result?.image;
+
+
+          if (!image) {
+
+            return json({
+              ok: false,
+              error:
+                "Image model returned no image"
+            }, cors, 502);
+
+          }
+
+
+          return json({
+
+            ok: true,
+
+            type:
+              "image",
+
+            mime:
+              "image/jpeg",
+
+            image,
+
+            dataURI:
+              `data:image/jpeg;base64,${image}`,
+
+            model:
+              IMAGE_MODEL
+
+          }, cors);
 
         } catch (error) {
 
@@ -1088,68 +1031,46 @@ Use these results when relevant.
 
           return json({
 
-            ok:
-              false,
+            ok: false,
 
             error:
               error?.message ||
-              "Image generation failed"
+              "Image generation failed",
+
+            model:
+              IMAGE_MODEL
 
           }, cors, 500);
+
         }
-
-
-        if (
-          !result?.image
-        ) {
-
-          return json({
-
-            ok:
-              false,
-
-            error:
-              "The configured image model did not return an image."
-
-          }, cors, 500);
-        }
-
-
-        /*
-          FLUX returns base64 image data.
-        */
-
-        const dataURI =
-          `data:image/jpeg;base64,${result.image}`;
-
-
-        return json({
-
-          ok:
-            true,
-
-          image:
-            dataURI,
-
-          message:
-            "Generated image"
-
-        }, cors);
 
       }
 
 
-      /* =========================================
-         PDF / DOCUMENT
-      ========================================= */
+      // ======================================================
+      // PDF / DOCUMENT GENERATION
+      // ======================================================
 
       if (
         url.pathname === "/v1/pdf" &&
         request.method === "POST"
       ) {
 
+        if (!env.AI) {
+
+          return json({
+            ok: false,
+            error:
+              "Workers AI binding missing"
+          }, cors, 500);
+
+        }
+
+
         const body =
-          await request.json();
+          await safeJSON(
+            request
+          );
 
 
         const prompt =
@@ -1169,234 +1090,114 @@ Use these results when relevant.
         if (!prompt) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "PDF request required"
-
           }, cors, 400);
+
         }
 
 
-        let result;
+        const result =
+          await env.AI.run(
+            CHAT_MODEL,
+            {
 
+              messages: [
 
-        try {
+                {
+                  role:
+                    "system",
 
-          result =
-            await env.AI.run(
-              CHAT_MODEL,
-              {
-                messages: [
-
-                  {
-                    role:
-                      "system",
-
-                    content: `
-
+                  content: `
 Create a professional printable document.
 
-Return ONLY HTML content.
+Return ONLY valid HTML.
 
-Do not use Markdown fences.
+Do not return Markdown.
 
 Do not include JavaScript.
 
 Use:
 
-- headings
-- paragraphs
-- lists
-- tables
-- sections
+<h1>
+<h2>
+<h3>
+<p>
+<ul>
+<ol>
+<table>
 
 when appropriate.
 
+Do not include html,
+head,
+body,
+or script tags.
 `
-                  },
+                },
 
-                  {
-                    role:
-                      "user",
+                {
+                  role:
+                    "user",
 
-                    content:
-                      `Title:
+                  content:
+                    `Title:
 ${title}
 
 Request:
 ${prompt}`
-                  }
+                }
 
-                ],
+              ],
 
-                max_tokens:
-                  4096
+              max_tokens:
+                4096
 
-              }
-            );
+            },
 
-
-        } catch (error) {
-
-          return json({
-
-            ok:
-              false,
-
-            error:
-              error?.message ||
-              "Document generation failed"
-
-          }, cors, 500);
-        }
-
-
-        let content =
-          extractAIText(
-            result
+            gatewayOptions()
           );
 
 
+        let content =
+          result?.response ||
+          "";
+
+
         content =
-          cleanHTML(
+          cleanGeneratedHTML(
             content
           );
 
 
-        const document =
-          `<!doctype html>
-
-<html>
-
-<head>
-
-<meta charset="UTF-8">
-
-<title>
-${escapeHTML(title)}
-</title>
-
-<style>
-
-@page {
-  size: A4;
-  margin: 18mm;
-}
-
-body {
-  font-family:
-    Arial,
-    Helvetica,
-    sans-serif;
-
-  color: #111;
-
-  line-height: 1.6;
-
-  font-size: 14px;
-}
-
-h1 {
-  font-size: 28px;
-}
-
-h2 {
-  margin-top: 28px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 18px 0;
-}
-
-th,
-td {
-  border: 1px solid #999;
-  padding: 8px;
-}
-
-.header {
-  border-bottom: 2px solid #111;
-  margin-bottom: 25px;
-  padding-bottom: 12px;
-}
-
-.footer {
-  border-top: 1px solid #aaa;
-  margin-top: 40px;
-  padding-top: 10px;
-  font-size: 10px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="header">
-<strong>LOGIC-LEAF</strong>
-</div>
-
-<h1>
-${escapeHTML(title)}
-</h1>
-
-${content}
-
-<div class="footer">
-Created with LOGIC-LEAF
-</div>
-
-</body>
-
-</html>`;
-
-
-        /*
-          Return an HTML document as a data URL.
-          The browser can open/print it as PDF.
-        */
-
-        const encoded =
-          base64Encode(
-            new TextEncoder()
-              .encode(document)
+        const documentHTML =
+          createPrintableHTML(
+            title,
+            content
           );
-
-
-        const dataURL =
-          `data:text/html;base64,${encoded}`;
 
 
         return json({
 
-          ok:
-            true,
+          ok: true,
+
+          type:
+            "html-document",
 
           title,
 
-          url:
-            dataURL,
-
           html:
-            document,
-
-          message:
-            "Document generated. Open it and use Print → Save as PDF."
+            documentHTML
 
         }, cors);
 
       }
 
 
-      /* =========================================
-         HISTORY
-      ========================================= */
+      // ======================================================
+      // HISTORY
+      // ======================================================
 
       if (
         url.pathname === "/v1/history" &&
@@ -1406,19 +1207,18 @@ Created with LOGIC-LEAF
         if (!env.DB) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "D1 unavailable"
-
           }, cors, 500);
+
         }
 
 
         const body =
-          await request.json();
+          await safeJSON(
+            request
+          );
 
 
         const userId =
@@ -1434,46 +1234,45 @@ Created with LOGIC-LEAF
 
 
         const result =
-          await env.DB
-            .prepare(`
-              SELECT
-                conversation_id,
-                MAX(created_at) AS updated_at,
-                SUBSTR(
-                  MAX(
-                    CASE
-                      WHEN role = 'user'
-                      THEN content
-                    END
-                  ),
-                  1,
-                  80
-                ) AS title
-              FROM messages
-              WHERE user_id = ?
-              GROUP BY conversation_id
-              ORDER BY updated_at DESC
-              LIMIT 100
-            `)
-            .bind(userId)
-            .all();
+          await env.DB.prepare(`
+            SELECT
+              conversation_id,
+              MAX(created_at) AS updated_at,
+              MAX(
+                CASE
+                  WHEN role = 'user'
+                  THEN SUBSTR(content, 1, 80)
+                  ELSE NULL
+                END
+              ) AS title
+            FROM messages
+            WHERE user_id = ?
+            GROUP BY conversation_id
+            ORDER BY updated_at DESC
+            LIMIT 100
+          `)
+          .bind(
+            userId
+          )
+          .all();
 
 
         return json({
 
-          ok:
-            true,
+          ok: true,
 
           chats:
-            result.results || []
+            result.results ||
+            []
 
         }, cors);
+
       }
 
 
-      /* =========================================
-         CONVERSATION
-      ========================================= */
+      // ======================================================
+      // CONVERSATION
+      // ======================================================
 
       if (
         url.pathname === "/v1/conversation" &&
@@ -1483,39 +1282,42 @@ Created with LOGIC-LEAF
         if (!env.DB) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "D1 unavailable"
-
           }, cors, 500);
+
         }
 
 
         const body =
-          await request.json();
+          await safeJSON(
+            request
+          );
 
 
-        const id =
+        const conversationId =
           String(
             body.conversationId ||
             ""
           );
 
 
-        if (!id) {
+        const userId =
+          String(
+            body.userId ||
+            "anonymous"
+          );
+
+
+        if (!conversationId) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "Conversation ID required"
-
           }, cors, 400);
+
         }
 
 
@@ -1525,35 +1327,37 @@ Created with LOGIC-LEAF
 
 
         const result =
-          await env.DB
-            .prepare(`
-              SELECT
-                role,
-                content,
-                created_at
-              FROM messages
-              WHERE conversation_id = ?
-              ORDER BY id ASC
-            `)
-            .bind(id)
-            .all();
+          await env.DB.prepare(`
+            SELECT
+              role,
+              content,
+              created_at
+            FROM messages
+            WHERE conversation_id = ?
+            ORDER BY id ASC
+          `)
+          .bind(
+            conversationId
+          )
+          .all();
 
 
         return json({
 
-          ok:
-            true,
+          ok: true,
 
           messages:
-            result.results || []
+            result.results ||
+            []
 
         }, cors);
+
       }
 
 
-      /* =========================================
-         CREATE API KEY
-      ========================================= */
+      // ======================================================
+      // CREATE API KEY
+      // ======================================================
 
       if (
         url.pathname === "/v1/keys/create" &&
@@ -1570,28 +1374,22 @@ Created with LOGIC-LEAF
         if (!auth.ok) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               auth.error
-
           }, cors, 401);
+
         }
 
 
         if (!env.QTM_KEYS) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "KV unavailable"
-
           }, cors, 500);
+
         }
 
 
@@ -1626,22 +1424,22 @@ Created with LOGIC-LEAF
 
         return json({
 
-          ok:
-            true,
+          ok: true,
 
           apiKey:
             rawKey,
 
           warning:
-            "Copy this key now. It will not be shown again."
+            "Copy this key now. It will not be displayed again."
 
         }, cors);
+
       }
 
 
-      /* =========================================
-         REVOKE API KEY
-      ========================================= */
+      // ======================================================
+      // REVOKE API KEY
+      // ======================================================
 
       if (
         url.pathname === "/v1/keys/revoke" &&
@@ -1658,58 +1456,53 @@ Created with LOGIC-LEAF
         if (!auth.ok) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               auth.error
-
           }, cors, 401);
+
         }
 
 
         if (!env.QTM_KEYS) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "KV unavailable"
-
           }, cors, 500);
+
         }
 
 
         const body =
-          await request.json();
+          await safeJSON(
+            request
+          );
 
 
         const key =
           String(
             body.apiKey ||
             ""
-          );
+          ).trim();
 
 
         if (!key) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "API key required"
-
           }, cors, 400);
+
         }
 
 
         const hash =
-          await sha256(key);
+          await sha256(
+            key
+          );
 
 
         const record =
@@ -1721,18 +1514,16 @@ Created with LOGIC-LEAF
 
         if (
           !record ||
-          record.uid !== auth.uid
+          record.uid !==
+          auth.uid
         ) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "API key not found"
-
           }, cors, 404);
+
         }
 
 
@@ -1743,16 +1534,16 @@ Created with LOGIC-LEAF
 
         return json({
 
-          ok:
-            true
+          ok: true
 
         }, cors);
+
       }
 
 
-      /* =========================================
-         PUBLIC API
-      ========================================= */
+      // ======================================================
+      // PUBLIC API
+      // ======================================================
 
       if (
         url.pathname === "/v1/api/chat" &&
@@ -1769,19 +1560,18 @@ Created with LOGIC-LEAF
         if (!auth.ok) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               auth.error
-
           }, cors, 401);
+
         }
 
 
         const body =
-          await request.json();
+          await safeJSON(
+            request
+          );
 
 
         const message =
@@ -1794,14 +1584,11 @@ Created with LOGIC-LEAF
         if (!message) {
 
           return json({
-
-            ok:
-              false,
-
+            ok: false,
             error:
               "Message required"
-
           }, cors, 400);
+
         }
 
 
@@ -1828,35 +1615,46 @@ Created with LOGIC-LEAF
                     message
                 }
 
-              ]
+              ],
 
-            }
+              max_tokens:
+                4096
+
+            },
+
+            gatewayOptions()
           );
 
 
         return json({
 
-          ok:
-            true,
+          ok: true,
 
           answer:
-            extractAIText(result)
+            result?.response ||
+            "",
+
+          model:
+            CHAT_MODEL
 
         }, cors);
+
       }
 
 
-      /* =========================================
-         NOT FOUND
-      ========================================= */
+      // ======================================================
+      // NOT FOUND
+      // ======================================================
 
       return json({
 
-        ok:
-          false,
+        ok: false,
 
         error:
-          "Endpoint not found"
+          "Endpoint not found",
+
+        path:
+          url.pathname
 
       }, cors, 404);
 
@@ -1871,165 +1669,689 @@ Created with LOGIC-LEAF
 
       return json({
 
-        ok:
-          false,
+        ok: false,
 
         error:
           error?.message ||
           "Server error"
 
       }, cors, 500);
+
     }
+
   }
+
 };
 
 
-/* =====================================================
-   DATABASE
-===================================================== */
+// ============================================================
+// FILE HANDLER
+// ============================================================
 
-async function ensureDatabase(env) {
+async function handleFile(
+  request,
+  env,
+  cors
+) {
 
-  await env.DB
-    .prepare(`
-      CREATE TABLE IF NOT EXISTS messages (
+  if (!env.AI) {
 
-        id
-          INTEGER
-          PRIMARY KEY
-          AUTOINCREMENT,
+    return json({
+      ok: false,
+      error:
+        "Workers AI binding missing"
+    }, cors, 500);
 
-        conversation_id
-          TEXT
-          NOT NULL,
+  }
 
-        user_id
-          TEXT
-          NOT NULL,
 
-        role
-          TEXT
-          NOT NULL,
+  const contentType =
+    request.headers.get(
+      "content-type"
+    ) || "";
 
-        content
-          TEXT
-          NOT NULL,
 
-        created_at
-          TEXT
-          NOT NULL
+  // ----------------------------------------------------------
+  // JSON BASE64 IMAGE
+  // ----------------------------------------------------------
 
+  if (
+    contentType
+      .toLowerCase()
+      .includes(
+        "application/json"
       )
-    `)
-    .run();
+  ) {
+
+    const body =
+      await safeJSON(
+        request
+      );
 
 
-  await env.DB
-    .prepare(`
-      CREATE INDEX IF NOT EXISTS
-      idx_messages_conversation
-      ON messages(conversation_id)
-    `)
-    .run();
+    if (
+      body.image ||
+      body.imageBase64
+    ) {
+
+      const image =
+        stripDataUri(
+          body.image ||
+          body.imageBase64
+        );
 
 
-  await env.DB
-    .prepare(`
-      CREATE INDEX IF NOT EXISTS
-      idx_messages_user
-      ON messages(user_id)
-    `)
-    .run();
+      const prompt =
+        String(
+          body.prompt ||
+          "Analyze this image."
+        );
+
+
+      const result =
+        await env.AI.run(
+          VISION_MODEL,
+          {
+
+            messages: [
+
+              {
+                role:
+                  "system",
+
+                content:
+                  "You are LOGIC-LEAF. Analyze the supplied image accurately."
+              },
+
+              {
+                role:
+                  "user",
+
+                content:
+                  prompt,
+
+                image
+
+              }
+
+            ],
+
+            max_tokens:
+              2048
+
+          }
+        );
+
+
+      return json({
+
+        ok: true,
+
+        type:
+          "image",
+
+        answer:
+          result?.response ||
+          "",
+
+        model:
+          VISION_MODEL
+
+      }, cors);
+
+    }
+
+
+    return json({
+      ok: false,
+      error:
+        "No supported file data found"
+    }, cors, 400);
+
+  }
+
+
+  // ----------------------------------------------------------
+  // MULTIPART FILE
+  // ----------------------------------------------------------
+
+  if (
+    contentType
+      .toLowerCase()
+      .includes(
+        "multipart/form-data"
+      )
+  ) {
+
+    const form =
+      await request.formData();
+
+
+    const file =
+      form.get("file");
+
+
+    const prompt =
+      String(
+        form.get("prompt") ||
+        "Analyze this file."
+      );
+
+
+    if (
+      !file ||
+      typeof file ===
+      "string"
+    ) {
+
+      return json({
+        ok: false,
+        error:
+          "File required"
+      }, cors, 400);
+
+    }
+
+
+    if (
+      file.size >
+      MAX_FILE_BYTES
+    ) {
+
+      return json({
+        ok: false,
+        error:
+          "File is larger than 15 MB"
+      }, cors, 413);
+
+    }
+
+
+    const mime =
+      file.type ||
+      "application/octet-stream";
+
+
+    const name =
+      file.name ||
+      "uploaded-file";
+
+
+    // --------------------------------------------------------
+    // IMAGE
+    // --------------------------------------------------------
+
+    if (
+      mime.startsWith(
+        "image/"
+      )
+    ) {
+
+      const bytes =
+        new Uint8Array(
+          await file.arrayBuffer()
+        );
+
+
+      const base64 =
+        bytesToBase64(
+          bytes
+        );
+
+
+      const result =
+        await env.AI.run(
+          VISION_MODEL,
+          {
+
+            messages: [
+
+              {
+                role:
+                  "system",
+
+                content:
+                  "You are LOGIC-LEAF. Carefully analyze the supplied image. Do not invent visual details."
+              },
+
+              {
+                role:
+                  "user",
+
+                content:
+                  prompt,
+
+                image:
+                  base64
+
+              }
+
+            ],
+
+            max_tokens:
+              2048
+
+          }
+        );
+
+
+      return json({
+
+        ok: true,
+
+        type:
+          "image",
+
+        filename:
+          name,
+
+        answer:
+          result?.response ||
+          "",
+
+        model:
+          VISION_MODEL
+
+      }, cors);
+
+    }
+
+
+    // --------------------------------------------------------
+    // TEXT / CODE
+    // --------------------------------------------------------
+
+    if (
+      mime.startsWith(
+        "text/"
+      ) ||
+      /\.(txt|md|csv|json|js|css|html|py|java|c|cpp|h|xml)$/i
+        .test(name)
+    ) {
+
+      const text =
+        await file.text();
+
+
+      const limited =
+        text.slice(
+          0,
+          100000
+        );
+
+
+      const result =
+        await env.AI.run(
+          CHAT_MODEL,
+          {
+
+            messages: [
+
+              {
+                role:
+                  "system",
+
+                content:
+                  `You are LOGIC-LEAF.
+
+Analyze the supplied file.
+
+Filename:
+${name}
+
+Give a useful answer to the user's request.
+
+Do not invent file contents.`
+              },
+
+              {
+                role:
+                  "user",
+
+                content:
+                  `User request:
+
+${prompt}
+
+File contents:
+
+${limited}`
+              }
+
+            ],
+
+            max_tokens:
+              4096
+
+          },
+
+          gatewayOptions()
+        );
+
+
+      return json({
+
+        ok: true,
+
+        type:
+          "text",
+
+        filename:
+          name,
+
+        answer:
+          result?.response ||
+          "",
+
+        model:
+          CHAT_MODEL
+
+      }, cors);
+
+    }
+
+
+    // --------------------------------------------------------
+    // PDF / DOCUMENT
+    // --------------------------------------------------------
+
+    if (
+      mime ===
+      "application/pdf" ||
+      /\.pdf$/i.test(name)
+    ) {
+
+      return await analyzeDocument(
+        file,
+        name,
+        prompt,
+        env,
+        cors
+      );
+
+    }
+
+
+    // --------------------------------------------------------
+    // FALLBACK
+    // --------------------------------------------------------
+
+    return json({
+
+      ok: false,
+
+      error:
+        `Unsupported file type: ${mime}`,
+
+      filename:
+        name
+
+    }, cors, 415);
+
+  }
+
+
+  return json({
+
+    ok: false,
+
+    error:
+      "Send JSON or multipart/form-data"
+
+  }, cors, 400);
+
 }
 
 
-/* =====================================================
-   SAVE CHAT
-===================================================== */
+// ============================================================
+// DOCUMENT ANALYSIS
+// ============================================================
 
-async function saveMessages(
+async function analyzeDocument(
+  file,
+  filename,
+  prompt,
   env,
-  conversationId,
-  userId,
-  userMessage,
-  assistantMessage
+  cors
 ) {
 
-  if (!env.DB) {
-    return;
+  /*
+    Cloudflare's current document conversion API is a REST
+    service. A Worker binding does not automatically expose
+    that REST conversion API.
+
+    If you configure:
+
+      CLOUDFLARE_ACCOUNT_ID
+      CLOUDFLARE_API_TOKEN
+
+    as Worker secrets, this function can use the conversion
+    service to turn PDFs/documents into Markdown.
+  */
+
+
+  if (
+    !env.CLOUDFLARE_ACCOUNT_ID ||
+    !env.CLOUDFLARE_API_TOKEN
+  ) {
+
+    return json({
+
+      ok: false,
+
+      error:
+        "PDF analysis requires CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN Worker secrets.",
+
+      filename
+
+    }, cors, 503);
+
   }
 
 
   try {
 
-    await ensureDatabase(
-      env
+    const form =
+      new FormData();
+
+
+    form.append(
+      "files",
+      file,
+      filename
     );
 
 
-    const now =
-      new Date()
-        .toISOString();
+    form.append(
+      "conversionOptions",
+      JSON.stringify({
+
+        output: {
+          format:
+            "markdown"
+        }
+
+      })
+    );
 
 
-    await env.DB
-      .prepare(`
-        INSERT INTO messages
-        (
-          conversation_id,
-          user_id,
-          role,
-          content,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?)
-      `)
-      .bind(
-        conversationId,
-        userId,
-        "user",
-        userMessage,
-        now
-      )
-      .run();
+    const response =
+      await fetch(
+
+        `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(
+          env.CLOUDFLARE_ACCOUNT_ID
+        )}/ai/tomarkdown`,
+
+        {
+
+          method:
+            "POST",
+
+          headers: {
+
+            Authorization:
+              `Bearer ${env.CLOUDFLARE_API_TOKEN}`
+
+          },
+
+          body:
+            form
+
+        }
+
+      );
 
 
-    await env.DB
-      .prepare(`
-        INSERT INTO messages
-        (
-          conversation_id,
-          user_id,
-          role,
-          content,
-          created_at
-        )
-        VALUES (?, ?, ?, ?, ?)
-      `)
-      .bind(
-        conversationId,
-        userId,
-        "assistant",
-        assistantMessage,
-        new Date()
-          .toISOString()
-      )
-      .run();
+    const data =
+      await response.json();
 
+
+    if (!response.ok) {
+
+      return json({
+
+        ok: false,
+
+        error:
+          data?.errors?.[0]?.message ||
+          "Document conversion failed",
+
+        filename
+
+      }, cors, 502);
+
+    }
+
+
+    const converted =
+      data?.result?.[0];
+
+
+    const markdown =
+      converted?.data ||
+      "";
+
+
+    if (!markdown) {
+
+      return json({
+
+        ok: false,
+
+        error:
+          "No text could be extracted from the document",
+
+        filename
+
+      }, cors, 422);
+
+    }
+
+
+    const limited =
+      markdown.slice(
+        0,
+        120000
+      );
+
+
+    const result =
+      await env.AI.run(
+        CHAT_MODEL,
+        {
+
+          messages: [
+
+            {
+              role:
+                "system",
+
+              content:
+                `You are LOGIC-LEAF.
+
+You are analyzing a user-provided document.
+
+Do not invent information.
+
+Use only the supplied document content.
+
+Give a clear answer to the user's request.`
+            },
+
+            {
+              role:
+                "user",
+
+              content:
+                `USER REQUEST:
+
+${prompt}
+
+DOCUMENT:
+
+${limited}`
+            }
+
+          ],
+
+          max_tokens:
+            4096
+
+        },
+
+        gatewayOptions()
+      );
+
+
+    return json({
+
+      ok: true,
+
+      type:
+        "document",
+
+      filename,
+
+      answer:
+        result?.response ||
+        "",
+
+      extracted:
+        true,
+
+      model:
+        CHAT_MODEL
+
+    }, cors);
 
   } catch (error) {
 
     console.error(
-      "D1 SAVE ERROR",
+      "DOCUMENT ERROR",
       error
     );
+
+
+    return json({
+
+      ok: false,
+
+      error:
+        error?.message ||
+        "Document analysis failed",
+
+      filename
+
+    }, cors, 500);
+
   }
+
 }
 
 
-/* =====================================================
-   FIREBASE AUTH
-===================================================== */
+// ============================================================
+// FIREBASE AUTH
+// ============================================================
 
 async function authenticateFirebase(
   request,
@@ -2048,13 +2370,13 @@ async function authenticateFirebase(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
           "Login required"
 
       };
+
     }
 
 
@@ -2071,13 +2393,13 @@ async function authenticateFirebase(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
           "Invalid authentication"
 
       };
+
     }
 
 
@@ -2087,13 +2409,13 @@ async function authenticateFirebase(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
-          "FIREBASE_WEB_API_KEY secret is missing"
+          "Firebase API key secret missing"
 
       };
+
     }
 
 
@@ -2118,12 +2440,11 @@ async function authenticateFirebase(
 
           body:
             JSON.stringify({
-
               idToken
-
             })
 
         }
+
       );
 
 
@@ -2131,13 +2452,13 @@ async function authenticateFirebase(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
           "Firebase authentication failed"
 
       };
+
     }
 
 
@@ -2153,48 +2474,54 @@ async function authenticateFirebase(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
           "User not found"
 
       };
+
     }
 
 
     return {
 
-      ok:
-        true,
+      ok: true,
 
       uid:
         user.localId,
 
       email:
-        user.email || ""
+        user.email ||
+        ""
 
     };
 
+  } catch (error) {
 
-  } catch {
+    console.error(
+      "FIREBASE ERROR",
+      error
+    );
+
 
     return {
 
-      ok:
-        false,
+      ok: false,
 
       error:
         "Authentication verification failed"
 
     };
+
   }
+
 }
 
 
-/* =====================================================
-   API KEY AUTH
-===================================================== */
+// ============================================================
+// API KEY AUTH
+// ============================================================
 
 async function authenticateApiKey(
   request,
@@ -2207,13 +2534,13 @@ async function authenticateApiKey(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
-          "KV unavailable"
+          "API key storage unavailable"
 
       };
+
     }
 
 
@@ -2227,13 +2554,13 @@ async function authenticateApiKey(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
           "API key required"
 
       };
+
     }
 
 
@@ -2254,18 +2581,20 @@ async function authenticateApiKey(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
           "Invalid API key"
 
       };
+
     }
 
 
     const hash =
-      await sha256(key);
+      await sha256(
+        key
+      );
 
 
     const record =
@@ -2279,303 +2608,171 @@ async function authenticateApiKey(
 
       return {
 
-        ok:
-          false,
+        ok: false,
 
         error:
           "Invalid or revoked API key"
 
       };
+
     }
 
 
     return {
 
-      ok:
-        true,
+      ok: true,
 
       uid:
         record.uid
 
     };
 
-
   } catch {
 
     return {
 
-      ok:
-        false,
+      ok: false,
 
       error:
         "API authentication failed"
 
     };
+
   }
+
 }
 
 
-/* =====================================================
-   AI RESULT EXTRACTION
-===================================================== */
+// ============================================================
+// DATABASE
+// ============================================================
 
-function extractAIText(
-  result
+async function ensureDatabase(
+  env
 ) {
 
-  if (!result) {
-
-    return "";
+  if (!env.DB) {
+    return;
   }
 
 
-  if (
-    typeof result === "string"
-  ) {
-
-    return result;
-  }
-
-
-  if (
-    typeof result.response === "string"
-  ) {
-
-    return result.response;
-  }
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )
+  `)
+  .run();
 
 
-  if (
-    typeof result.result === "string"
-  ) {
-
-    return result.result;
-  }
-
-
-  if (
-    typeof result.result?.response === "string"
-  ) {
-
-    return result.result.response;
-  }
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS
+    idx_messages_conversation
+    ON messages(conversation_id)
+  `)
+  .run();
 
 
-  if (
-    typeof result.text === "string"
-  ) {
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS
+    idx_messages_user
+    ON messages(user_id)
+  `)
+  .run();
 
-    return result.text;
-  }
-
-
-  return JSON.stringify(
-    result
-  );
 }
 
 
-/* =====================================================
-   DATA URL DECODER
-===================================================== */
+// ============================================================
+// AI GATEWAY
+// ============================================================
 
-function decodeDataURL(
-  dataURL
-) {
+function gatewayOptions() {
 
-  if (
-    !dataURL.includes(",")
-  ) {
+  return {
 
-    return dataURL;
-  }
+    gateway: {
 
+      id:
+        "default",
 
-  const comma =
-    dataURL.indexOf(",");
+      skipCache:
+        false,
 
+      collectLog:
+        true
 
-  const metadata =
-    dataURL.slice(
-      0,
-      comma
-    );
+    }
 
+  };
 
-  const data =
-    dataURL.slice(
-      comma + 1
-    );
-
-
-  if (
-    metadata.includes(
-      ";base64"
-    )
-  ) {
-
-    const binary =
-      atob(data);
-
-
-    return new TextDecoder()
-      .decode(
-        Uint8Array.from(
-          binary,
-          c =>
-            c.charCodeAt(0)
-        )
-      );
-  }
-
-
-  return decodeURIComponent(
-    data
-  );
 }
 
 
-/* =====================================================
-   CLEAN HTML
-===================================================== */
+// ============================================================
+// JSON
+// ============================================================
 
-function cleanHTML(
-  html
+async function safeJSON(
+  request
 ) {
 
-  return String(
-    html || ""
-  )
+  try {
 
-    .replace(
-      /^```html\s*/i,
-      ""
-    )
+    return await request.json();
 
-    .replace(
-      /^```\s*/i,
-      ""
-    )
+  } catch {
 
-    .replace(
-      /\s*```$/i,
-      ""
-    )
+    return {};
 
-    .trim();
+  }
+
 }
 
 
-/* =====================================================
-   SHA256
-===================================================== */
+// ============================================================
+// RESPONSE
+// ============================================================
 
-async function sha256(
-  text
+function json(
+  data,
+  cors,
+  status = 200
 ) {
 
-  const data =
-    new TextEncoder()
-      .encode(text);
+  return new Response(
 
-
-  const hash =
-    await crypto.subtle.digest(
-      "SHA-256",
+    JSON.stringify(
       data
-    );
+    ),
 
+    {
 
-  return [
-    ...new Uint8Array(hash)
-  ]
+      status,
 
-    .map(
-      b =>
-        b
-          .toString(16)
-          .padStart(2, "0")
-    )
+      headers: {
 
-    .join("");
-}
+        ...cors,
 
+        "Content-Type":
+          "application/json; charset=UTF-8"
 
-/* =====================================================
-   RANDOM TOKEN
-===================================================== */
+      }
 
-function randomToken(
-  length
-) {
+    }
 
-  const bytes =
-    new Uint8Array(
-      length
-    );
-
-
-  crypto.getRandomValues(
-    bytes
   );
 
-
-  return [
-    ...bytes
-  ]
-
-    .map(
-      b =>
-        b
-          .toString(16)
-          .padStart(2, "0")
-    )
-
-    .join("");
 }
 
 
-/* =====================================================
-   BASE64
-===================================================== */
-
-function base64Encode(
-  bytes
-) {
-
-  let binary =
-    "";
-
-
-  const chunkSize =
-    0x8000;
-
-
-  for (
-    let i = 0;
-    i < bytes.length;
-    i += chunkSize
-  ) {
-
-    binary += String.fromCharCode(
-      ...bytes.subarray(
-        i,
-        Math.min(
-          i + chunkSize,
-          bytes.length
-        )
-      )
-    );
-  }
-
-
-  return btoa(binary);
-}
-
-
-/* =====================================================
-   ESCAPE HTML
-===================================================== */
+// ============================================================
+// HTML
+// ============================================================
 
 function escapeHTML(
   value
@@ -2609,38 +2806,341 @@ function escapeHTML(
       /'/g,
       "&#039;"
     );
+
 }
 
 
-/* =====================================================
-   JSON RESPONSE
-===================================================== */
+// ============================================================
+// GENERATED HTML CLEANUP
+// ============================================================
 
-function json(
-  data,
-  cors,
-  status = 200
+function cleanGeneratedHTML(
+  value
 ) {
 
-  return new Response(
+  return String(
+    value || ""
+  )
 
-    JSON.stringify(
+    .replace(
+      /^```html\s*/i,
+      ""
+    )
+
+    .replace(
+      /^```\s*/i,
+      ""
+    )
+
+    .replace(
+      /\s*```$/i,
+      ""
+    )
+
+    .trim();
+
+}
+
+
+// ============================================================
+// PRINTABLE HTML
+// ============================================================
+
+function createPrintableHTML(
+  title,
+  content
+) {
+
+  return `<!doctype html>
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width,initial-scale=1">
+
+<title>
+${escapeHTML(title)}
+</title>
+
+<style>
+
+@page {
+  size: A4;
+  margin: 18mm;
+}
+
+body {
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  color: #111;
+
+  line-height: 1.6;
+
+  font-size: 14px;
+}
+
+.header {
+
+  border-bottom:
+    2px solid #111;
+
+  padding-bottom:
+    12px;
+
+  margin-bottom:
+    24px;
+
+}
+
+h1 {
+  font-size:
+    28px;
+}
+
+h2 {
+  margin-top:
+    28px;
+}
+
+table {
+
+  width:
+    100%;
+
+  border-collapse:
+    collapse;
+
+  margin:
+    18px 0;
+
+}
+
+th,
+td {
+
+  border:
+    1px solid #999;
+
+  padding:
+    8px;
+
+  text-align:
+    left;
+
+}
+
+.footer {
+
+  border-top:
+    1px solid #aaa;
+
+  margin-top:
+    40px;
+
+  padding-top:
+    10px;
+
+  font-size:
+    10px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="header">
+
+<strong>
+LOGIC-LEAF
+</strong>
+
+</div>
+
+<h1>
+${escapeHTML(title)}
+</h1>
+
+${content}
+
+<div class="footer">
+
+Created with LOGIC-LEAF
+
+</div>
+
+</body>
+
+</html>`;
+
+}
+
+
+// ============================================================
+// CRYPTO
+// ============================================================
+
+async function sha256(
+  text
+) {
+
+  const data =
+    new TextEncoder()
+      .encode(text);
+
+
+  const hash =
+    await crypto.subtle.digest(
+      "SHA-256",
       data
-    ),
+    );
 
-    {
 
-      status,
+  return [
+    ...new Uint8Array(
+      hash
+    )
+  ]
 
-      headers: {
+    .map(
+      byte =>
+        byte
+          .toString(16)
+          .padStart(
+            2,
+            "0"
+          )
+    )
 
-        ...cors,
+    .join("");
 
-        "Content-Type":
-          "application/json; charset=UTF-8"
+}
 
-      }
+
+// ============================================================
+// RANDOM TOKEN
+// ============================================================
+
+function randomToken(
+  length
+) {
+
+  const bytes =
+    new Uint8Array(
+      length
+    );
+
+
+  crypto.getRandomValues(
+    bytes
+  );
+
+
+  return [
+    ...bytes
+  ]
+
+    .map(
+      byte =>
+        byte
+          .toString(16)
+          .padStart(
+            2,
+            "0"
+          )
+    )
+
+    .join("");
+
+}
+
+
+// ============================================================
+// DATA URI
+// ============================================================
+
+function stripDataUri(
+  value
+) {
+
+  const text =
+    String(value || "");
+
+
+  if (
+    text.startsWith(
+      "data:"
+    )
+  ) {
+
+    const comma =
+      text.indexOf(",");
+
+
+    if (
+      comma !== -1
+    ) {
+
+      return text.slice(
+        comma + 1
+      );
 
     }
+
+  }
+
+
+  return text;
+
+}
+
+
+// ============================================================
+// BYTES → BASE64
+// ============================================================
+
+function bytesToBase64(
+  bytes
+) {
+
+  let binary =
+    "";
+
+
+  const chunkSize =
+    0x8000;
+
+
+  for (
+    let i = 0;
+    i < bytes.length;
+    i += chunkSize
+  ) {
+
+    binary += String.fromCharCode(
+      ...bytes.subarray(
+        i,
+        Math.min(
+          i + chunkSize,
+          bytes.length
+        )
+      )
+    );
+
+  }
+
+
+  return btoa(
+    binary
   );
-      }
+
+            }
