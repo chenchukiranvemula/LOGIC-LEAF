@@ -1,9 +1,12 @@
 /* =========================================================
-   LOGIC-LEAF — app.js
-   Firebase Google Login + Cloudflare Worker AI
+   LOGIC-LEAF
+   Firebase Google Login
+   ChatGPT-style frontend
+   Cloudflare Worker connection
 ========================================================= */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
   getAuth,
@@ -12,6 +15,7 @@ import {
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
 
 /* =========================================================
    CONFIG
@@ -27,423 +31,176 @@ const firebaseConfig = {
   measurementId: "G-ZVVBH04E9M"
 };
 
-/* Your deployed Worker */
-const API_URL = "https://ck.qtmkiller6.workers.dev";
+
+const API_URL =
+  "https://ck.qtmkiller6.workers.dev";
+
 
 /* =========================================================
    FIREBASE
 ========================================================= */
 
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
-const googleProvider = new GoogleAuthProvider();
+const firebaseApp =
+  initializeApp(firebaseConfig);
+
+const auth =
+  getAuth(firebaseApp);
+
+const googleProvider =
+  new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({
   prompt: "select_account"
 });
+
 
 /* =========================================================
    STATE
 ========================================================= */
 
 let currentUser = null;
+
 let currentChatId = null;
-let chats = JSON.parse(localStorage.getItem("logic_leaf_chats") || "{}");
+
 let isGenerating = false;
 
+let chats =
+  JSON.parse(
+    localStorage.getItem("logic_leaf_chats") || "{}"
+  );
+
+
 /* =========================================================
-   DOM HELPERS
+   DOM
 ========================================================= */
 
-const $ = (selector) => document.querySelector(selector);
+const $ = selector =>
+  document.querySelector(selector);
 
-const messages = $("#messages");
-const welcomeScreen = $("#welcomeScreen");
-const chatInput = $("#chatInput");
-const sendBtn = $("#sendBtn");
-const historyList = $("#historyList");
+const $$ = selector =>
+  [...document.querySelectorAll(selector)];
 
-const loginModal = $("#loginModal");
-const settingsModal = $("#settingsModal");
 
-const loginBtn = $("#loginBtn");
-const googleLoginBtn = $("#googleLoginBtn");
-const logoutBtn = $("#logoutBtn");
+const sidebar =
+  $("#sidebar");
 
-const menuBtn = $("#menuBtn");
-const sidebar = $("#sidebar");
+const menuBtn =
+  $("#menuBtn");
 
-const newChatBtn = $("#newChatBtn");
+const closeSidebar =
+  $("#closeSidebar");
 
-const attachBtn = $("#attachBtn");
-const attachmentMenu = $("#attachmentMenu");
+const newChatBtn =
+  $("#newChatBtn");
 
-const fileInput = $("#fileInput");
-const imageInput = $("#imageInput");
+const messages =
+  $("#messages");
 
-const modelBtn = $("#modelBtn");
-const modelMenu = $("#modelMenu");
+const welcomeScreen =
+  $("#welcomeScreen");
 
-const toast = $("#toast");
+const chatInput =
+  $("#chatInput");
+
+const sendBtn =
+  $("#sendBtn");
+
+const historyList =
+  $("#historyList");
+
+const searchChats =
+  $("#searchChats");
+
+const attachBtn =
+  $("#attachBtn");
+
+const attachmentMenu =
+  $("#attachmentMenu");
+
+const fileInput =
+  $("#fileInput");
+
+const imageInput =
+  $("#imageInput");
+
+const modelBtn =
+  $("#modelBtn");
+
+const modelMenu =
+  $("#modelMenu");
+
+const loginModal =
+  $("#loginModal");
+
+const loginBtn =
+  $("#loginBtn");
+
+const googleLoginBtn =
+  $("#googleLoginBtn");
+
+const logoutBtn =
+  $("#logoutBtn");
+
+const settingsModal =
+  $("#settingsModal");
+
+const toast =
+  $("#toast");
+
+const workerStatus =
+  $("#workerStatus");
+
 
 /* =========================================================
-   SAFE ELEMENT FUNCTIONS
+   HELPERS
 ========================================================= */
 
 function show(element) {
-  if (element) element.classList.remove("hidden");
+
+  if (element)
+    element.classList.remove("hidden");
+
 }
+
 
 function hide(element) {
-  if (element) element.classList.add("hidden");
+
+  if (element)
+    element.classList.add("hidden");
+
 }
 
-function text(element, value) {
-  if (element) element.textContent = value;
+
+function escapeHTML(value) {
+
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
 }
 
-/* =========================================================
-   TOAST
-========================================================= */
-
-let toastTimer;
 
 function showToast(message) {
-  if (!toast) return;
+
+  if (!toast)
+    return;
 
   toast.textContent = message;
+
   toast.classList.add("show");
 
-  clearTimeout(toastTimer);
+  clearTimeout(showToast.timer);
 
-  toastTimer = setTimeout(() => {
-    toast.classList.remove("show");
-  }, 2500);
-}
-
-/* =========================================================
-   SIDEBAR
-========================================================= */
-
-if (menuBtn) {
-  menuBtn.addEventListener("click", () => {
-    sidebar?.classList.toggle("closed");
-  });
-}
-
-/* =========================================================
-   LOGIN MODAL
-========================================================= */
-
-function openLogin() {
-  show(loginModal);
-}
-
-function closeLogin() {
-  hide(loginModal);
-}
-
-if (loginBtn) {
-  loginBtn.addEventListener("click", openLogin);
-}
-
-/* Close buttons */
-
-document.querySelectorAll("[data-close-login]").forEach((button) => {
-  button.addEventListener("click", closeLogin);
-});
-
-document.querySelectorAll("[data-close-settings]").forEach((button) => {
-  button.addEventListener("click", () => hide(settingsModal));
-});
-
-/* =========================================================
-   GOOGLE LOGIN
-========================================================= */
-
-if (googleLoginBtn) {
-  googleLoginBtn.addEventListener("click", async () => {
-
-    try {
-
-      googleLoginBtn.disabled = true;
-      googleLoginBtn.textContent = "Signing in…";
-
-      const result = await signInWithPopup(
-        auth,
-        googleProvider
-      );
-
-      currentUser = result.user;
-
-      closeLogin();
-
-      showToast(`Welcome, ${currentUser.displayName || "User"}`);
-
-      updateUserUI();
-
-    } catch (error) {
-
-      console.error("Google login error:", error);
-
-      let message = "Google login failed.";
-
-      if (error.code === "auth/popup-closed-by-user") {
-        message = "Login window was closed.";
-      }
-
-      if (error.code === "auth/unauthorized-domain") {
-        message =
-          "This website is not added to Firebase Authorized Domains.";
-      }
-
-      if (error.code === "auth/api-key-not-valid") {
-        message =
-          "Firebase API key is invalid. Check the Firebase project configuration.";
-      }
-
-      showToast(message);
-
-    } finally {
-
-      googleLoginBtn.disabled = false;
-      googleLoginBtn.textContent = "Continue with Google";
-
-    }
-
-  });
-}
-
-/* =========================================================
-   AUTH STATE
-========================================================= */
-
-onAuthStateChanged(auth, (user) => {
-
-  currentUser = user || null;
-
-  updateUserUI();
-
-});
-
-/* =========================================================
-   USER UI
-========================================================= */
-
-function updateUserUI() {
-
-  const nameElements = document.querySelectorAll(
-    "[data-user-name]"
-  );
-
-  const emailElements = document.querySelectorAll(
-    "[data-user-email]"
-  );
-
-  const avatarElements = document.querySelectorAll(
-    "[data-user-avatar]"
-  );
-
-  if (!currentUser) {
-
-    nameElements.forEach(el => {
-      el.textContent = "Guest";
-    });
-
-    emailElements.forEach(el => {
-      el.textContent = "Sign in to continue";
-    });
-
-    avatarElements.forEach(el => {
-      el.textContent = "G";
-    });
-
-    return;
-  }
-
-  nameElements.forEach(el => {
-    el.textContent =
-      currentUser.displayName ||
-      currentUser.email?.split("@")[0] ||
-      "User";
-  });
-
-  emailElements.forEach(el => {
-    el.textContent =
-      currentUser.email || "";
-  });
-
-  avatarElements.forEach(el => {
-
-    if (currentUser.photoURL) {
-
-      el.innerHTML = "";
-
-      const img = document.createElement("img");
-
-      img.src = currentUser.photoURL;
-      img.alt = "User";
-
-      el.appendChild(img);
-
-    } else {
-
-      el.textContent =
-        (currentUser.displayName ||
-          currentUser.email ||
-          "U")
-          .charAt(0)
-          .toUpperCase();
-
-    }
-
-  });
+  showToast.timer =
+    setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2400);
 
 }
 
-/* =========================================================
-   LOGOUT
-========================================================= */
-
-if (logoutBtn) {
-
-  logoutBtn.addEventListener("click", async () => {
-
-    try {
-
-      await signOut(auth);
-
-      showToast("Signed out");
-
-      hide(settingsModal);
-
-    } catch (error) {
-
-      console.error(error);
-
-      showToast("Could not sign out.");
-
-    }
-
-  });
-
-}
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
-document.querySelectorAll("[data-open-settings]").forEach((button) => {
-
-  button.addEventListener("click", () => {
-
-    show(settingsModal);
-
-  });
-
-});
-
-document.querySelectorAll(".settings-nav-btn").forEach((button) => {
-
-  button.addEventListener("click", () => {
-
-    document
-      .querySelectorAll(".settings-nav-btn")
-      .forEach(btn => btn.classList.remove("active"));
-
-    document
-      .querySelectorAll(".settings-page")
-      .forEach(page => page.classList.remove("active"));
-
-    button.classList.add("active");
-
-    const target = button.dataset.target;
-
-    const page = document.querySelector(
-      `[data-page="${target}"]`
-    );
-
-    if (page) {
-      page.classList.add("active");
-    }
-
-  });
-
-});
-
-/* =========================================================
-   MODEL MENU
-========================================================= */
-
-if (modelBtn) {
-
-  modelBtn.addEventListener("click", () => {
-
-    modelMenu?.classList.toggle("hidden");
-
-  });
-
-}
-
-document.querySelectorAll(".model-option").forEach((option) => {
-
-  option.addEventListener("click", () => {
-
-    document
-      .querySelectorAll(".model-option")
-      .forEach(item => item.classList.remove("active"));
-
-    option.classList.add("active");
-
-    const name = option.dataset.modelName;
-
-    const modelName = $("#selectedModel");
-
-    if (modelName && name) {
-      modelName.textContent = name;
-    }
-
-    hide(modelMenu);
-
-  });
-
-});
-
-/* =========================================================
-   NEW CHAT
-========================================================= */
-
-function createNewChat() {
-
-  currentChatId =
-    "chat_" +
-    Date.now();
-
-  chats[currentChatId] = {
-    id: currentChatId,
-    title: "New chat",
-    messages: []
-  };
-
-  saveChats();
-
-  renderChatHistory();
-
-  renderMessages();
-
-  welcomeScreen?.classList.remove("hidden");
-
-  chatInput?.focus();
-
-}
-
-if (newChatBtn) {
-  newChatBtn.addEventListener("click", createNewChat);
-}
-
-/* =========================================================
-   STORAGE
-========================================================= */
 
 function saveChats() {
 
@@ -454,27 +211,112 @@ function saveChats() {
 
 }
 
+
 /* =========================================================
-   CHAT HISTORY
+   SIDEBAR
 ========================================================= */
 
-function renderChatHistory() {
+menuBtn?.addEventListener(
+  "click",
+  () => {
 
-  if (!historyList) return;
+    sidebar?.classList.add("open");
+
+  }
+);
+
+
+closeSidebar?.addEventListener(
+  "click",
+  () => {
+
+    sidebar?.classList.remove("open");
+
+  }
+);
+
+
+/* =========================================================
+   NEW CHAT
+========================================================= */
+
+function createNewChat() {
+
+  const id =
+    "chat_" +
+    Date.now();
+
+  currentChatId = id;
+
+  chats[id] = {
+
+    id,
+
+    title:
+      "New chat",
+
+    messages: []
+
+  };
+
+  saveChats();
+
+  renderHistory();
+
+  renderMessages();
+
+  chatInput.value = "";
+
+  chatInput.focus();
+
+  sidebar?.classList.remove("open");
+
+}
+
+
+newChatBtn?.addEventListener(
+  "click",
+  createNewChat
+);
+
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+function renderHistory(filter = "") {
+
+  if (!historyList)
+    return;
 
   historyList.innerHTML = "";
 
-  const chatEntries =
+  const list =
     Object.values(chats)
-      .sort((a, b) => b.id.localeCompare(a.id));
+      .sort(
+        (a, b) =>
+          b.id.localeCompare(a.id)
+      )
+      .filter(chat =>
+        (chat.title || "New chat")
+          .toLowerCase()
+          .includes(filter.toLowerCase())
+      );
 
-  if (!chatEntries.length) {
 
-    const empty = document.createElement("div");
+  if (!list.length) {
 
-    empty.className = "history-empty";
+    const empty =
+      document.createElement("div");
 
-    empty.textContent = "No conversations yet.";
+    empty.className =
+      "history-empty";
+
+    empty.style.cssText =
+      "padding:12px;color:#666;font-size:11px;";
+
+    empty.textContent =
+      "No conversations";
 
     historyList.appendChild(empty);
 
@@ -482,35 +324,57 @@ function renderChatHistory() {
 
   }
 
-  chatEntries.forEach(chat => {
+
+  list.forEach(chat => {
 
     const button =
       document.createElement("button");
 
     button.className =
       "history-item" +
-      (chat.id === currentChatId ? " active" : "");
+      (
+        chat.id === currentChatId
+          ? " active"
+          : ""
+      );
 
-    button.innerHTML = `
-      <span>◌</span>
-      <span class="history-item-title">
-        ${escapeHTML(chat.title || "New chat")}
-      </span>
-    `;
 
-    button.addEventListener("click", () => {
+    const icon =
+      document.createElement("span");
 
-      currentChatId = chat.id;
+    icon.textContent = "◌";
 
-      renderMessages();
 
-      renderChatHistory();
+    const title =
+      document.createElement("span");
 
-      if (window.innerWidth <= 850) {
-        sidebar?.classList.add("closed");
+    title.className =
+      "history-item-title";
+
+    title.textContent =
+      chat.title || "New chat";
+
+
+    button.appendChild(icon);
+    button.appendChild(title);
+
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        currentChatId =
+          chat.id;
+
+        renderHistory();
+
+        renderMessages();
+
+        sidebar?.classList.remove("open");
+
       }
+    );
 
-    });
 
     historyList.appendChild(button);
 
@@ -518,35 +382,39 @@ function renderChatHistory() {
 
 }
 
-/* =========================================================
-   ESCAPE HTML
-========================================================= */
 
-function escapeHTML(value) {
+searchChats?.addEventListener(
+  "input",
+  () => {
 
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    renderHistory(
+      searchChats.value
+    );
 
-}
+  }
+);
+
 
 /* =========================================================
-   MESSAGE RENDERING
+   RENDER MESSAGES
 ========================================================= */
 
 function renderMessages() {
 
-  if (!messages) return;
+  if (!messages)
+    return;
 
   messages.innerHTML = "";
 
   const chat =
     chats[currentChatId];
 
-  if (!chat || !chat.messages.length) {
+
+  if (
+    !chat ||
+    !chat.messages ||
+    !chat.messages.length
+  ) {
 
     show(welcomeScreen);
 
@@ -554,11 +422,13 @@ function renderMessages() {
 
   }
 
+
   hide(welcomeScreen);
+
 
   chat.messages.forEach(message => {
 
-    addMessageToDOM(
+    addMessage(
       message.role,
       message.content,
       false
@@ -566,21 +436,21 @@ function renderMessages() {
 
   });
 
-  scrollToBottom();
+
+  scrollBottom();
 
 }
+
 
 /* =========================================================
    ADD MESSAGE
 ========================================================= */
 
-function addMessageToDOM(
+function addMessage(
   role,
   content,
   animate = true
 ) {
-
-  if (!messages) return;
 
   const wrapper =
     document.createElement("div");
@@ -588,57 +458,82 @@ function addMessageToDOM(
   wrapper.className =
     `message ${role}`;
 
-  if (!animate) {
-    wrapper.style.animation = "none";
-  }
 
-  const contentBox =
+  if (!animate)
+    wrapper.style.animation = "none";
+
+
+  const box =
     document.createElement("div");
 
-  contentBox.className =
+  box.className =
     "message-content";
+
 
   if (role === "ai") {
 
-    contentBox.innerHTML = `
+    box.innerHTML = `
+
       <div class="message-role">
+
         <span class="message-role-dot"></span>
+
         LOGIC-LEAF
+
       </div>
 
       <div class="message-text">
-        ${formatAIResponse(content)}
+
+        ${formatAI(content)}
+
       </div>
 
       <div class="message-actions">
-        <button data-copy>Copy</button>
+
+        <button data-copy>
+          Copy
+        </button>
+
+        <button data-speak>
+          Read aloud
+        </button>
+
       </div>
+
     `;
 
   } else {
 
-    contentBox.innerHTML = `
+    box.innerHTML = `
+
       <div class="message-text">
+
         ${escapeHTML(content)}
+
       </div>
+
     `;
 
   }
 
-  wrapper.appendChild(contentBox);
+
+  wrapper.appendChild(box);
 
   messages.appendChild(wrapper);
 
-  const copyButton =
+
+  const copy =
     wrapper.querySelector("[data-copy]");
 
-  if (copyButton) {
-
-    copyButton.addEventListener("click", async () => {
+  copy?.addEventListener(
+    "click",
+    async () => {
 
       try {
 
-        await navigator.clipboard.writeText(content);
+        await navigator.clipboard.writeText(
+          content
+        );
 
         showToast("Copied");
 
@@ -648,30 +543,102 @@ function addMessageToDOM(
 
       }
 
-    });
+    }
+  );
 
-  }
+
+  const speak =
+    wrapper.querySelector("[data-speak]");
+
+  speak?.addEventListener(
+    "click",
+    () => {
+
+      if (
+        "speechSynthesis"
+        in window
+      ) {
+
+        speechSynthesis.cancel();
+
+        const utterance =
+          new SpeechSynthesisUtterance(
+            content
+          );
+
+        speechSynthesis.speak(
+          utterance
+        );
+
+      }
+
+    }
+  );
 
 }
 
+
 /* =========================================================
-   FORMAT AI RESPONSE
+   AI FORMATTER
 ========================================================= */
 
-function formatAIResponse(textValue) {
-
-  if (!textValue) return "";
+function formatAI(value) {
 
   let html =
-    escapeHTML(textValue);
+    escapeHTML(value);
 
-  /* Code blocks */
 
-  html = html.replace(
-    /```([\s\S]*?)```/g,
-    (_, code) => {
+  /*
+    Temporarily protect code blocks.
+  */
 
-      return `
+  const blocks = [];
+
+
+  html =
+    html.replace(
+      /```([\s\S]*?)```/g,
+      (_, code) => {
+
+        const index =
+          blocks.length;
+
+        blocks.push(
+          code.trim()
+        );
+
+        return `___CODEBLOCK_${index}___`;
+
+      }
+    );
+
+
+  html =
+    html.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+
+  html =
+    html.replace(
+      /`([^`]+)`/g,
+      "<code>$1</code>"
+    );
+
+
+  html =
+    html.replace(
+      /\n/g,
+      "<br>"
+    );
+
+
+  blocks.forEach(
+    (code, index) => {
+
+      const block = `
+
         <div class="code-block">
 
           <div class="code-header">
@@ -680,88 +647,100 @@ function formatAIResponse(textValue) {
 
             <button
               class="code-copy"
-              data-code="${encodeURIComponent(code.trim())}">
+              data-code="${encodeURIComponent(code)}"
+            >
               Copy
             </button>
 
           </div>
 
-          <pre>${code.trim()}</pre>
+          <pre>${escapeHTML(code)}</pre>
 
         </div>
+
       `;
+
+      html =
+        html.replace(
+          `___CODEBLOCK_${index}___`,
+          block
+        );
 
     }
   );
 
-  /* Bold */
-
-  html = html.replace(
-    /\*\*(.*?)\*\*/g,
-    "<strong>$1</strong>"
-  );
-
-  /* Inline code */
-
-  html = html.replace(
-    /`([^`]+)`/g,
-    "<code>$1</code>"
-  );
 
   return html;
 
 }
 
+
 /* =========================================================
    CODE COPY
 ========================================================= */
 
-document.addEventListener("click", async (event) => {
+document.addEventListener(
+  "click",
+  async event => {
 
-  const button =
-    event.target.closest(".code-copy");
-
-  if (!button) return;
-
-  try {
-
-    const code =
-      decodeURIComponent(
-        button.dataset.code || ""
+    const button =
+      event.target.closest(
+        ".code-copy"
       );
 
-    await navigator.clipboard.writeText(code);
+    if (!button)
+      return;
 
-    button.textContent = "Copied";
+    try {
 
-    setTimeout(() => {
-      button.textContent = "Copy";
-    }, 1200);
+      const code =
+        decodeURIComponent(
+          button.dataset.code
+        );
 
-  } catch {
+      await navigator.clipboard.writeText(
+        code
+      );
 
-    showToast("Copy failed");
+      button.textContent =
+        "Copied";
+
+      setTimeout(
+        () => {
+          button.textContent =
+            "Copy";
+        },
+        1200
+      );
+
+    } catch {
+
+      showToast("Copy failed");
+
+    }
 
   }
+);
 
-});
 
 /* =========================================================
    SCROLL
 ========================================================= */
 
-function scrollToBottom() {
+function scrollBottom() {
 
-  if (!messages) return;
+  requestAnimationFrame(
+    () => {
 
-  requestAnimationFrame(() => {
+      if (messages)
+        messages.scrollTop =
+          messages.scrollHeight;
 
-    messages.scrollTop =
-      messages.scrollHeight;
-
-  });
+    }
+  );
 
 }
+
 
 /* =========================================================
    ENSURE CHAT
@@ -772,255 +751,328 @@ function ensureChat() {
   if (
     currentChatId &&
     chats[currentChatId]
-  ) {
+  )
     return;
-  }
+
 
   createNewChat();
 
 }
 
+
 /* =========================================================
-   SEND MESSAGE
+   SEND
 ========================================================= */
 
 async function sendMessage() {
 
-  if (isGenerating) return;
+  if (isGenerating)
+    return;
+
 
   const prompt =
-    chatInput?.value.trim();
+    chatInput.value.trim();
 
-  if (!prompt) return;
+
+  if (!prompt)
+    return;
+
 
   ensureChat();
 
+
   isGenerating = true;
 
-  if (sendBtn) {
-    sendBtn.disabled = true;
-  }
+  sendBtn.disabled = true;
+
 
   hide(welcomeScreen);
 
-  chats[currentChatId].messages.push({
+
+  const chat =
+    chats[currentChatId];
+
+
+  chat.messages.push({
+
     role: "user",
+
     content: prompt
+
   });
 
+
   if (
-    chats[currentChatId].title === "New chat"
+    chat.title === "New chat"
   ) {
 
-    chats[currentChatId].title =
-      prompt.slice(0, 45);
+    chat.title =
+      prompt.length > 42
+        ? prompt.slice(0, 42) + "…"
+        : prompt;
 
   }
 
+
   saveChats();
 
-  addMessageToDOM(
+  renderHistory();
+
+
+  addMessage(
     "user",
     prompt
   );
 
+
   chatInput.value = "";
 
-  autoResizeTextarea();
+  resizeInput();
 
-  scrollToBottom();
+  scrollBottom();
 
-  /* Typing */
 
-  const typingWrapper =
+  /* Typing indicator */
+
+  const typing =
     document.createElement("div");
 
-  typingWrapper.className =
+  typing.className =
     "message ai";
 
-  typingWrapper.innerHTML = `
+  typing.innerHTML = `
+
     <div class="message-content">
 
       <div class="message-role">
+
         <span class="message-role-dot"></span>
+
         LOGIC-LEAF
+
       </div>
 
       <div class="typing">
+
         <span></span>
         <span></span>
         <span></span>
+
       </div>
 
     </div>
+
   `;
 
-  messages.appendChild(typingWrapper);
 
-  scrollToBottom();
+  messages.appendChild(typing);
+
+  scrollBottom();
+
 
   try {
+
+    const history =
+      chat.messages
+        .slice(-20)
+        .map(item => ({
+          role: item.role === "ai"
+            ? "assistant"
+            : "user",
+          content: item.content
+        }));
+
 
     const response =
       await fetch(
         `${API_URL}/v1/chat`,
         {
+
           method: "POST",
 
           headers: {
+
             "Content-Type":
               "application/json"
+
           },
 
-          body: JSON.stringify({
+          body:
+            JSON.stringify({
 
-            message: prompt,
+              message: prompt,
 
-            messages:
-              chats[currentChatId]
-                .messages
-                .slice(-20),
+              messages: history,
 
-            user: currentUser
-              ? {
-                  uid: currentUser.uid,
-                  email: currentUser.email,
-                  name: currentUser.displayName
-                }
-              : null
+              user:
+                currentUser
+                  ? {
+                      uid:
+                        currentUser.uid,
 
-          })
+                      email:
+                        currentUser.email,
+
+                      name:
+                        currentUser.displayName
+                    }
+                  : null
+
+            })
 
         }
       );
 
-    typingWrapper.remove();
+
+    typing.remove();
+
 
     if (!response.ok) {
 
       throw new Error(
-        `Worker returned ${response.status}`
+        `HTTP ${response.status}`
       );
 
     }
 
+
     const data =
       await response.json();
+
 
     const answer =
       extractAnswer(data);
 
-    chats[currentChatId].messages.push({
+
+    chat.messages.push({
+
       role: "ai",
+
       content: answer
+
     });
+
 
     saveChats();
 
-    addMessageToDOM(
+
+    addMessage(
       "ai",
       answer
     );
 
-    renderChatHistory();
 
-    scrollToBottom();
+    renderHistory();
+
+    scrollBottom();
+
 
   } catch (error) {
 
     console.error(
-      "Worker error:",
+      "LOGIC-LEAF Worker error:",
       error
     );
 
-    typingWrapper.remove();
 
-    const errorMessage =
-      "Sorry, something went wrong while connecting to LOGIC-LEAF.";
+    typing.remove();
 
-    chats[currentChatId].messages.push({
+
+    const message =
+      "I couldn't connect to the LOGIC-LEAF AI service right now. Please check the Worker connection and try again.";
+
+
+    chat.messages.push({
+
       role: "ai",
-      content: errorMessage
+
+      content: message
+
     });
+
 
     saveChats();
 
-    addMessageToDOM(
+
+    addMessage(
       "ai",
-      errorMessage
+      message
     );
 
-    showToast("Failed to fetch");
+
+    showToast(
+      "Failed to connect to AI"
+    );
 
   } finally {
 
     isGenerating = false;
 
-    if (sendBtn) {
-      sendBtn.disabled = false;
-    }
+    sendBtn.disabled = false;
 
-    chatInput?.focus();
+    chatInput.focus();
 
   }
 
 }
 
+
 /* =========================================================
-   EXTRACT WORKER ANSWER
+   EXTRACT RESPONSE
 ========================================================= */
 
 function extractAnswer(data) {
 
-  if (!data) {
+  if (!data)
     return "The AI returned an empty response.";
-  }
 
-  if (typeof data === "string") {
+
+  if (typeof data === "string")
     return data;
-  }
 
-  if (data.response) {
-    return data.response;
-  }
-
-  if (data.answer) {
-    return data.answer;
-  }
-
-  if (data.text) {
-    return data.text;
-  }
-
-  if (data.result) {
-
-    if (typeof data.result === "string") {
-      return data.result;
-    }
-
-    if (data.result.response) {
-      return data.result.response;
-    }
-
-  }
 
   if (
-    data.choices &&
-    data.choices[0]
-  ) {
+    typeof data.response === "string"
+  )
+    return data.response;
 
-    const choice =
-      data.choices[0];
 
-    if (choice.message?.content) {
-      return choice.message.content;
-    }
+  if (
+    typeof data.answer === "string"
+  )
+    return data.answer;
 
-    if (choice.text) {
-      return choice.text;
-    }
 
-  }
+  if (
+    typeof data.text === "string"
+  )
+    return data.text;
+
+
+  if (
+    data.result &&
+    typeof data.result === "string"
+  )
+    return data.result;
+
+
+  if (
+    data.result?.response
+  )
+    return data.result.response;
+
+
+  if (
+    data.choices?.[0]?.message?.content
+  )
+    return data.choices[0].message.content;
+
+
+  if (
+    data.choices?.[0]?.text
+  )
+    return data.choices[0].text;
+
 
   return JSON.stringify(
     data,
@@ -1030,54 +1082,48 @@ function extractAnswer(data) {
 
 }
 
+
 /* =========================================================
    SEND BUTTON
 ========================================================= */
 
-if (sendBtn) {
+sendBtn?.addEventListener(
+  "click",
+  sendMessage
+);
 
-  sendBtn.addEventListener(
-    "click",
-    sendMessage
-  );
-
-}
 
 /* =========================================================
-   ENTER TO SEND
+   ENTER
 ========================================================= */
 
-if (chatInput) {
+chatInput?.addEventListener(
+  "keydown",
+  event => {
 
-  chatInput.addEventListener(
-    "keydown",
-    event => {
+    if (
+      event.key === "Enter" &&
+      !event.shiftKey
+    ) {
 
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
+      event.preventDefault();
 
-        event.preventDefault();
-
-        sendMessage();
-
-      }
+      sendMessage();
 
     }
-  );
 
-}
+  }
+);
+
 
 /* =========================================================
-   TEXTAREA AUTO RESIZE
+   RESIZE INPUT
 ========================================================= */
 
-function autoResizeTextarea() {
+function resizeInput() {
 
-  if (!chatInput) return;
-
-  chatInput.style.height = "auto";
+  chatInput.style.height =
+    "auto";
 
   chatInput.style.height =
     Math.min(
@@ -1087,191 +1133,791 @@ function autoResizeTextarea() {
 
 }
 
-if (chatInput) {
 
-  chatInput.addEventListener(
-    "input",
-    autoResizeTextarea
-  );
+chatInput?.addEventListener(
+  "input",
+  resizeInput
+);
 
-}
 
 /* =========================================================
    SUGGESTIONS
 ========================================================= */
 
-document.querySelectorAll(".suggestion").forEach(button => {
+$$(".suggestion").forEach(
+  button => {
 
-  button.addEventListener("click", () => {
+    button.addEventListener(
+      "click",
+      () => {
 
-    const prompt =
-      button.dataset.prompt ||
-      button.textContent.trim();
+        chatInput.value =
+          button.dataset.prompt || "";
 
-    if (chatInput) {
+        resizeInput();
 
-      chatInput.value =
-        prompt;
+        chatInput.focus();
 
-      autoResizeTextarea();
+      }
+    );
 
-      chatInput.focus();
+  }
+);
 
-    }
-
-  });
-
-});
 
 /* =========================================================
-   ATTACHMENT MENU
+   ATTACHMENTS
 ========================================================= */
 
-if (attachBtn) {
-
-  attachBtn.addEventListener("click", event => {
+attachBtn?.addEventListener(
+  "click",
+  event => {
 
     event.stopPropagation();
 
-    attachmentMenu?.classList.toggle(
+    attachmentMenu.classList.toggle(
       "hidden"
     );
 
-  });
-
-}
-
-document.addEventListener("click", event => {
-
-  if (
-    attachmentMenu &&
-    !attachmentMenu.contains(event.target) &&
-    event.target !== attachBtn
-  ) {
-
-    hide(attachmentMenu);
-
   }
+);
 
-});
 
-/* =========================================================
-   FILE UPLOAD
-========================================================= */
-
-document.querySelectorAll("[data-file-upload]").forEach(button => {
-
-  button.addEventListener("click", () => {
-
-    fileInput?.click();
-
-    hide(attachmentMenu);
-
-  });
-
-});
-
-document.querySelectorAll("[data-image-upload]").forEach(button => {
-
-  button.addEventListener("click", () => {
-
-    imageInput?.click();
-
-    hide(attachmentMenu);
-
-  });
-
-});
-
-if (fileInput) {
-
-  fileInput.addEventListener(
-    "change",
-    () => {
-
-      const files =
-        Array.from(
-          fileInput.files || []
-        );
-
-      if (!files.length) return;
-
-      showToast(
-        `${files.length} file selected`
-      );
-
-      /*
-       * The UI accepts files here.
-       * Actual PDF/image AI processing
-       * depends on the Worker endpoint.
-       */
-
-    }
-  );
-
-}
-
-if (imageInput) {
-
-  imageInput.addEventListener(
-    "change",
-    () => {
-
-      const files =
-        Array.from(
-          imageInput.files || []
-        );
-
-      if (!files.length) return;
-
-      showToast(
-        "Image selected"
-      );
-
-    }
-  );
-
-}
-
-/* =========================================================
-   CLEAR CHAT HISTORY
-========================================================= */
-
-document.querySelectorAll("[data-clear-history]").forEach(button => {
-
-  button.addEventListener("click", () => {
+document.addEventListener(
+  "click",
+  event => {
 
     if (
-      !confirm(
-        "Delete all local chat history?"
-      )
+      attachmentMenu &&
+      !attachmentMenu.contains(
+        event.target
+      ) &&
+      event.target !== attachBtn
     ) {
-      return;
+
+      hide(attachmentMenu);
+
     }
 
-    chats = {};
+  }
+);
 
-    currentChatId = null;
 
-    saveChats();
+$$("[data-file-upload]")
+  .forEach(button => {
 
-    renderChatHistory();
+    button.addEventListener(
+      "click",
+      () => {
 
-    createNewChat();
+        fileInput?.click();
 
-    showToast(
-      "Chat history cleared"
+        hide(attachmentMenu);
+
+      }
     );
 
   });
 
-});
+
+$$("[data-image-upload]")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        imageInput?.click();
+
+        hide(attachmentMenu);
+
+      }
+    );
+
+  });
+
+
+fileInput?.addEventListener(
+  "change",
+  () => {
+
+    if (!fileInput.files.length)
+      return;
+
+    showToast(
+      `${fileInput.files.length} file selected`
+    );
+
+  }
+);
+
+
+imageInput?.addEventListener(
+  "change",
+  () => {
+
+    if (!imageInput.files.length)
+      return;
+
+    showToast(
+      "Image selected"
+    );
+
+  }
+);
+
 
 /* =========================================================
-   WORKER HEALTH CHECK
+   IMAGE GENERATION UI
+========================================================= */
+
+$("#generateImageBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      hide(attachmentMenu);
+
+      chatInput.value =
+        "Generate an image of ";
+
+      resizeInput();
+
+      chatInput.focus();
+
+      showToast(
+        "Describe the image you want"
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   CAMERA
+========================================================= */
+
+$("#cameraBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      hide(attachmentMenu);
+
+      imageInput?.click();
+
+    }
+  );
+
+
+/* =========================================================
+   MICROPHONE
+========================================================= */
+
+$("#micBtn")
+  ?.addEventListener(
+    "click",
+    startVoiceInput
+  );
+
+
+function startVoiceInput() {
+
+  const Recognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+
+  if (!Recognition) {
+
+    showToast(
+      "Voice input isn't supported by this browser"
+    );
+
+    return;
+
+  }
+
+
+  const recognition =
+    new Recognition();
+
+  recognition.lang =
+    navigator.language || "en-IN";
+
+  recognition.interimResults =
+    false;
+
+  recognition.maxAlternatives =
+    1;
+
+
+  showToast(
+    "Listening…"
+  );
+
+
+  recognition.start();
+
+
+  recognition.onresult =
+    event => {
+
+      const transcript =
+        event.results[0][0].transcript;
+
+      chatInput.value =
+        transcript;
+
+      resizeInput();
+
+      chatInput.focus();
+
+    };
+
+
+  recognition.onerror =
+    () => {
+
+      showToast(
+        "Voice input failed"
+      );
+
+    };
+
+}
+
+
+/* =========================================================
+   MODEL MENU
+========================================================= */
+
+modelBtn?.addEventListener(
+  "click",
+  event => {
+
+    event.stopPropagation();
+
+    modelMenu.classList.toggle(
+      "hidden"
+    );
+
+  }
+);
+
+
+$$(".model-option")
+  .forEach(option => {
+
+    option.addEventListener(
+      "click",
+      () => {
+
+        $$(".model-option")
+          .forEach(
+            item =>
+              item.classList.remove(
+                "active"
+              )
+          );
+
+        option.classList.add(
+          "active"
+        );
+
+
+        $("#selectedModel")
+          .textContent =
+          option.dataset.modelName;
+
+
+        hide(modelMenu);
+
+      }
+    );
+
+  });
+
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if (
+      modelMenu &&
+      !modelMenu.contains(
+        event.target
+      ) &&
+      event.target !== modelBtn
+    ) {
+
+      hide(modelMenu);
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+function openLogin() {
+
+  show(loginModal);
+
+}
+
+
+function closeLogin() {
+
+  hide(loginModal);
+
+}
+
+
+loginBtn?.addEventListener(
+  "click",
+  openLogin
+);
+
+
+$$("[data-close-login]")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      closeLogin
+    );
+
+  });
+
+
+googleLoginBtn?.addEventListener(
+  "click",
+  async () => {
+
+    try {
+
+      googleLoginBtn.disabled =
+        true;
+
+      googleLoginBtn.textContent =
+        "Signing in…";
+
+
+      const result =
+        await signInWithPopup(
+          auth,
+          googleProvider
+        );
+
+
+      currentUser =
+        result.user;
+
+
+      closeLogin();
+
+      updateUserUI();
+
+      showToast(
+        `Welcome, ${
+          currentUser.displayName ||
+          "User"
+        }`
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Google login:",
+        error
+      );
+
+
+      let message =
+        "Google login failed.";
+
+
+      if (
+        error.code ===
+        "auth/popup-closed-by-user"
+      ) {
+
+        message =
+          "Login window was closed.";
+
+      }
+
+
+      if (
+        error.code ===
+        "auth/unauthorized-domain"
+      ) {
+
+        message =
+          "Add this GitHub Pages domain to Firebase Authorized Domains.";
+
+      }
+
+
+      if (
+        error.code ===
+        "auth/api-key-not-valid"
+      ) {
+
+        message =
+          "Firebase API configuration is invalid.";
+
+      }
+
+
+      showToast(message);
+
+    } finally {
+
+      googleLoginBtn.disabled =
+        false;
+
+      googleLoginBtn.textContent =
+        "Continue with Google";
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   AUTH STATE
+========================================================= */
+
+onAuthStateChanged(
+  auth,
+  user => {
+
+    currentUser =
+      user || null;
+
+    updateUserUI();
+
+  }
+);
+
+
+/* =========================================================
+   USER UI
+========================================================= */
+
+function updateUserUI() {
+
+  const names =
+    $$("[data-user-name]");
+
+  const emails =
+    $$("[data-user-email]");
+
+  const avatars =
+    $$("[data-user-avatar]");
+
+
+  if (!currentUser) {
+
+    names.forEach(
+      element =>
+        element.textContent =
+          "Guest"
+    );
+
+    emails.forEach(
+      element =>
+        element.textContent =
+          "Sign in to continue"
+    );
+
+    avatars.forEach(
+      element =>
+        element.textContent =
+          "G"
+    );
+
+    return;
+
+  }
+
+
+  names.forEach(
+    element =>
+      element.textContent =
+        currentUser.displayName ||
+        "User"
+  );
+
+
+  emails.forEach(
+    element =>
+      element.textContent =
+        currentUser.email ||
+        ""
+  );
+
+
+  avatars.forEach(
+    element => {
+
+      if (currentUser.photoURL) {
+
+        element.innerHTML =
+          `<img src="${
+            escapeHTML(
+              currentUser.photoURL
+            )
+          }" alt="User">`;
+
+      } else {
+
+        element.textContent =
+          (
+            currentUser.displayName ||
+            currentUser.email ||
+            "U"
+          )
+          .charAt(0)
+          .toUpperCase();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+logoutBtn?.addEventListener(
+  "click",
+  async () => {
+
+    try {
+
+      await signOut(auth);
+
+      showToast(
+        "Signed out"
+      );
+
+    } catch {
+
+      showToast(
+        "Could not sign out"
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+$$("[data-open-settings]")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        show(settingsModal);
+
+      }
+    );
+
+  });
+
+
+$$("[data-close-settings]")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        hide(settingsModal);
+
+      }
+    );
+
+  });
+
+
+$$(".settings-nav-btn")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        $$(".settings-nav-btn")
+          .forEach(
+            item =>
+              item.classList.remove(
+                "active"
+              )
+          );
+
+        $$(".settings-page")
+          .forEach(
+            page =>
+              page.classList.remove(
+                "active"
+              )
+          );
+
+
+        button.classList.add(
+          "active"
+        );
+
+
+        const page =
+          document.querySelector(
+            `[data-page="${
+              button.dataset.target
+            }"]`
+          );
+
+
+        page?.classList.add(
+          "active"
+        );
+
+      }
+    );
+
+  });
+
+
+/* =========================================================
+   CLEAR HISTORY
+========================================================= */
+
+$("#clearHistoryBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !confirm(
+          "Clear all local conversations?"
+        )
+      )
+        return;
+
+
+      chats = {};
+
+      currentChatId =
+        null;
+
+      saveChats();
+
+      createNewChat();
+
+      showToast(
+        "History cleared"
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   READ ALOUD TEST
+========================================================= */
+
+$("#readAloudBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !("speechSynthesis" in window)
+      ) {
+
+        showToast(
+          "Speech isn't supported"
+        );
+
+        return;
+
+      }
+
+
+      speechSynthesis.cancel();
+
+
+      const speech =
+        new SpeechSynthesisUtterance(
+          "LOGIC-LEAF voice is ready."
+        );
+
+
+      speechSynthesis.speak(
+        speech
+      );
+
+    }
+  );
+
+
+/* =========================================================
+   COPY API
+========================================================= */
+
+$("#copyApiBtn")
+  ?.addEventListener(
+    "click",
+    async () => {
+
+      try {
+
+        await navigator.clipboard.writeText(
+          `${API_URL}/v1/chat`
+        );
+
+        showToast(
+          "API endpoint copied"
+        );
+
+      } catch {
+
+        showToast(
+          "Copy failed"
+        );
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   WORKER HEALTH
 ========================================================= */
 
 async function checkWorker() {
+
+  if (!workerStatus)
+    return;
+
 
   try {
 
@@ -1283,39 +1929,74 @@ async function checkWorker() {
         }
       );
 
-    if (!response.ok) {
-      throw new Error("Worker offline");
-    }
+
+    if (!response.ok)
+      throw new Error(
+        "Worker offline"
+      );
+
 
     const data =
       await response.json();
+
+
+    workerStatus.textContent =
+      data.ai
+        ? "Online"
+        : "Connected";
+
+
+    workerStatus.style.background =
+      "#202a20";
+
+    workerStatus.style.color =
+      "#9fce9f";
+
 
     console.log(
       "LOGIC-LEAF Worker:",
       data
     );
 
+
   } catch (error) {
 
     console.warn(
-      "Worker health check failed:",
+      "Worker health:",
       error
     );
+
+
+    workerStatus.textContent =
+      "Unavailable";
+
+
+    workerStatus.style.background =
+      "#302020";
+
+    workerStatus.style.color =
+      "#ffaaaa";
 
   }
 
 }
 
+
 /* =========================================================
    INITIALIZE
 ========================================================= */
 
-renderChatHistory();
+renderHistory();
 
-if (Object.keys(chats).length) {
+
+const existingChats =
+  Object.keys(chats);
+
+
+if (existingChats.length) {
 
   currentChatId =
-    Object.keys(chats)[0];
+    existingChats[0];
 
   renderMessages();
 
@@ -1325,12 +2006,14 @@ if (Object.keys(chats).length) {
 
 }
 
+
 updateUserUI();
 
 checkWorker();
 
+chatInput?.focus();
+
+
 console.log(
-  "%cLOGIC-LEAF%c online",
-  "font-weight:800",
-  "font-weight:400"
+  "LOGIC-LEAF frontend initialized"
 );
