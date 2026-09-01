@@ -1,116 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>LOGIC-LEAF AI</title>
-  <meta name="theme-color" content="#0b0b0c">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
+  <meta
+    name="viewport"
+    content="width=device-width,initial-scale=1.0"
   >
 
-  <link rel="stylesheet" href="style.css">
+  <meta
+    name="theme-color"
+    content="#08090c"
+  >
+
+  <title>LOGIC-LEAF</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+
 </head>
 
 <body>
 
 <div id="app">
 
-  <!-- ================= SIDEBAR ================= -->
+  <!-- ============================= -->
+  <!-- SIDEBAR -->
+  <!-- ============================= -->
 
-  <aside id="sidebar" class="sidebar">
+  <aside
+    id="sidebar"
+    class="sidebar"
+  >
 
     <div class="sidebar-top">
 
-      <div class="brand">
-        <div class="brand-mark">LL</div>
+      <button
+        id="closeSidebar"
+        class="icon-btn"
+        aria-label="Close sidebar"
+      >
+        ×
+      </button>
 
-        <div class="brand-text">
+      <div class="brand">
+        <div class="brand-mark">
+          L
+        </div>
+
+        <div>
           <strong>LOGIC-LEAF</strong>
           <span>AI</span>
         </div>
       </div>
 
-      <button
-        id="closeSidebar"
-        class="icon-btn mobile-only"
-        aria-label="Close sidebar"
-      >×</button>
-
     </div>
 
 
-    <button id="newChatBtn" class="new-chat">
-      <span class="new-chat-plus">+</span>
+    <button
+      id="newChat"
+      class="new-chat"
+    >
+      <span>＋</span>
       <span>New chat</span>
     </button>
 
 
-    <div class="search-box">
+    <div class="sidebar-search">
 
-      <span class="search-icon">⌕</span>
+      <span>⌕</span>
 
       <input
-        id="searchChats"
+        id="chatSearch"
         type="text"
         placeholder="Search chats"
-        autocomplete="off"
       >
 
     </div>
 
 
-    <div class="sidebar-section">
-
-      <div class="section-label">
-        Recent
-      </div>
-
-      <div id="historyList" class="history-list"></div>
-
+    <div class="history-label">
+      Chats
     </div>
+
+    <div
+      id="chatHistory"
+      class="chat-history"
+    ></div>
 
 
     <div class="sidebar-bottom">
 
       <button
-        class="sidebar-action"
-        data-open-settings
+        id="apiButton"
+        class="side-action"
+      >
+        <span>⌘</span>
+        API
+      </button>
+
+      <button
+        id="settingsButton"
+        class="side-action"
       >
         <span>⚙</span>
-        <span>Settings</span>
+        Settings
       </button>
 
 
-      <div class="account-mini">
+      <div
+        id="accountArea"
+        class="account"
+      >
 
         <div
+          id="avatar"
           class="avatar"
-          data-user-avatar
-        >G</div>
+        >
+          ?
+        </div>
 
         <div class="account-info">
 
-          <strong data-user-name>
+          <strong id="accountName">
             Guest
           </strong>
 
-          <span data-user-email>
-            Sign in to continue
+          <span id="accountEmail">
+            Not signed in
           </span>
 
         </div>
 
         <button
-          class="account-more"
-          data-open-settings
-        >•••</button>
+          id="authButton"
+          class="account-menu"
+        >
+          Sign in
+        </button>
 
       </div>
 
@@ -119,106 +150,69 @@
   </aside>
 
 
-  <!-- ================= MAIN ================= -->
+  <!-- ============================= -->
+  <!-- MAIN -->
+  <!-- ============================= -->
 
   <main class="main">
 
     <header class="topbar">
 
-      <div class="topbar-left">
-
-        <button
-          id="menuBtn"
-          class="icon-btn"
-          aria-label="Open sidebar"
-        >
-          ☰
-        </button>
-
-        <div class="mobile-brand">
-          LOGIC-LEAF
-        </div>
-
-      </div>
-
-
-      <div class="model-area">
-
-        <button
-          id="modelBtn"
-          class="model-button"
-        >
-          <span id="selectedModel">
-            LOGIC-LEAF
-          </span>
-          <span class="chevron">⌄</span>
-        </button>
-
-
-        <div
-          id="modelMenu"
-          class="model-menu hidden"
-        >
-
-          <button
-            class="model-option active"
-            data-model-name="LOGIC-LEAF"
-          >
-            <strong>LOGIC-LEAF</strong>
-            <small>General AI</small>
-          </button>
-
-          <button
-            class="model-option"
-            data-model-name="Reasoning"
-          >
-            <strong>Reasoning</strong>
-            <small>Complex problems</small>
-          </button>
-
-          <button
-            class="model-option"
-            data-model-name="Coding"
-          >
-            <strong>Coding</strong>
-            <small>Programming assistant</small>
-          </button>
-
-        </div>
-
-      </div>
-
-
       <button
-        class="icon-btn top-settings"
-        data-open-settings
-        aria-label="Settings"
+        id="openSidebar"
+        class="menu-btn"
+        aria-label="Open sidebar"
       >
-        ⚙
+        <span></span>
+        <span></span>
+        <span></span>
       </button>
+
+
+      <div class="mobile-title">
+        LOGIC-LEAF
+      </div>
+
+
+      <div class="top-actions">
+
+        <button
+          id="searchToggle"
+          class="top-pill"
+        >
+          Search
+        </button>
+
+        <button
+          id="profileButton"
+          class="profile-mini"
+        >
+          ?
+        </button>
+
+      </div>
 
     </header>
 
 
-    <!-- ================= CHAT ================= -->
+    <!-- ============================= -->
+    <!-- CHAT -->
+    <!-- ============================= -->
 
-    <section id="chatArea" class="chat-area">
-
-      <div
-        id="messages"
-        class="messages"
-      ></div>
-
-
-      <!-- ================= WELCOME ================= -->
+    <section
+      id="chat"
+      class="chat"
+    >
 
       <div
-        id="welcomeScreen"
+        id="welcome"
         class="welcome"
       >
 
-        <div class="welcome-logo">
-          LL
+        <div class="welcome-glow"></div>
+
+        <div class="logo-large">
+          L
         </div>
 
         <h1>
@@ -226,118 +220,111 @@
         </h1>
 
         <p>
-          Ask LOGIC-LEAF anything.
+          Ask anything. Build anything.
         </p>
 
 
-        <div class="suggestions">
+        <div class="quick-grid">
 
           <button
-            class="suggestion"
-            data-prompt="Explain this concept simply and give me an example."
+            data-prompt="Explain this concept to me simply"
           >
-            <span>Explain</span>
-            <small>Make a difficult concept simple</small>
+            <strong>Learn</strong>
+            <span>Explain a difficult concept</span>
           </button>
 
-
           <button
-            class="suggestion"
-            data-prompt="Solve this problem step by step and explain your reasoning."
+            data-prompt="Write a complete solution for this programming problem"
           >
-            <span>Solve</span>
-            <small>Work through a problem</small>
+            <strong>Code</strong>
+            <span>Build and debug code</span>
           </button>
 
-
           <button
-            class="suggestion"
-            data-prompt="Help me write clean and efficient code."
+            data-prompt="Search my indexed knowledge and answer my question"
           >
-            <span>Code</span>
-            <small>Build or debug something</small>
+            <strong>Search</strong>
+            <span>Find information</span>
           </button>
 
-
           <button
-            class="suggestion"
-            data-prompt="Create a practical study plan for me."
+            data-prompt="Create a professional study document"
           >
-            <span>Study</span>
-            <small>Plan your learning</small>
+            <strong>Create</strong>
+            <span>Make a document</span>
           </button>
 
         </div>
 
       </div>
 
+
+      <div
+        id="messages"
+        class="messages"
+      ></div>
+
     </section>
 
 
-    <!-- ================= COMPOSER ================= -->
+    <!-- ============================= -->
+    <!-- COMPOSER -->
+    <!-- ============================= -->
 
     <div class="composer-area">
 
       <div
-        id="attachmentMenu"
-        class="attachment-menu hidden"
+        id="filePreview"
+        class="file-preview"
+      ></div>
+
+
+      <div
+        id="searchIndicator"
+        class="search-indicator hidden"
       >
-
-        <button data-file-upload>
-          <span>＋</span>
-          Add files
-        </button>
-
-        <button data-image-upload>
-          <span>▧</span>
-          Add image
-        </button>
-
-        <button id="cameraBtn">
-          <span>◉</span>
-          Camera
-        </button>
-
-        <button id="generateImageBtn">
-          <span>✦</span>
-          Generate image
-        </button>
-
+        Search enabled
       </div>
 
 
       <div class="composer">
 
         <button
-          id="attachBtn"
+          id="attachButton"
           class="composer-btn"
-          aria-label="Add"
+          title="Attach file"
         >
           +
         </button>
 
+        <input
+          id="fileInput"
+          type="file"
+          hidden
+          accept=".txt,.md,.csv,.json,.html,.css,.js,.py,.java,.cpp,.c,.pdf"
+        >
+
 
         <textarea
-          id="chatInput"
+          id="messageInput"
           rows="1"
           placeholder="Message LOGIC-LEAF..."
-          autocomplete="off"
         ></textarea>
 
 
         <button
-          id="micBtn"
+          id="imageButton"
           class="composer-btn"
-          aria-label="Voice input"
+          title="Generate image"
         >
-          ◉
+          ◇
         </button>
 
 
         <button
-          id="sendBtn"
+          id="sendButton"
           class="send-btn"
-          aria-label="Send"
+          title="Send"
         >
           ↑
         </button>
@@ -356,10 +343,12 @@
 </div>
 
 
-<!-- ================= LOGIN ================= -->
+<!-- ============================= -->
+<!-- AUTH MODAL -->
+<!-- ============================= -->
 
 <div
-  id="loginModal"
+  id="authModal"
   class="modal hidden"
 >
 
@@ -367,25 +356,179 @@
 
     <button
       class="modal-close"
-      data-close-login
-    >×</button>
+      data-close="authModal"
+    >
+      ×
+    </button>
 
     <div class="modal-logo">
-      LL
+      L
     </div>
 
-    <h2>Welcome to LOGIC-LEAF</h2>
+    <h2 id="authTitle">
+      Welcome to LOGIC-LEAF
+    </h2>
 
-    <p>
-      Sign in to keep your conversations synced.
+    <p id="authSubtitle">
+      Sign in to continue
     </p>
 
+
+    <input
+      id="authEmail"
+      class="modal-input"
+      type="email"
+      placeholder="Email"
+    >
+
+    <input
+      id="authPassword"
+      class="modal-input"
+      type="password"
+      placeholder="Password"
+    >
+
+
     <button
-      id="googleLoginBtn"
+      id="emailAuth"
+      class="primary-btn"
+    >
+      Sign in
+    </button>
+
+
+    <button
+      id="googleAuth"
       class="google-btn"
     >
-      <span class="google-g">G</span>
       Continue with Google
+    </button>
+
+
+    <button
+      id="switchAuth"
+      class="text-btn"
+    >
+      Create an account
+    </button>
+
+
+    <div
+      id="authStatus"
+      class="modal-status"
+    ></div>
+
+  </div>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- API MODAL -->
+<!-- ============================= -->
+
+<div
+  id="apiModal"
+  class="modal hidden"
+>
+
+  <div class="modal-card">
+
+    <button
+      class="modal-close"
+      data-close="apiModal"
+    >
+      ×
+    </button>
+
+    <h2>LOGIC-LEAF API</h2>
+
+    <p>
+      Create a personal API key for your account.
+    </p>
+
+
+    <button
+      id="createApiKey"
+      class="primary-btn"
+    >
+      Create API key
+    </button>
+
+
+    <div
+      id="apiOutput"
+      class="api-output"
+    ></div>
+
+
+    <p class="small-note">
+      Store your key safely. It is shown only when created.
+    </p>
+
+  </div>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- SETTINGS MODAL -->
+<!-- ============================= -->
+
+<div
+  id="settingsModal"
+  class="modal hidden"
+>
+
+  <div class="modal-card">
+
+    <button
+      class="modal-close"
+      data-close="settingsModal"
+    >
+      ×
+    </button>
+
+    <h2>Settings</h2>
+
+    <div class="settings-row">
+
+      <div>
+        <strong>Developer</strong>
+        <span>
+          V.CHENCHUKIRAN
+        </span>
+      </div>
+
+    </div>
+
+    <div class="settings-row">
+
+      <div>
+        <strong>Security</strong>
+        <span>
+          CLOUD SECURITY
+        </span>
+      </div>
+
+    </div>
+
+    <div class="settings-row">
+
+      <div>
+        <strong>Specialization</strong>
+        <span>
+          ETHICAL HACKER · DEVSECOPS
+        </span>
+      </div>
+
+    </div>
+
+    <button
+      id="logoutButton"
+      class="danger-btn"
+    >
+      Sign out
     </button>
 
   </div>
@@ -393,297 +536,12 @@
 </div>
 
 
-<!-- ================= SETTINGS ================= -->
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 
-<div
-  id="settingsModal"
-  class="modal hidden"
->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 
-  <div class="settings-card">
-
-    <button
-      class="modal-close"
-      data-close-settings
-    >×</button>
-
-    <div class="settings-layout">
-
-      <aside class="settings-nav">
-
-        <h2>Settings</h2>
-
-        <button
-          class="settings-nav-btn active"
-          data-target="general"
-        >
-          General
-        </button>
-
-        <button
-          class="settings-nav-btn"
-          data-target="appearance"
-        >
-          Appearance
-        </button>
-
-        <button
-          class="settings-nav-btn"
-          data-target="voice"
-        >
-          Voice
-        </button>
-
-        <button
-          class="settings-nav-btn"
-          data-target="history"
-        >
-          History & Data
-        </button>
-
-        <button
-          class="settings-nav-btn"
-          data-target="developer"
-        >
-          Developer
-        </button>
-
-      </aside>
-
-
-      <section class="settings-content">
-
-        <!-- GENERAL -->
-
-        <div
-          class="settings-page active"
-          data-page="general"
-        >
-
-          <h3>General</h3>
-
-          <div class="setting-card">
-
-            <div>
-              <strong>Account</strong>
-              <p data-user-email>
-                Sign in to LOGIC-LEAF
-              </p>
-            </div>
-
-            <button
-              id="loginBtn"
-              class="small-button"
-            >
-              Sign in
-            </button>
-
-          </div>
-
-          <div class="setting-card">
-
-            <div>
-              <strong>LOGIC-LEAF Worker</strong>
-              <p>
-                Cloudflare AI backend
-              </p>
-            </div>
-
-            <span
-              id="workerStatus"
-              class="status"
-            >
-              Checking
-            </span>
-
-          </div>
-
-          <button
-            id="logoutBtn"
-            class="danger-button"
-          >
-            Sign out
-          </button>
-
-        </div>
-
-
-        <!-- APPEARANCE -->
-
-        <div
-          class="settings-page"
-          data-page="appearance"
-        >
-
-          <h3>Appearance</h3>
-
-          <div class="setting-card">
-
-            <div>
-              <strong>Dark interface</strong>
-              <p>
-                LOGIC-LEAF uses a focused dark interface.
-              </p>
-            </div>
-
-            <div class="toggle active">
-              <span></span>
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <!-- VOICE -->
-
-        <div
-          class="settings-page"
-          data-page="voice"
-        >
-
-          <h3>Voice</h3>
-
-          <div class="setting-card">
-
-            <div>
-              <strong>Voice input</strong>
-              <p>
-                Use your device microphone to enter messages.
-              </p>
-            </div>
-
-            <span class="status">
-              Ready
-            </span>
-
-          </div>
-
-          <div class="setting-card">
-
-            <div>
-              <strong>Read aloud</strong>
-              <p>
-                Read AI responses using your device voice.
-              </p>
-            </div>
-
-            <button
-              id="readAloudBtn"
-              class="small-button"
-            >
-              Test
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <!-- HISTORY -->
-
-        <div
-          class="settings-page"
-          data-page="history"
-        >
-
-          <h3>History & Data</h3>
-
-          <div class="setting-card">
-
-            <div>
-              <strong>Chat history</strong>
-              <p>
-                Conversations are stored locally in this browser.
-              </p>
-            </div>
-
-            <button
-              id="clearHistoryBtn"
-              class="danger-button small"
-            >
-              Clear
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <!-- DEVELOPER -->
-
-        <div
-          class="settings-page"
-          data-page="developer"
-        >
-
-          <h3>Developer</h3>
-
-          <div class="developer-card">
-
-            <strong>
-              V.CHENCHUKIRAN
-            </strong>
-
-            <span>
-              CLOUD SECURITY • ETHICAL HACKER • DevSecOps
-            </span>
-
-          </div>
-
-          <div class="setting-card">
-
-            <div>
-              <strong>API endpoint</strong>
-              <p>
-                /v1/chat
-              </p>
-            </div>
-
-            <button
-              id="copyApiBtn"
-              class="small-button"
-            >
-              Copy
-            </button>
-
-          </div>
-
-        </div>
-
-      </section>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<!-- ================= FILE INPUTS ================= -->
-
-<input
-  id="fileInput"
-  type="file"
-  hidden
-  multiple
-  accept=".pdf,.txt,.doc,.docx,.csv,.json"
->
-
-<input
-  id="imageInput"
-  type="file"
-  hidden
-  accept="image/*"
->
-
-
-<!-- ================= TOAST ================= -->
-
-<div id="toast"></div>
-
-
-<script type="module" src="app.js"></script>
+<script src="app.js"></script>
 
 </body>
-          </html>
+  </html>
