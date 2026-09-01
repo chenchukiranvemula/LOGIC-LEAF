@@ -2,13 +2,15 @@ name = "logic-leaf"
 main = "worker.js"
 compatibility_date = "2026-08-31"
 
+workers_dev = true
+preview_urls = true
+
 # =========================================================
 # WORKERS AI
 # =========================================================
 
 [ai]
 binding = "AI"
-
 
 # =========================================================
 # D1 DATABASE
@@ -19,7 +21,6 @@ binding = "DB"
 database_name = "qtm-ai-db"
 database_id = "06fb0a2b-0531-4633-a3e5-4ff0754b7528"
 
-
 # =========================================================
 # KV
 # =========================================================
@@ -28,7 +29,6 @@ database_id = "06fb0a2b-0531-4633-a3e5-4ff0754b7528"
 binding = "QTM_KEYS"
 id = "8c76e2538038405c941c6a9cdb2dfc02"
 
-
 # =========================================================
 # ENVIRONMENT VARIABLES
 # =========================================================
@@ -36,9 +36,7 @@ id = "8c76e2538038405c941c6a9cdb2dfc02"
 [vars]
 
 APP_NAME = "LOGIC-LEAF"
-APP_URL = "https://chenchukiranvemula.github.io/LOGIC-LEAF/"
-WORKER_URL = "https://ck.qtmkiller6.workers.dev"
 
-# AI Search is NOT configured yet.
-# Do not add [[ai_search_namespaces]]
-# until you actually create an AI Search instance.
+APP_URL = "https://chenchukiranvemula.github.io/LOGIC-LEAF/"
+
+WORKER_URL = "https://logic-leaf.qtmkiller6.workers.dev"
