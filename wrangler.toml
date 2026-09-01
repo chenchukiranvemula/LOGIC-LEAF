@@ -1,37 +1,46 @@
 name = "logic-leaf"
 main = "worker.js"
-compatibility_date = "2026-08-31"
+compatibility_date = "2026-08-28"
 
 workers_dev = true
 preview_urls = true
 
-# =========================================================
+# ==========================================
 # WORKERS AI
-# =========================================================
+# ==========================================
 
 [ai]
 binding = "AI"
 
-# =========================================================
-# D1 DATABASE
-# =========================================================
+# ==========================================
+# D1
+# ==========================================
 
 [[d1_databases]]
 binding = "DB"
 database_name = "qtm-ai-db"
 database_id = "06fb0a2b-0531-4633-a3e5-4ff0754b7528"
 
-# =========================================================
+# ==========================================
 # KV
-# =========================================================
+# ==========================================
 
 [[kv_namespaces]]
 binding = "QTM_KEYS"
 id = "8c76e2538038405c941c6a9cdb2dfc02"
 
-# =========================================================
-# ENVIRONMENT VARIABLES
-# =========================================================
+# ==========================================
+# AI SEARCH
+# ==========================================
+
+[[ai_search_namespaces]]
+binding = "AI_SEARCH"
+namespace = "default"
+remote = true
+
+# ==========================================
+# APPLICATION VARIABLES
+# ==========================================
 
 [vars]
 
@@ -40,3 +49,7 @@ APP_NAME = "LOGIC-LEAF"
 APP_URL = "https://chenchukiranvemula.github.io/LOGIC-LEAF/"
 
 WORKER_URL = "https://logic-leaf.qtmkiller6.workers.dev"
+
+FIREBASE_PROJECT_ID = "logic-leaf-64d0d"
+
+FIREBASE_WEB_API_KEY = "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw"
