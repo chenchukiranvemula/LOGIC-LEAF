@@ -1,56 +1,81 @@
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+/*
+===========================================================
+ LOGIC-LEAF FRONTEND
+===========================================================
 
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+Connected Worker:
 
+https://ck.qtmkiller6.workers.dev
 
-// =====================================================
-// CONFIG
-// =====================================================
+Main API:
+
+POST /v1/chat
+
+History:
+
+GET    /api/chats
+POST   /api/chats
+GET    /api/chats/:id
+PUT    /api/chats/:id
+DELETE /api/chats/:id
+
+Vision:
+
+POST /api/vision
+
+Image:
+
+POST /api/image
+
+Voice:
+
+POST /api/transcribe
+POST /api/speech
+
+User:
+
+GET /api/user
+
+Config:
+
+GET /api/config
+
+===========================================================
+*/
+
 
 const API_URL =
   "https://ck.qtmkiller6.workers.dev";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
-  authDomain: "logic-leaf.firebaseapp.com",
-  databaseURL: "https://logic-leaf-default-rtdb.firebaseio.com",
-  projectId: "logic-leaf",
-  storageBucket: "logic-leaf.firebasestorage.app",
-  messagingSenderId: "288673697563",
-  appId: "1:288673697563:web:c14d08452b01568d1c8dbe",
-  measurementId: "G-Z30K3K85LX"
-};
+
+/* ========================================================
+   STATE
+======================================================== */
+
+let currentChatId = null;
+
+let currentMode = "general";
+
+let selectedFile = null;
+
+let isGenerating = false;
+
+let mediaRecorder = null;
+
+let audioChunks = [];
+
+let isRecording = false;
 
 
-// =====================================================
-// FIREBASE
-// =====================================================
-
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
-const googleProvider = new GoogleAuthProvider();
-
-
-// =====================================================
-// ELEMENTS
-// =====================================================
+/* ========================================================
+   DOM
+======================================================== */
 
 const sidebar =
   document.getElementById("sidebar");
 
-const sidebarOverlay =
-  document.getElementById("sidebarOverlay");
-
-const menuButton =
-  document.getElementById("menuButton");
+const openSidebar =
+  document.getElementById("openSidebar");
 
 const closeSidebar =
   document.getElementById("closeSidebar");
@@ -58,346 +83,1662 @@ const closeSidebar =
 const newChatBtn =
   document.getElementById("newChatBtn");
 
+const chatList =
+  document.getElementById("chatList");
+
+const chatArea =
+  document.getElementById("chatArea");
+
+const welcome =
+  document.getElementById("welcome");
+
+const messages =
+  document.getElementById("messages");
+
 const messageInput =
   document.getElementById("messageInput");
 
 const sendBtn =
   document.getElementById("sendBtn");
 
-const chatMessages =
-  document.getElementById("chatMessages");
-
-const welcome =
-  document.getElementById("welcome");
-
-const history =
-  document.getElementById("chatHistory");
-
-const attachmentBtn =
-  document.getElementById("attachmentBtn");
-
-const cameraBtn =
-  document.getElementById("cameraBtn");
-
-const imageBtn =
-  document.getElementById("imageBtn");
+const attachBtn =
+  document.getElementById("attachBtn");
 
 const fileInput =
   document.getElementById("fileInput");
 
-const cameraInput =
-  document.getElementById("cameraInput");
+const voiceBtn =
+  document.getElementById("voiceBtn");
+
+const attachmentPreview =
+  document.getElementById("attachmentPreview");
+
+const settingsOverlay =
+  document.getElementById("settingsOverlay");
 
 const settingsBtn =
   document.getElementById("settingsBtn");
 
-const settingsModal =
-  document.getElementById("settingsModal");
+const settingsTopBtn =
+  document.getElementById("settingsTopBtn");
 
 const closeSettings =
   document.getElementById("closeSettings");
 
-const loginBtn =
-  document.getElementById("loginBtn");
+const clearChatBtn =
+  document.getElementById("clearChatBtn");
 
-const topLoginBtn =
-  document.getElementById("topLoginBtn");
+const toast =
+  document.getElementById("toast");
 
-const loginModal =
-  document.getElementById("loginModal");
+const googleLoginBtn =
+  document.getElementById("googleLoginBtn");
 
-const closeLogin =
-  document.getElementById("closeLogin");
+const createApiKeyBtn =
+  document.getElementById("createApiKeyBtn");
 
-const googleLogin =
-  document.getElementById("googleLogin");
+const apiKeysList =
+  document.getElementById("apiKeysList");
 
-const logoutBtn =
-  document.getElementById("logoutBtn");
+const apiKeyResult =
+  document.getElementById("apiKeyResult");
 
-const loginStatus =
-  document.getElementById("loginStatus");
+const backendStatus =
+  document.getElementById("backendStatus");
 
-const userName =
-  document.getElementById("userName");
+const aiStatus =
+  document.getElementById("aiStatus");
 
-const userEmail =
-  document.getElementById("userEmail");
-
-const userAvatar =
-  document.getElementById("userAvatar");
-
-const topAvatar =
-  document.getElementById("topAvatar");
-
-const enterToSend =
-  document.getElementById("enterToSend");
-
-const animations =
-  document.getElementById("animations");
+const dbStatus =
+  document.getElementById("dbStatus");
 
 
-// =====================================================
-// SIDEBAR
-// =====================================================
+/* ========================================================
+   UTILITIES
+======================================================== */
 
-function openSidebar() {
-  sidebar.classList.add("open");
-  sidebarOverlay.classList.add("show");
+function showToast(text) {
+
+  toast.textContent = text;
+
+  toast.classList.add("show");
+
+  clearTimeout(
+    showToast.timer
+  );
+
+  showToast.timer =
+    setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2600);
 }
 
-function closeSidebarMenu() {
-  sidebar.classList.remove("open");
-  sidebarOverlay.classList.remove("show");
+
+function escapeHTML(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-menuButton.addEventListener("click", openSidebar);
-closeSidebar.addEventListener("click", closeSidebarMenu);
-sidebarOverlay.addEventListener("click", closeSidebarMenu);
+
+/*
+Simple Markdown-like renderer.
+
+This intentionally does not try to be a full Markdown
+parser. It handles common AI responses safely.
+*/
+
+function renderText(text) {
+
+  let safe =
+    escapeHTML(text || "");
+
+  /*
+  Code blocks
+  */
+
+  safe =
+    safe.replace(
+      /```([\s\S]*?)```/g,
+      (_, code) =>
+        `<pre><code>${code.trim()}</code></pre>`
+    );
+
+  /*
+  Inline code
+  */
+
+  safe =
+    safe.replace(
+      /`([^`]+)`/g,
+      "<code>$1</code>"
+    );
+
+  /*
+  Bold
+  */
+
+  safe =
+    safe.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+  /*
+  Italic
+  */
+
+  safe =
+    safe.replace(
+      /\*(.*?)\*/g,
+      "<em>$1</em>"
+    );
+
+  /*
+  Line breaks
+  */
+
+  safe =
+    safe.replace(
+      /\n/g,
+      "<br>"
+    );
+
+  return safe;
+}
 
 
-// =====================================================
-// NEW CHAT
-// =====================================================
+function scrollToBottom() {
 
-function startNewChat() {
-  chatMessages.innerHTML = "";
-  chatMessages.appendChild(welcome);
+  requestAnimationFrame(() => {
 
-  welcome.style.display = "";
+    chatArea.scrollTop =
+      chatArea.scrollHeight;
+
+  });
+}
+
+
+function setLoading(value) {
+
+  isGenerating = value;
+
+  sendBtn.disabled = value;
+
+  if (value) {
+
+    sendBtn.innerHTML = "•";
+
+  } else {
+
+    sendBtn.innerHTML = "↑";
+
+  }
+}
+
+
+/* ========================================================
+   API
+======================================================== */
+
+async function apiFetch(
+  endpoint,
+  options = {}
+) {
+
+  const response =
+    await fetch(
+      `${API_URL}${endpoint}`,
+      {
+        ...options,
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          ...(options.headers || {})
+        }
+      }
+    );
+
+  let data = null;
+
+  try {
+
+    data =
+      await response.json();
+
+  } catch {
+
+    data = {};
+
+  }
+
+  if (!response.ok) {
+
+    throw new Error(
+      data.error ||
+      `Request failed (${response.status})`
+    );
+
+  }
+
+  return data;
+}
+
+
+/* ========================================================
+   HEALTH
+======================================================== */
+
+async function checkBackend() {
+
+  try {
+
+    const data =
+      await apiFetch(
+        "/api/health"
+      );
+
+    backendStatus.textContent =
+      data.status === "online"
+        ? "Online"
+        : "Unavailable";
+
+    backendStatus.style.color =
+      data.status === "online"
+        ? "var(--success)"
+        : "var(--danger)";
+
+    aiStatus.textContent =
+      data.ai
+        ? "Available"
+        : "Unavailable";
+
+    dbStatus.textContent =
+      data.database
+        ? "Connected"
+        : "Unavailable";
+
+  } catch (error) {
+
+    backendStatus.textContent =
+      "Offline";
+
+    aiStatus.textContent =
+      "Unavailable";
+
+    dbStatus.textContent =
+      "Unavailable";
+
+    backendStatus.style.color =
+      "var(--danger)";
+  }
+}
+
+
+/* ========================================================
+   CHAT HISTORY
+======================================================== */
+
+async function loadChats() {
+
+  try {
+
+    const data =
+      await apiFetch(
+        "/api/chats"
+      );
+
+    renderChatList(
+      data.chats || []
+    );
+
+  } catch (error) {
+
+    chatList.innerHTML = `
+      <div class="empty-history">
+        Unable to load chats
+      </div>
+    `;
+
+  }
+}
+
+
+function renderChatList(chats) {
+
+  if (!chats.length) {
+
+    chatList.innerHTML = `
+      <div class="empty-history">
+        No conversations yet
+      </div>
+    `;
+
+    return;
+  }
+
+  chatList.innerHTML = "";
+
+  chats.forEach(chat => {
+
+    const button =
+      document.createElement("button");
+
+    button.className =
+      "chat-item" +
+      (
+        chat.id === currentChatId
+          ? " active"
+          : ""
+      );
+
+    button.innerHTML = `
+      <span>○</span>
+      <span class="chat-item-title">
+        ${escapeHTML(
+          chat.title || "New chat"
+        )}
+      </span>
+    `;
+
+    button.addEventListener(
+      "click",
+      () => loadChat(chat.id)
+    );
+
+    chatList.appendChild(button);
+
+  });
+}
+
+
+async function loadChat(chatId) {
+
+  try {
+
+    const data =
+      await apiFetch(
+        `/api/chats/${encodeURIComponent(chatId)}`
+      );
+
+    currentChatId =
+      chatId;
+
+    messages.innerHTML = "";
+
+    welcome.classList.add(
+      "hidden"
+    );
+
+    const chatMessages =
+      data.messages || [];
+
+    chatMessages.forEach(
+      item => {
+
+        addMessage(
+          item.role,
+          item.content
+        );
+
+      }
+    );
+
+    renderChatListFromRefresh();
+
+    closeMobileSidebar();
+
+    scrollToBottom();
+
+  } catch (error) {
+
+    showToast(
+      error.message
+    );
+
+  }
+}
+
+
+async function renderChatListFromRefresh() {
+
+  await loadChats();
+
+}
+
+
+/* ========================================================
+   NEW CHAT
+======================================================== */
+
+function newChat() {
+
+  currentChatId = null;
+
+  messages.innerHTML = "";
+
+  welcome.classList.remove(
+    "hidden"
+  );
+
+  selectedFile = null;
+
+  updateAttachmentPreview();
 
   messageInput.value = "";
-  messageInput.style.height = "auto";
 
   messageInput.focus();
 
-  closeSidebarMenu();
+  loadChats();
+
 }
 
-newChatBtn.addEventListener("click", startNewChat);
 
+/* ========================================================
+   MESSAGE UI
+======================================================== */
 
-// =====================================================
-// AUTO RESIZE
-// =====================================================
+function addMessage(
+  role,
+  content,
+  image = null
+) {
 
-messageInput.addEventListener("input", () => {
-  messageInput.style.height = "auto";
+  welcome.classList.add(
+    "hidden"
+  );
 
-  messageInput.style.height =
-    Math.min(messageInput.scrollHeight, 180) + "px";
-});
-
-
-// =====================================================
-// SUGGESTIONS
-// =====================================================
-
-document.querySelectorAll(".suggestion").forEach(button => {
-
-  button.addEventListener("click", () => {
-
-    messageInput.value =
-      button.textContent.trim();
-
-    messageInput.dispatchEvent(
-      new Event("input")
-    );
-
-    messageInput.focus();
-  });
-
-});
-
-
-// =====================================================
-// CHAT UI
-// =====================================================
-
-function addMessage(role, text) {
-
-  if (welcome.parentNode === chatMessages) {
-    welcome.style.display = "none";
-  }
-
-  const row =
+  const wrapper =
     document.createElement("div");
 
-  row.className =
-    `message-row ${
-      role === "user"
-        ? "user-message"
-        : "ai-message"
-    }`;
+  wrapper.className =
+    `message ${role}`;
 
-  const avatar =
+  const contentDiv =
     document.createElement("div");
 
-  avatar.className =
-    "message-avatar";
-
-  avatar.textContent =
-    role === "user" ? "U" : "L";
-
-  const content =
-    document.createElement("div");
-
-  content.className =
+  contentDiv.className =
     "message-content";
 
-  content.textContent = text;
+  const roleLabel =
+    role === "user"
+      ? "You"
+      : "LOGIC-LEAF";
 
-  row.appendChild(avatar);
-  row.appendChild(content);
+  let html = `
+    <div class="message-role">
+      ${roleLabel}
+    </div>
 
-  chatMessages.appendChild(row);
+    <div class="message-text">
+      ${renderText(content)}
+    </div>
+  `;
 
-  chatMessages.scrollTop =
-    chatMessages.scrollHeight;
+  if (image) {
 
-  return content;
+    html += `
+      <img
+        class="message-image"
+        src="${image}"
+        alt="Generated image"
+      >
+    `;
+
+  }
+
+  if (role === "assistant") {
+
+    html += `
+      <div class="message-actions">
+
+        <button
+          class="message-action copy-answer"
+        >
+          Copy
+        </button>
+
+        <button
+          class="message-action speak-answer"
+        >
+          Read aloud
+        </button>
+
+      </div>
+    `;
+
+  }
+
+  contentDiv.innerHTML =
+    html;
+
+  wrapper.appendChild(
+    contentDiv
+  );
+
+  messages.appendChild(
+    wrapper
+  );
+
+  /*
+  Copy
+  */
+
+  const copyButton =
+    contentDiv.querySelector(
+      ".copy-answer"
+    );
+
+  if (copyButton) {
+
+    copyButton.addEventListener(
+      "click",
+      async () => {
+
+        await navigator.clipboard.writeText(
+          content || ""
+        );
+
+        showToast(
+          "Copied"
+        );
+
+      }
+    );
+
+  }
+
+
+  /*
+  Speech
+  */
+
+  const speakButton =
+    contentDiv.querySelector(
+      ".speak-answer"
+    );
+
+  if (speakButton) {
+
+    speakButton.addEventListener(
+      "click",
+      () => {
+
+        speakText(
+          content || ""
+        );
+
+      }
+    );
+
+  }
+
+  scrollToBottom();
+
+  return wrapper;
 }
 
 
 function addTyping() {
 
-  if (welcome.parentNode === chatMessages) {
-    welcome.style.display = "none";
-  }
-
-  const row =
+  const wrapper =
     document.createElement("div");
 
-  row.className =
-    "message-row ai-message";
+  wrapper.className =
+    "message assistant";
 
-  const avatar =
-    document.createElement("div");
+  wrapper.id =
+    "typingMessage";
 
-  avatar.className =
-    "message-avatar";
+  wrapper.innerHTML = `
+    <div class="message-content">
 
-  avatar.textContent = "L";
+      <div class="message-role">
+        LOGIC-LEAF
+      </div>
 
-  const content =
-    document.createElement("div");
+      <div class="typing">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
 
-  content.className =
-    "message-content";
-
-  content.innerHTML = `
-    <span class="typing">
-      <i></i>
-      <i></i>
-      <i></i>
-    </span>
+    </div>
   `;
 
-  row.appendChild(avatar);
-  row.appendChild(content);
+  messages.appendChild(
+    wrapper
+  );
 
-  chatMessages.appendChild(row);
+  scrollToBottom();
 
-  chatMessages.scrollTop =
-    chatMessages.scrollHeight;
-
-  return row;
 }
 
 
-// =====================================================
-// SEND
-// =====================================================
-
-let sending = false;
-
-async function sendMessage() {
-
-  if (sending) return;
-
-  const message =
-    messageInput.value.trim();
-
-  if (!message) return;
-
-  sending = true;
-  sendBtn.disabled = true;
-
-  addMessage("user", message);
-
-  messageInput.value = "";
-  messageInput.style.height = "auto";
+function removeTyping() {
 
   const typing =
-    addTyping();
+    document.getElementById(
+      "typingMessage"
+    );
+
+  if (typing) {
+
+    typing.remove();
+
+  }
+}
+
+
+/* ========================================================
+   SEND MESSAGE
+======================================================== */
+
+async function sendMessage(
+  forcedMessage = null
+) {
+
+  if (isGenerating) {
+    return;
+  }
+
+  const message =
+    forcedMessage !== null
+      ? forcedMessage.trim()
+      : messageInput.value.trim();
+
+  if (!message && !selectedFile) {
+
+    showToast(
+      "Write a message first."
+    );
+
+    return;
+  }
+
+  /*
+  If image selected, use vision.
+  */
+
+  if (
+    selectedFile &&
+    selectedFile.type.startsWith(
+      "image/"
+    )
+  ) {
+
+    await sendVision(
+      message ||
+      "Analyze this image carefully."
+    );
+
+    return;
+  }
+
+  /*
+  Normal AI chat.
+  */
+
+  if (messageInput) {
+    messageInput.value = "";
+    autoResizeTextarea();
+  }
+
+  addMessage(
+    "user",
+    message ||
+    `Attached: ${selectedFile.name}`
+  );
+
+  const fileToSend =
+    selectedFile;
+
+  selectedFile = null;
+
+  updateAttachmentPreview();
+
+  addTyping();
+
+  setLoading(true);
 
   try {
 
+    const data =
+      await apiFetch(
+        "/v1/chat",
+        {
+          method: "POST",
+
+          body:
+            JSON.stringify({
+              message,
+
+              conversationId:
+                currentChatId,
+
+              mode:
+                currentMode,
+
+              max_tokens:
+                8192
+            })
+        }
+      );
+
+    currentChatId =
+      data.conversationId ||
+      currentChatId;
+
+    removeTyping();
+
+    addMessage(
+      "assistant",
+      data.message ||
+      "I didn't receive a response."
+    );
+
+    await loadChats();
+
+  } catch (error) {
+
+    removeTyping();
+
+    addMessage(
+      "assistant",
+      `Sorry, something went wrong.\n\n${error.message}`
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+
+}
+
+
+/* ========================================================
+   VISION
+======================================================== */
+
+async function sendVision(
+  prompt
+) {
+
+  if (!selectedFile) {
+    return;
+  }
+
+  addMessage(
+    "user",
+    prompt
+  );
+
+  addTyping();
+
+  setLoading(true);
+
+  try {
+
+    const base64 =
+      await fileToBase64(
+        selectedFile
+      );
+
+    const cleanBase64 =
+      base64.includes(",")
+        ? base64.split(",")[1]
+        : base64;
+
+    selectedFile = null;
+
+    updateAttachmentPreview();
+
+    const data =
+      await apiFetch(
+        "/api/vision",
+        {
+          method: "POST",
+
+          body:
+            JSON.stringify({
+              prompt,
+
+              image:
+                cleanBase64
+            })
+        }
+      );
+
+    removeTyping();
+
+    addMessage(
+      "assistant",
+      data.message ||
+      "Unable to analyze the image."
+    );
+
+  } catch (error) {
+
+    removeTyping();
+
+    addMessage(
+      "assistant",
+      `Vision error: ${error.message}`
+    );
+
+  } finally {
+
+    setLoading(false);
+
+  }
+
+}
+
+
+/* ========================================================
+   IMAGE GENERATION
+======================================================== */
+
+async function generateImage(
+  prompt
+) {
+
+  if (!prompt.trim()) {
+
+    showToast(
+      "Enter an image prompt."
+    );
+
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "generateImageBtn"
+    );
+
+  button.disabled = true;
+
+  button.textContent =
+    "Generating...";
+
+  try {
+
+    const data =
+      await apiFetch(
+        "/api/image",
+        {
+          method: "POST",
+
+          body:
+            JSON.stringify({
+              prompt
+            })
+        }
+      );
+
+    const container =
+      document.getElementById(
+        "generatedImageContainer"
+      );
+
+    container.innerHTML = `
+      <img
+        src="${data.image}"
+        alt="Generated image"
+      >
+    `;
+
+    addMessage(
+      "assistant",
+      "Generated the requested image.",
+      data.image
+    );
+
+    showToast(
+      "Image generated."
+    );
+
+  } catch (error) {
+
+    showToast(
+      `Image generation failed: ${error.message}`
+    );
+
+  } finally {
+
+    button.disabled = false;
+
+    button.textContent =
+      "Generate image";
+
+  }
+
+}
+
+
+/* ========================================================
+   FILE HANDLING
+======================================================== */
+
+function fileToBase64(file) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        () => resolve(
+          reader.result
+        );
+
+      reader.onerror =
+        reject;
+
+      reader.readAsDataURL(
+        file
+      );
+
+    }
+  );
+
+}
+
+
+function updateAttachmentPreview() {
+
+  if (!selectedFile) {
+
+    attachmentPreview.classList.add(
+      "hidden"
+    );
+
+    attachmentPreview.innerHTML =
+      "";
+
+    return;
+  }
+
+  attachmentPreview.classList.remove(
+    "hidden"
+  );
+
+  attachmentPreview.innerHTML = `
+    Attached:
+    <strong>
+      ${escapeHTML(
+        selectedFile.name
+      )}
+    </strong>
+  `;
+
+}
+
+
+/* ========================================================
+   TEXTAREA
+======================================================== */
+
+function autoResizeTextarea() {
+
+  messageInput.style.height =
+    "auto";
+
+  messageInput.style.height =
+    Math.min(
+      messageInput.scrollHeight,
+      160
+    ) + "px";
+
+}
+
+
+/* ========================================================
+   SPEECH
+======================================================== */
+
+function speakText(text) {
+
+  if (
+    !("speechSynthesis" in window)
+  ) {
+
+    showToast(
+      "Read aloud is not supported on this device."
+    );
+
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const utterance =
+    new SpeechSynthesisUtterance(
+      text
+    );
+
+  utterance.rate =
+    1;
+
+  utterance.pitch =
+    1;
+
+  window.speechSynthesis.speak(
+    utterance
+  );
+
+}
+
+
+/* ========================================================
+   VOICE INPUT
+======================================================== */
+
+async function toggleVoice() {
+
+  if (isRecording) {
+
+    stopRecording();
+
+    return;
+  }
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
+
+    showToast(
+      "Microphone is not supported."
+    );
+
+    return;
+  }
+
+  try {
+
+    const stream =
+      await navigator.mediaDevices.getUserMedia(
+        {
+          audio: true
+        }
+      );
+
+    audioChunks = [];
+
+    mediaRecorder =
+      new MediaRecorder(
+        stream
+      );
+
+    mediaRecorder.ondataavailable =
+      event => {
+
+        if (event.data.size > 0) {
+
+          audioChunks.push(
+            event.data
+          );
+
+        }
+
+      };
+
+    mediaRecorder.onstop =
+      async () => {
+
+        stream
+          .getTracks()
+          .forEach(
+            track =>
+              track.stop()
+          );
+
+        const blob =
+          new Blob(
+            audioChunks,
+            {
+              type:
+                "audio/webm"
+            }
+          );
+
+        await transcribeAudio(
+          blob
+        );
+
+      };
+
+    mediaRecorder.start();
+
+    isRecording = true;
+
+    voiceBtn.textContent =
+      "■";
+
+    voiceBtn.style.color =
+      "var(--danger)";
+
+    showToast(
+      "Listening..."
+    );
+
+  } catch (error) {
+
+    showToast(
+      "Microphone permission denied."
+    );
+
+  }
+
+}
+
+
+function stopRecording() {
+
+  if (
+    mediaRecorder &&
+    mediaRecorder.state !==
+      "inactive"
+  ) {
+
+    mediaRecorder.stop();
+
+  }
+
+  isRecording = false;
+
+  voiceBtn.textContent =
+    "◉";
+
+  voiceBtn.style.color =
+    "";
+
+}
+
+
+async function transcribeAudio(
+  blob
+) {
+
+  showToast(
+    "Converting speech..."
+  );
+
+  try {
+
+    const arrayBuffer =
+      await blob.arrayBuffer();
+
+    const bytes =
+      Array.from(
+        new Uint8Array(
+          arrayBuffer
+        )
+      );
+
     const response =
-      await fetch(`${API_URL}/v1/chat`, {
-        method: "POST",
+      await fetch(
+        `${API_URL}/api/transcribe`,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type": "application/json"
-        },
+          headers: {
+            "Content-Type":
+              "application/octet-stream"
+          },
 
-        body: JSON.stringify({
-          message
-        })
-      });
+          body:
+            new Uint8Array(
+              bytes
+            )
+        }
+      );
 
     const data =
       await response.json();
 
-    typing.remove();
+    if (!response.ok) {
 
-    if (!response.ok || !data.ok) {
-
-      addMessage(
-        "assistant",
-        data?.error ||
-        "The AI could not respond."
+      throw new Error(
+        data.error ||
+        "Transcription failed."
       );
+
+    }
+
+    if (data.transcript) {
+
+      messageInput.value +=
+        (
+          messageInput.value
+            ? " "
+            : ""
+        ) +
+        data.transcript;
+
+      autoResizeTextarea();
+
+      messageInput.focus();
+
+    }
+
+  } catch (error) {
+
+    showToast(
+      `Voice error: ${error.message}`
+    );
+
+  }
+
+}
+
+
+/* ========================================================
+   SETTINGS
+======================================================== */
+
+function openSettingsModal() {
+
+  settingsOverlay.classList.remove(
+    "hidden"
+  );
+
+  loadUser();
+
+  loadApiKeys();
+
+}
+
+
+function closeSettingsModal() {
+
+  settingsOverlay.classList.add(
+    "hidden"
+  );
+
+}
+
+
+async function loadUser() {
+
+  try {
+
+    const data =
+      await apiFetch(
+        "/api/user"
+      );
+
+    if (
+      data.user
+    ) {
+
+      document.getElementById(
+        "userName"
+      ).textContent =
+        data.user.name ||
+        "Guest User";
+
+      document.getElementById(
+        "userEmail"
+      ).textContent =
+        data.user.email ||
+        "Not signed in";
+
+    }
+
+  } catch {
+
+    document.getElementById(
+      "userName"
+    ).textContent =
+      "Guest User";
+
+  }
+
+}
+
+
+/* ========================================================
+   API KEY SYSTEM UI
+======================================================== */
+
+async function loadApiKeys() {
+
+  /*
+  This expects the final Worker API-key routes:
+
+  GET /api/keys
+
+  If the current Worker does not have them yet,
+  the UI will simply report that API management
+  is not available.
+  */
+
+  try {
+
+    const data =
+      await apiFetch(
+        "/api/keys"
+      );
+
+    renderApiKeys(
+      data.keys || []
+    );
+
+  } catch {
+
+    apiKeysList.innerHTML = `
+      <div class="empty-api">
+        API-key management is not enabled
+        on the current Worker yet.
+      </div>
+    `;
+
+  }
+
+}
+
+
+function renderApiKeys(keys) {
+
+  if (!keys.length) {
+
+    apiKeysList.innerHTML = `
+      <div class="empty-api">
+        No API keys.
+      </div>
+    `;
+
+    return;
+  }
+
+  apiKeysList.innerHTML = "";
+
+  keys.forEach(key => {
+
+    const card =
+      document.createElement(
+        "div"
+      );
+
+    card.className =
+      "api-key-card";
+
+    card.innerHTML = `
+      <div>
+
+        <div class="api-key-name">
+          ${escapeHTML(
+            key.name ||
+            "API Key"
+          )}
+        </div>
+
+        <div class="api-key-meta">
+          ${escapeHTML(
+            key.prefix ||
+            "logic"
+          )}
+          ·
+          ${escapeHTML(
+            key.created_at ||
+            ""
+          )}
+        </div>
+
+      </div>
+
+      <div class="api-key-actions">
+
+        <button
+          class="small-button danger"
+          data-revoke="${escapeHTML(
+            key.id
+          )}"
+        >
+          Revoke
+        </button>
+
+      </div>
+    `;
+
+    const revoke =
+      card.querySelector(
+        "[data-revoke]"
+      );
+
+    revoke.addEventListener(
+      "click",
+      () =>
+        revokeApiKey(
+          key.id
+        )
+    );
+
+    apiKeysList.appendChild(
+      card
+    );
+
+  });
+
+}
+
+
+async function createApiKey() {
+
+  const name =
+    prompt(
+      "Enter a name for this API key:"
+    );
+
+  if (!name) {
+    return;
+  }
+
+  try {
+
+    const data =
+      await apiFetch(
+        "/api/keys",
+        {
+          method: "POST",
+
+          body:
+            JSON.stringify({
+              name
+            })
+        }
+      );
+
+    if (
+      data.key
+    ) {
+
+      apiKeyResult.classList.remove(
+        "hidden"
+      );
+
+      apiKeyResult.innerHTML = `
+        <strong>
+          New API key
+        </strong>
+        <br><br>
+        ${escapeHTML(
+          data.key
+        )}
+        <br><br>
+        <small>
+          Copy this now. Secret keys may only
+          be displayed once.
+        </small>
+      `;
+
+    }
+
+    await loadApiKeys();
+
+  } catch (error) {
+
+    apiKeyResult.classList.remove(
+      "hidden"
+    );
+
+    apiKeyResult.innerHTML =
+      escapeHTML(
+        error.message
+      );
+
+  }
+
+}
+
+
+async function revokeApiKey(
+  keyId
+) {
+
+  if (
+    !confirm(
+      "Revoke this API key?"
+    )
+  ) {
+
+    return;
+  }
+
+  try {
+
+    await apiFetch(
+      `/api/keys/${encodeURIComponent(
+        keyId
+      )}`,
+      {
+        method:
+          "DELETE"
+      }
+    );
+
+    showToast(
+      "API key revoked."
+    );
+
+    await loadApiKeys();
+
+  } catch (error) {
+
+    showToast(
+      error.message
+    );
+
+  }
+
+}
+
+
+/* ========================================================
+   GOOGLE LOGIN
+======================================================== */
+
+async function googleLogin() {
+
+  try {
+
+    const response =
+      await fetch(
+        `${API_URL}/api/auth/google`
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      data.configured &&
+      data.url
+    ) {
+
+      window.location.href =
+        data.url;
 
       return;
     }
 
-    addMessage(
-      "assistant",
-      data.reply ||
-      "I couldn't generate a response."
+    showToast(
+      "Google Login is not configured on the Worker yet."
     );
 
-    addHistory(message);
+  } catch {
 
-  } catch (error) {
-
-    typing.remove();
-
-    addMessage(
-      "assistant",
-      "Connection failed. Please check the Worker and try again."
+    showToast(
+      "Google Login is unavailable."
     );
 
-    console.error(error);
-
-  } finally {
-
-    sending = false;
-    sendBtn.disabled = false;
-    messageInput.focus();
   }
+
 }
 
-sendBtn.addEventListener(
+
+/* ========================================================
+   MOBILE SIDEBAR
+======================================================== */
+
+function closeMobileSidebar() {
+
+  sidebar.classList.remove(
+    "open"
+  );
+
+}
+
+
+/* ========================================================
+   EVENT LISTENERS
+======================================================== */
+
+openSidebar.addEventListener(
   "click",
-  sendMessage
+  () => {
+
+    sidebar.classList.add(
+      "open"
+    );
+
+  }
 );
 
 
-// =====================================================
-// ENTER TO SEND
-// =====================================================
+closeSidebar.addEventListener(
+  "click",
+  closeMobileSidebar
+);
+
+
+newChatBtn.addEventListener(
+  "click",
+  newChat
+);
+
+
+sendBtn.addEventListener(
+  "click",
+  () =>
+    sendMessage()
+);
+
+
+messageInput.addEventListener(
+  "input",
+  autoResizeTextarea
+);
+
 
 messageInput.addEventListener(
   "keydown",
@@ -405,329 +1746,260 @@ messageInput.addEventListener(
 
     if (
       event.key === "Enter" &&
-      !event.shiftKey &&
-      enterToSend.checked
+      !event.shiftKey
     ) {
 
       event.preventDefault();
+
       sendMessage();
+
     }
 
   }
 );
 
 
-// =====================================================
-// CHAT HISTORY
-// =====================================================
-
-function addHistory(message) {
-
-  const empty =
-    history.querySelector(".history-empty");
-
-  if (empty) {
-    empty.remove();
-  }
-
-  const item =
-    document.createElement("button");
-
-  item.type = "button";
-  item.className = "history-item";
-
-  item.textContent =
-    message.length > 42
-      ? message.slice(0, 42) + "..."
-      : message;
-
-  item.addEventListener(
-    "click",
-    () => closeSidebarMenu()
-  );
-
-  history.prepend(item);
-}
-
-
-// =====================================================
-// ATTACHMENTS
-// =====================================================
-
-attachmentBtn.addEventListener(
+attachBtn.addEventListener(
   "click",
-  () => fileInput.click()
+  () =>
+    fileInput.click()
 );
 
-cameraBtn.addEventListener(
-  "click",
-  () => cameraInput.click()
-);
 
 fileInput.addEventListener(
   "change",
-  () => {
+  event => {
 
-    if (!fileInput.files.length) return;
+    const file =
+      event.target.files[0];
 
-    const names =
-      [...fileInput.files]
-        .map(file => file.name)
-        .join(", ");
+    if (!file) {
+      return;
+    }
 
-    messageInput.value =
-      `Attached: ${names}\n\n`;
+    selectedFile =
+      file;
 
-    messageInput.dispatchEvent(
-      new Event("input")
+    updateAttachmentPreview();
+
+    showToast(
+      `${file.name} attached`
     );
 
-    messageInput.focus();
-  }
-);
-
-cameraInput.addEventListener(
-  "change",
-  () => {
-
-    if (!cameraInput.files.length) return;
-
-    messageInput.value =
-      "Camera image attached.";
-
-    messageInput.focus();
   }
 );
 
 
-// =====================================================
-// IMAGE BUTTON
-// =====================================================
-
-imageBtn.addEventListener(
+voiceBtn.addEventListener(
   "click",
-  () => {
-
-    messageInput.value =
-      "Create an image of ";
-
-    messageInput.dispatchEvent(
-      new Event("input")
-    );
-
-    messageInput.focus();
-  }
+  toggleVoice
 );
 
 
-// =====================================================
-// SETTINGS
-// =====================================================
+/* ================================= */
+/* MODES */
+/* ================================= */
+
+document
+  .querySelectorAll(
+    ".mode-button"
+  )
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        document
+          .querySelectorAll(
+            ".mode-button"
+          )
+          .forEach(
+            item =>
+              item.classList.remove(
+                "active"
+              )
+          );
+
+        button.classList.add(
+          "active"
+        );
+
+        currentMode =
+          button.dataset.mode;
+
+        messageInput.focus();
+
+      }
+    );
+
+  });
+
+
+/* ================================= */
+/* QUICK PROMPTS */
+/* ================================= */
+
+document
+  .querySelectorAll(
+    ".quick-card"
+  )
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        messageInput.value =
+          button.dataset.prompt;
+
+        autoResizeTextarea();
+
+        messageInput.focus();
+
+      }
+    );
+
+  });
+
+
+/* ================================= */
+/* SETTINGS */
+/* ================================= */
 
 settingsBtn.addEventListener(
   "click",
-  () => {
-    settingsModal.classList.remove("hidden");
-    closeSidebarMenu();
-  }
+  openSettingsModal
 );
+
+
+settingsTopBtn.addEventListener(
+  "click",
+  openSettingsModal
+);
+
 
 closeSettings.addEventListener(
   "click",
-  () => {
-    settingsModal.classList.add("hidden");
-  }
+  closeSettingsModal
 );
 
-settingsModal.addEventListener(
+
+settingsOverlay.addEventListener(
   "click",
   event => {
 
-    if (event.target === settingsModal) {
-      settingsModal.classList.add("hidden");
+    if (
+      event.target ===
+      settingsOverlay
+    ) {
+
+      closeSettingsModal();
+
     }
 
   }
 );
 
 
-// =====================================================
-// GOOGLE LOGIN UI
-// =====================================================
+/* ================================= */
+/* CLEAR */
+/* ================================= */
 
-function openLogin() {
-  loginModal.classList.remove("hidden");
+clearChatBtn.addEventListener(
+  "click",
+  () => {
+
+    if (
+      !currentChatId &&
+      !messages.children.length
+    ) {
+
+      return;
+    }
+
+    newChat();
+
+  }
+);
+
+
+/* ================================= */
+/* GOOGLE */
+/* ================================= */
+
+googleLoginBtn.addEventListener(
+  "click",
+  googleLogin
+);
+
+
+/* ================================= */
+/* API KEY */
+/* ================================= */
+
+createApiKeyBtn.addEventListener(
+  "click",
+  createApiKey
+);
+
+
+/* ========================================================
+   KEYBOARD SHORTCUT
+======================================================== */
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.ctrlKey &&
+      event.key.toLowerCase() ===
+        "k"
+    ) {
+
+      event.preventDefault();
+
+      newChat();
+
+    }
+
+    if (
+      event.key === "Escape"
+    ) {
+
+      closeSettingsModal();
+
+      closeMobileSidebar();
+
+    }
+
+  }
+);
+
+
+/* ========================================================
+   STARTUP
+======================================================== */
+
+async function startApp() {
+
+  console.log(
+    "LOGIC-LEAF frontend starting..."
+  );
+
+  console.log(
+    "Worker:",
+    API_URL
+  );
+
+  await checkBackend();
+
+  await loadChats();
+
+  messageInput.focus();
+
 }
 
-loginBtn.addEventListener(
-  "click",
-  openLogin
-);
 
-topLoginBtn.addEventListener(
-  "click",
-  openLogin
-);
-
-closeLogin.addEventListener(
-  "click",
-  () => {
-    loginModal.classList.add("hidden");
-  }
-);
-
-loginModal.addEventListener(
-  "click",
-  event => {
-
-    if (event.target === loginModal) {
-      loginModal.classList.add("hidden");
-    }
-
-  }
-);
-
-
-// =====================================================
-// GOOGLE AUTH
-// =====================================================
-
-googleLogin.addEventListener(
-  "click",
-  async () => {
-
-    loginStatus.textContent =
-      "Opening Google sign-in...";
-
-    try {
-
-      await signInWithPopup(
-        auth,
-        googleProvider
-      );
-
-      loginStatus.textContent =
-        "Signed in successfully.";
-
-    } catch (error) {
-
-      console.error(error);
-
-      loginStatus.textContent =
-        error?.message ||
-        "Google sign-in failed.";
-
-    }
-
-  }
-);
-
-
-logoutBtn.addEventListener(
-  "click",
-  async () => {
-
-    try {
-      await signOut(auth);
-
-      loginStatus.textContent =
-        "Signed out.";
-
-    } catch (error) {
-      console.error(error);
-    }
-
-  }
-);
-
-
-// =====================================================
-// AUTH STATE
-// =====================================================
-
-onAuthStateChanged(
-  auth,
-  user => {
-
-    if (user) {
-
-      userName.textContent =
-        user.displayName ||
-        "Google User";
-
-      userEmail.textContent =
-        user.email ||
-        "";
-
-      if (user.photoURL) {
-
-        userAvatar.innerHTML =
-          `<img src="${user.photoURL}" alt="">`;
-
-        topAvatar.innerHTML =
-          `<img src="${user.photoURL}" alt="">`;
-
-      } else {
-
-        userAvatar.textContent =
-          (user.displayName || "G")
-            .charAt(0)
-            .toUpperCase();
-
-        topAvatar.textContent =
-          (user.displayName || "G")
-            .charAt(0)
-            .toUpperCase();
-      }
-
-      googleLogin.classList.add("hidden");
-      logoutBtn.classList.remove("hidden");
-
-    } else {
-
-      userName.textContent = "Guest";
-      userEmail.textContent =
-        "Sign in with Google";
-
-      userAvatar.textContent = "G";
-      topAvatar.textContent = "G";
-
-      googleLogin.classList.remove("hidden");
-      logoutBtn.classList.add("hidden");
-    }
-
-  }
-);
-
-
-// =====================================================
-// ANIMATION SETTING
-// =====================================================
-
-animations.addEventListener(
-  "change",
-  () => {
-
-    document.body.style.setProperty(
-      "--animation-state",
-      animations.checked ? "1" : "0"
-    );
-
-  }
-);
-
-
-// =====================================================
-// CLOSE SIDEBAR AFTER MOBILE ACTION
-// =====================================================
-
-window.addEventListener(
-  "resize",
-  () => {
-
-    if (window.innerWidth > 760) {
-      closeSidebarMenu();
-    }
-
-  }
-);
+startApp();
