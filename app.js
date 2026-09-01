@@ -1,10 +1,9 @@
-// ============================================================
-// LOGIC-LEAF
-// Firebase + Cloudflare Worker
-// ============================================================
+/* =========================================================
+   LOGIC-LEAF — app.js
+   Firebase Google Login + Cloudflare Worker AI
+========================================================= */
 
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
   getAuth,
@@ -12,334 +11,586 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged
-}
-from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
-
-// ============================================================
-// CONFIGURATION
-// ============================================================
-
-const API_URL =
-  "https://logic-leaf.qtmkiller6.workers.dev";
-
+/* =========================================================
+   CONFIG
+========================================================= */
 
 const firebaseConfig = {
-
-  apiKey:
-    "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw",
-
-  authDomain:
-    "logic-leaf-64d0d.firebaseapp.com",
-
-  projectId:
-    "logic-leaf-64d0d",
-
-  storageBucket:
-    "logic-leaf-64d0d.firebasestorage.app",
-
-  messagingSenderId:
-    "346443954182",
-
-  appId:
-    "1:346443954182:web:2ab5bb71b5e52206e62b87",
-
-  measurementId:
-    "G-ZVVBH04E9M"
+  apiKey: "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw",
+  authDomain: "logic-leaf-64d0d.firebaseapp.com",
+  projectId: "logic-leaf-64d0d",
+  storageBucket: "logic-leaf-64d0d.firebasestorage.app",
+  messagingSenderId: "346443954182",
+  appId: "1:346443954182:web:2ab5bb71b5e52206e62b87",
+  measurementId: "G-ZVVBH04E9M"
 };
 
+/* Your deployed Worker */
+const API_URL = "https://ck.qtmkiller6.workers.dev";
 
-// ============================================================
-// FIREBASE
-// ============================================================
+/* =========================================================
+   FIREBASE
+========================================================= */
 
-const firebaseApp =
-  initializeApp(firebaseConfig);
-
-const auth =
-  getAuth(firebaseApp);
-
-const googleProvider =
-  new GoogleAuthProvider();
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({
   prompt: "select_account"
 });
 
-
-// ============================================================
-// ELEMENT HELPER
-// ============================================================
-
-const $ = id =>
-  document.getElementById(id);
-
-
-// ============================================================
-// STATE
-// ============================================================
+/* =========================================================
+   STATE
+========================================================= */
 
 let currentUser = null;
-
 let currentChatId = null;
+let chats = JSON.parse(localStorage.getItem("logic_leaf_chats") || "{}");
+let isGenerating = false;
 
-let selectedFile = null;
+/* =========================================================
+   DOM HELPERS
+========================================================= */
 
-let selectedImage = null;
+const $ = (selector) => document.querySelector(selector);
 
-let recognition = null;
+const messages = $("#messages");
+const welcomeScreen = $("#welcomeScreen");
+const chatInput = $("#chatInput");
+const sendBtn = $("#sendBtn");
+const historyList = $("#historyList");
 
+const loginModal = $("#loginModal");
+const settingsModal = $("#settingsModal");
 
-const STORAGE_KEY =
-  "logic_leaf_chats_v3";
+const loginBtn = $("#loginBtn");
+const googleLoginBtn = $("#googleLoginBtn");
+const logoutBtn = $("#logoutBtn");
 
+const menuBtn = $("#menuBtn");
+const sidebar = $("#sidebar");
 
-// ============================================================
-// CHAT STORAGE
-// ============================================================
+const newChatBtn = $("#newChatBtn");
 
-function getChats() {
+const attachBtn = $("#attachBtn");
+const attachmentMenu = $("#attachmentMenu");
 
-  try {
+const fileInput = $("#fileInput");
+const imageInput = $("#imageInput");
 
-    return JSON.parse(
-      localStorage.getItem(STORAGE_KEY)
-    ) || [];
+const modelBtn = $("#modelBtn");
+const modelMenu = $("#modelMenu");
 
-  } catch {
+const toast = $("#toast");
 
-    return [];
+/* =========================================================
+   SAFE ELEMENT FUNCTIONS
+========================================================= */
 
-  }
+function show(element) {
+  if (element) element.classList.remove("hidden");
 }
 
-
-function saveChats(chats) {
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(chats)
-  );
-
+function hide(element) {
+  if (element) element.classList.add("hidden");
 }
 
-
-// ============================================================
-// CREATE CHAT
-// ============================================================
-
-function createChat() {
-
-  const chat = {
-
-    id:
-      "chat_" + Date.now(),
-
-    title:
-      "New chat",
-
-    messages:
-      [],
-
-    createdAt:
-      Date.now()
-
-  };
-
-
-  const chats =
-    getChats();
-
-  chats.unshift(chat);
-
-  saveChats(chats);
-
-  currentChatId =
-    chat.id;
-
-  renderHistory();
-
-  renderChat();
-
-  return chat;
+function text(element, value) {
+  if (element) element.textContent = value;
 }
 
+/* =========================================================
+   TOAST
+========================================================= */
 
-// ============================================================
-// CURRENT CHAT
-// ============================================================
+let toastTimer;
 
-function getCurrentChat() {
+function showToast(message) {
+  if (!toast) return;
 
-  return getChats().find(
-    chat =>
-      chat.id === currentChatId
-  );
+  toast.textContent = message;
+  toast.classList.add("show");
 
+  clearTimeout(toastTimer);
+
+  toastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2500);
 }
 
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
-// ============================================================
-// HISTORY
-// ============================================================
+if (menuBtn) {
+  menuBtn.addEventListener("click", () => {
+    sidebar?.classList.toggle("closed");
+  });
+}
 
-function renderHistory() {
+/* =========================================================
+   LOGIN MODAL
+========================================================= */
 
-  const history =
-    $("chatHistory");
+function openLogin() {
+  show(loginModal);
+}
 
-  if (!history)
-    return;
+function closeLogin() {
+  hide(loginModal);
+}
 
+if (loginBtn) {
+  loginBtn.addEventListener("click", openLogin);
+}
 
-  history.innerHTML = "";
+/* Close buttons */
 
+document.querySelectorAll("[data-close-login]").forEach((button) => {
+  button.addEventListener("click", closeLogin);
+});
 
-  const chats =
-    getChats();
+document.querySelectorAll("[data-close-settings]").forEach((button) => {
+  button.addEventListener("click", () => hide(settingsModal));
+});
 
+/* =========================================================
+   GOOGLE LOGIN
+========================================================= */
 
-  if (!chats.length) {
+if (googleLoginBtn) {
+  googleLoginBtn.addEventListener("click", async () => {
 
-    history.innerHTML =
-      `<div class="empty-state">
-        No chats yet.
-      </div>`;
+    try {
 
-    return;
+      googleLoginBtn.disabled = true;
+      googleLoginBtn.textContent = "Signing in…";
 
-  }
+      const result = await signInWithPopup(
+        auth,
+        googleProvider
+      );
 
+      currentUser = result.user;
 
-  chats.forEach(chat => {
+      closeLogin();
 
-    const button =
-      document.createElement("button");
+      showToast(`Welcome, ${currentUser.displayName || "User"}`);
 
-    button.className =
-      "history-item";
+      updateUserUI();
 
+    } catch (error) {
 
-    if (
-      chat.id === currentChatId
-    ) {
+      console.error("Google login error:", error);
 
-      button.classList.add("active");
+      let message = "Google login failed.";
+
+      if (error.code === "auth/popup-closed-by-user") {
+        message = "Login window was closed.";
+      }
+
+      if (error.code === "auth/unauthorized-domain") {
+        message =
+          "This website is not added to Firebase Authorized Domains.";
+      }
+
+      if (error.code === "auth/api-key-not-valid") {
+        message =
+          "Firebase API key is invalid. Check the Firebase project configuration.";
+      }
+
+      showToast(message);
+
+    } finally {
+
+      googleLoginBtn.disabled = false;
+      googleLoginBtn.textContent = "Continue with Google";
 
     }
 
+  });
+}
 
-    button.textContent =
-      chat.title || "New chat";
+/* =========================================================
+   AUTH STATE
+========================================================= */
 
+onAuthStateChanged(auth, (user) => {
 
-    button.title =
-      chat.title || "New chat";
+  currentUser = user || null;
 
+  updateUserUI();
 
-    button.addEventListener(
-      "click",
-      () => {
+});
 
-        currentChatId =
-          chat.id;
+/* =========================================================
+   USER UI
+========================================================= */
 
-        renderHistory();
+function updateUserUI() {
 
-        renderChat();
+  const nameElements = document.querySelectorAll(
+    "[data-user-name]"
+  );
 
-        $("sidebar")
-          ?.classList.remove("open");
+  const emailElements = document.querySelectorAll(
+    "[data-user-email]"
+  );
 
-      }
-    );
+  const avatarElements = document.querySelectorAll(
+    "[data-user-avatar]"
+  );
 
+  if (!currentUser) {
 
-    history.appendChild(button);
+    nameElements.forEach(el => {
+      el.textContent = "Guest";
+    });
+
+    emailElements.forEach(el => {
+      el.textContent = "Sign in to continue";
+    });
+
+    avatarElements.forEach(el => {
+      el.textContent = "G";
+    });
+
+    return;
+  }
+
+  nameElements.forEach(el => {
+    el.textContent =
+      currentUser.displayName ||
+      currentUser.email?.split("@")[0] ||
+      "User";
+  });
+
+  emailElements.forEach(el => {
+    el.textContent =
+      currentUser.email || "";
+  });
+
+  avatarElements.forEach(el => {
+
+    if (currentUser.photoURL) {
+
+      el.innerHTML = "";
+
+      const img = document.createElement("img");
+
+      img.src = currentUser.photoURL;
+      img.alt = "User";
+
+      el.appendChild(img);
+
+    } else {
+
+      el.textContent =
+        (currentUser.displayName ||
+          currentUser.email ||
+          "U")
+          .charAt(0)
+          .toUpperCase();
+
+    }
 
   });
 
 }
 
+/* =========================================================
+   LOGOUT
+========================================================= */
 
-// ============================================================
-// RENDER CHAT
-// ============================================================
+if (logoutBtn) {
 
-function renderChat() {
+  logoutBtn.addEventListener("click", async () => {
 
-  const messageBox =
-    $("messages");
+    try {
 
-  if (!messageBox)
-    return;
+      await signOut(auth);
 
+      showToast("Signed out");
 
-  messageBox.innerHTML =
-    "";
+      hide(settingsModal);
 
+    } catch (error) {
 
-  const chat =
-    getCurrentChat();
+      console.error(error);
 
+      showToast("Could not sign out.");
 
-  if (
-    !chat ||
-    !chat.messages.length
-  ) {
+    }
 
-    $("welcomeView")
-      ?.classList.remove("hidden");
+  });
+
+}
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+document.querySelectorAll("[data-open-settings]").forEach((button) => {
+
+  button.addEventListener("click", () => {
+
+    show(settingsModal);
+
+  });
+
+});
+
+document.querySelectorAll(".settings-nav-btn").forEach((button) => {
+
+  button.addEventListener("click", () => {
+
+    document
+      .querySelectorAll(".settings-nav-btn")
+      .forEach(btn => btn.classList.remove("active"));
+
+    document
+      .querySelectorAll(".settings-page")
+      .forEach(page => page.classList.remove("active"));
+
+    button.classList.add("active");
+
+    const target = button.dataset.target;
+
+    const page = document.querySelector(
+      `[data-page="${target}"]`
+    );
+
+    if (page) {
+      page.classList.add("active");
+    }
+
+  });
+
+});
+
+/* =========================================================
+   MODEL MENU
+========================================================= */
+
+if (modelBtn) {
+
+  modelBtn.addEventListener("click", () => {
+
+    modelMenu?.classList.toggle("hidden");
+
+  });
+
+}
+
+document.querySelectorAll(".model-option").forEach((option) => {
+
+  option.addEventListener("click", () => {
+
+    document
+      .querySelectorAll(".model-option")
+      .forEach(item => item.classList.remove("active"));
+
+    option.classList.add("active");
+
+    const name = option.dataset.modelName;
+
+    const modelName = $("#selectedModel");
+
+    if (modelName && name) {
+      modelName.textContent = name;
+    }
+
+    hide(modelMenu);
+
+  });
+
+});
+
+/* =========================================================
+   NEW CHAT
+========================================================= */
+
+function createNewChat() {
+
+  currentChatId =
+    "chat_" +
+    Date.now();
+
+  chats[currentChatId] = {
+    id: currentChatId,
+    title: "New chat",
+    messages: []
+  };
+
+  saveChats();
+
+  renderChatHistory();
+
+  renderMessages();
+
+  welcomeScreen?.classList.remove("hidden");
+
+  chatInput?.focus();
+
+}
+
+if (newChatBtn) {
+  newChatBtn.addEventListener("click", createNewChat);
+}
+
+/* =========================================================
+   STORAGE
+========================================================= */
+
+function saveChats() {
+
+  localStorage.setItem(
+    "logic_leaf_chats",
+    JSON.stringify(chats)
+  );
+
+}
+
+/* =========================================================
+   CHAT HISTORY
+========================================================= */
+
+function renderChatHistory() {
+
+  if (!historyList) return;
+
+  historyList.innerHTML = "";
+
+  const chatEntries =
+    Object.values(chats)
+      .sort((a, b) => b.id.localeCompare(a.id));
+
+  if (!chatEntries.length) {
+
+    const empty = document.createElement("div");
+
+    empty.className = "history-empty";
+
+    empty.textContent = "No conversations yet.";
+
+    historyList.appendChild(empty);
 
     return;
 
   }
 
+  chatEntries.forEach(chat => {
 
-  $("welcomeView")
-    ?.classList.add("hidden");
+    const button =
+      document.createElement("button");
 
+    button.className =
+      "history-item" +
+      (chat.id === currentChatId ? " active" : "");
 
-  chat.messages.forEach(
-    message => {
+    button.innerHTML = `
+      <span>◌</span>
+      <span class="history-item-title">
+        ${escapeHTML(chat.title || "New chat")}
+      </span>
+    `;
 
-      addMessage(
-        message.role,
-        message.content,
-        false
-      );
+    button.addEventListener("click", () => {
 
-    }
-  );
+      currentChatId = chat.id;
 
+      renderMessages();
 
-  scrollMessages();
+      renderChatHistory();
+
+      if (window.innerWidth <= 850) {
+        sidebar?.classList.add("closed");
+      }
+
+    });
+
+    historyList.appendChild(button);
+
+  });
 
 }
 
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
 
-// ============================================================
-// ADD MESSAGE
-// ============================================================
+function escapeHTML(value) {
 
-function addMessage(
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+
+}
+
+/* =========================================================
+   MESSAGE RENDERING
+========================================================= */
+
+function renderMessages() {
+
+  if (!messages) return;
+
+  messages.innerHTML = "";
+
+  const chat =
+    chats[currentChatId];
+
+  if (!chat || !chat.messages.length) {
+
+    show(welcomeScreen);
+
+    return;
+
+  }
+
+  hide(welcomeScreen);
+
+  chat.messages.forEach(message => {
+
+    addMessageToDOM(
+      message.role,
+      message.content,
+      false
+    );
+
+  });
+
+  scrollToBottom();
+
+}
+
+/* =========================================================
+   ADD MESSAGE
+========================================================= */
+
+function addMessageToDOM(
   role,
   content,
-  scroll = true
+  animate = true
 ) {
 
-  $("welcomeView")
-    ?.classList.add("hidden");
-
+  if (!messages) return;
 
   const wrapper =
     document.createElement("div");
 
   wrapper.className =
-    role === "user"
-      ? "message user"
-      : "message ai";
+    `message ${role}`;
 
+  if (!animate) {
+    wrapper.style.animation = "none";
+  }
 
   const contentBox =
     document.createElement("div");
@@ -347,811 +598,458 @@ function addMessage(
   contentBox.className =
     "message-content";
 
-
-  const roleLabel =
-    document.createElement("div");
-
-  roleLabel.className =
-    "message-role";
-
-  roleLabel.textContent =
-    role === "user"
-      ? "YOU"
-      : "LOGIC-LEAF";
-
-
-  const text =
-    document.createElement("div");
-
-  text.className =
-    "message-text";
-
-  text.textContent =
-    content;
-
-
-  contentBox.appendChild(
-    roleLabel
-  );
-
-  contentBox.appendChild(
-    text
-  );
-
-  wrapper.appendChild(
-    contentBox
-  );
-
-  $("messages")
-    ?.appendChild(wrapper);
-
-
-  if (scroll)
-    scrollMessages();
-
-}
-
-
-// ============================================================
-// SCROLL
-// ============================================================
-
-function scrollMessages() {
-
-  const area =
-    $("chatArea");
-
-  if (!area)
-    return;
-
-
-  requestAnimationFrame(
-    () => {
-
-      area.scrollTop =
-        area.scrollHeight;
-
-    }
-  );
-
-}
-
-
-// ============================================================
-// GOOGLE LOGIN
-// ============================================================
-
-$("googleLoginBtn")
-  ?.addEventListener(
-    "click",
-    async () => {
-
-      const button =
-        $("googleLoginBtn");
-
-      const error =
-        $("loginError");
-
-
-      error.textContent =
-        "";
-
-      button.disabled =
-        true;
-
-
-      try {
-
-        await signInWithPopup(
-          auth,
-          googleProvider
-        );
-
-      } catch (err) {
-
-        console.error(err);
-
-        error.textContent =
-          firebaseErrorMessage(err);
-
-      } finally {
-
-        button.disabled =
-          false;
-
-      }
-
-    }
-  );
-
-
-// ============================================================
-// FIREBASE ERROR
-// ============================================================
-
-function firebaseErrorMessage(error) {
-
-  const code =
-    error?.code || "";
-
-
-  switch (code) {
-
-    case "auth/api-key-not-valid":
-
-      return "Firebase API key is invalid. Check Firebase Project Settings.";
-
-    case "auth/unauthorized-domain":
-
-      return "Add chenchukiranvemula.github.io to Firebase Authorized domains.";
-
-    case "auth/popup-blocked":
-
-      return "Google popup was blocked by the browser.";
-
-    case "auth/popup-closed-by-user":
-
-      return "Google sign-in was cancelled.";
-
-    case "auth/network-request-failed":
-
-      return "Network error. Check your internet connection.";
-
-    default:
-
-      return (
-        error?.message ||
-        "Google sign-in failed."
-      );
-
-  }
-
-}
-
-
-// ============================================================
-// AUTH STATE
-// ============================================================
-
-onAuthStateChanged(
-  auth,
-  user => {
-
-    currentUser =
-      user;
-
-
-    if (user) {
-
-      $("loginScreen")
-        ?.classList.add("hidden");
-
-      $("appScreen")
-        ?.classList.remove("hidden");
-
-
-      updateUserUI(user);
-
-
-      const chats =
-        getChats();
-
-
-      if (!currentChatId) {
-
-        if (chats.length) {
-
-          currentChatId =
-            chats[0].id;
-
-        } else {
-
-          createChat();
-
-        }
-
-      }
-
-
-      renderHistory();
-
-      renderChat();
-
-    } else {
-
-      $("loginScreen")
-        ?.classList.remove("hidden");
-
-      $("appScreen")
-        ?.classList.add("hidden");
-
-    }
-
-  }
-);
-
-
-// ============================================================
-// USER UI
-// ============================================================
-
-function updateUserUI(user) {
-
-  const name =
-    user.displayName ||
-    "User";
-
-  const email =
-    user.email ||
-    "";
-
-  const photo =
-    user.photoURL ||
-    "";
-
-
-  $("userName").textContent =
-    name;
-
-  $("userEmail").textContent =
-    email;
-
-  $("settingsName").textContent =
-    name;
-
-  $("settingsEmail").textContent =
-    email;
-
-
-  setAvatar(
-    $("userAvatar"),
-    photo,
-    name
-  );
-
-  setAvatar(
-    $("headerAvatar"),
-    photo,
-    name
-  );
-
-  setAvatar(
-    $("settingsAvatar"),
-    photo,
-    name
-  );
-
-}
-
-
-function setAvatar(
-  element,
-  photo,
-  name
-) {
-
-  if (!element)
-    return;
-
-
-  element.innerHTML =
-    "";
-
-
-  if (photo) {
-
-    const img =
-      document.createElement("img");
-
-    img.src =
-      photo;
-
-    img.alt =
-      "";
-
-    element.appendChild(img);
+  if (role === "ai") {
+
+    contentBox.innerHTML = `
+      <div class="message-role">
+        <span class="message-role-dot"></span>
+        LOGIC-LEAF
+      </div>
+
+      <div class="message-text">
+        ${formatAIResponse(content)}
+      </div>
+
+      <div class="message-actions">
+        <button data-copy>Copy</button>
+      </div>
+    `;
 
   } else {
 
-    element.textContent =
-      name.charAt(0).toUpperCase();
+    contentBox.innerHTML = `
+      <div class="message-text">
+        ${escapeHTML(content)}
+      </div>
+    `;
 
   }
 
-}
+  wrapper.appendChild(contentBox);
 
+  messages.appendChild(wrapper);
 
-// ============================================================
-// LOGOUT
-// ============================================================
+  const copyButton =
+    wrapper.querySelector("[data-copy]");
 
-$("logoutBtn")
-  ?.addEventListener(
-    "click",
-    async () => {
+  if (copyButton) {
+
+    copyButton.addEventListener("click", async () => {
 
       try {
 
-        await signOut(auth);
+        await navigator.clipboard.writeText(content);
 
-      } catch (error) {
+        showToast("Copied");
 
-        console.error(error);
+      } catch {
+
+        showToast("Copy failed");
 
       }
 
-    }
-  );
-
-
-// ============================================================
-// SIDEBAR
-// ============================================================
-
-$("openSidebarBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("sidebar")
-        ?.classList.add("open");
-
-    }
-  );
-
-
-$("closeSidebarBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("sidebar")
-        ?.classList.remove("open");
-
-    }
-  );
-
-
-// ============================================================
-// NEW CHAT
-// ============================================================
-
-$("newChatBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      createChat();
-
-      $("messageInput")
-        ?.focus();
-
-    }
-  );
-
-
-// ============================================================
-// SETTINGS
-// ============================================================
-
-$("settingsBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("settingsOverlay")
-        ?.classList.remove("hidden");
-
-    }
-  );
-
-
-$("profileBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("settingsOverlay")
-        ?.classList.remove("hidden");
-
-    }
-  );
-
-
-$("closeSettingsBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("settingsOverlay")
-        ?.classList.add("hidden");
-
-    }
-  );
-
-
-// ============================================================
-// API MODAL
-// ============================================================
-
-$("apiKeysBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("apiOverlay")
-        ?.classList.remove("hidden");
-
-      loadApiKeys();
-
-    }
-  );
-
-
-$("closeApiBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("apiOverlay")
-        ?.classList.add("hidden");
-
-    }
-  );
-
-
-// ============================================================
-// WORKER REQUEST
-// ============================================================
-
-async function workerRequest(
-  endpoint,
-  options = {}
-) {
-
-  if (!currentUser) {
-
-    throw new Error(
-      "Please sign in with Google."
-    );
+    });
 
   }
-
-
-  const token =
-    await currentUser.getIdToken(true);
-
-
-  const headers = {
-    ...(options.headers || {}),
-
-    Authorization:
-      `Bearer ${token}`
-  };
-
-
-  if (
-    options.body &&
-    !(options.body instanceof FormData)
-  ) {
-
-    headers["Content-Type"] =
-      "application/json";
-
-  }
-
-
-  const response =
-    await fetch(
-      API_URL + endpoint,
-      {
-        ...options,
-        headers
-      }
-    );
-
-
-  const raw =
-    await response.text();
-
-
-  let data;
-
-
-  try {
-
-    data =
-      JSON.parse(raw);
-
-  } catch {
-
-    data = {
-      raw
-    };
-
-  }
-
-
-  if (!response.ok) {
-
-    throw new Error(
-      data?.error ||
-      data?.message ||
-      data?.raw ||
-      `HTTP ${response.status}`
-    );
-
-  }
-
-
-  return data;
 
 }
 
+/* =========================================================
+   FORMAT AI RESPONSE
+========================================================= */
 
-// ============================================================
-// SEND MESSAGE
-// ============================================================
+function formatAIResponse(textValue) {
 
-async function sendMessage() {
+  if (!textValue) return "";
 
-  const input =
-    $("messageInput");
+  let html =
+    escapeHTML(textValue);
 
-  const text =
-    input.value.trim();
+  /* Code blocks */
 
+  html = html.replace(
+    /```([\s\S]*?)```/g,
+    (_, code) => {
 
-  if (!text)
-    return;
+      return `
+        <div class="code-block">
 
+          <div class="code-header">
 
-  if (!currentUser) {
+            <span>Code</span>
 
-    alert(
-      "Please sign in with Google first."
-    );
+            <button
+              class="code-copy"
+              data-code="${encodeURIComponent(code.trim())}">
+              Copy
+            </button>
 
-    return;
+          </div>
 
-  }
+          <pre>${code.trim()}</pre>
 
+        </div>
+      `;
 
-  if (!currentChatId) {
-
-    createChat();
-
-  }
-
-
-  const chat =
-    getCurrentChat();
-
-
-  if (!chat)
-    return;
-
-
-  chat.messages.push({
-
-    role:
-      "user",
-
-    content:
-      text
-
-  });
-
-
-  if (
-    chat.title ===
-    "New chat"
-  ) {
-
-    chat.title =
-      text.length > 42
-        ? text.substring(0, 42) + "..."
-        : text;
-
-  }
-
-
-  saveChats(
-    getChats()
+    }
   );
 
+  /* Bold */
 
-  renderHistory();
-
-
-  addMessage(
-    "user",
-    text
+  html = html.replace(
+    /\*\*(.*?)\*\*/g,
+    "<strong>$1</strong>"
   );
 
+  /* Inline code */
 
-  input.value =
-    "";
+  html = html.replace(
+    /`([^`]+)`/g,
+    "<code>$1</code>"
+  );
 
-  input.style.height =
-    "auto";
+  return html;
 
+}
 
-  const sendButton =
-    $("sendBtn");
+/* =========================================================
+   CODE COPY
+========================================================= */
 
-  sendButton.disabled =
-    true;
+document.addEventListener("click", async (event) => {
 
+  const button =
+    event.target.closest(".code-copy");
 
-  const loading =
-    document.createElement("div");
-
-  loading.className =
-    "message ai";
-
-
-  loading.innerHTML = `
-    <div class="message-content">
-      <div class="message-role">LOGIC-LEAF</div>
-      <div class="message-text">Thinking…</div>
-    </div>
-  `;
-
-
-  $("messages")
-    .appendChild(loading);
-
-
-  scrollMessages();
-
+  if (!button) return;
 
   try {
 
-    const data =
-      await workerRequest(
-        "/v1/chat",
+    const code =
+      decodeURIComponent(
+        button.dataset.code || ""
+      );
+
+    await navigator.clipboard.writeText(code);
+
+    button.textContent = "Copied";
+
+    setTimeout(() => {
+      button.textContent = "Copy";
+    }, 1200);
+
+  } catch {
+
+    showToast("Copy failed");
+
+  }
+
+});
+
+/* =========================================================
+   SCROLL
+========================================================= */
+
+function scrollToBottom() {
+
+  if (!messages) return;
+
+  requestAnimationFrame(() => {
+
+    messages.scrollTop =
+      messages.scrollHeight;
+
+  });
+
+}
+
+/* =========================================================
+   ENSURE CHAT
+========================================================= */
+
+function ensureChat() {
+
+  if (
+    currentChatId &&
+    chats[currentChatId]
+  ) {
+    return;
+  }
+
+  createNewChat();
+
+}
+
+/* =========================================================
+   SEND MESSAGE
+========================================================= */
+
+async function sendMessage() {
+
+  if (isGenerating) return;
+
+  const prompt =
+    chatInput?.value.trim();
+
+  if (!prompt) return;
+
+  ensureChat();
+
+  isGenerating = true;
+
+  if (sendBtn) {
+    sendBtn.disabled = true;
+  }
+
+  hide(welcomeScreen);
+
+  chats[currentChatId].messages.push({
+    role: "user",
+    content: prompt
+  });
+
+  if (
+    chats[currentChatId].title === "New chat"
+  ) {
+
+    chats[currentChatId].title =
+      prompt.slice(0, 45);
+
+  }
+
+  saveChats();
+
+  addMessageToDOM(
+    "user",
+    prompt
+  );
+
+  chatInput.value = "";
+
+  autoResizeTextarea();
+
+  scrollToBottom();
+
+  /* Typing */
+
+  const typingWrapper =
+    document.createElement("div");
+
+  typingWrapper.className =
+    "message ai";
+
+  typingWrapper.innerHTML = `
+    <div class="message-content">
+
+      <div class="message-role">
+        <span class="message-role-dot"></span>
+        LOGIC-LEAF
+      </div>
+
+      <div class="typing">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
+    </div>
+  `;
+
+  messages.appendChild(typingWrapper);
+
+  scrollToBottom();
+
+  try {
+
+    const response =
+      await fetch(
+        `${API_URL}/v1/chat`,
         {
+          method: "POST",
 
-          method:
-            "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
 
-          body:
-            JSON.stringify({
+          body: JSON.stringify({
 
-              messages:
-                chat.messages.map(
-                  item => ({
+            message: prompt,
 
-                    role:
-                      item.role,
+            messages:
+              chats[currentChatId]
+                .messages
+                .slice(-20),
 
-                    content:
-                      item.content
+            user: currentUser
+              ? {
+                  uid: currentUser.uid,
+                  email: currentUser.email,
+                  name: currentUser.displayName
+                }
+              : null
 
-                  })
-                )
-
-            })
+          })
 
         }
       );
 
+    typingWrapper.remove();
 
-    loading.remove();
+    if (!response.ok) {
 
+      throw new Error(
+        `Worker returned ${response.status}`
+      );
+
+    }
+
+    const data =
+      await response.json();
 
     const answer =
       extractAnswer(data);
 
-
-    chat.messages.push({
-
-      role:
-        "assistant",
-
-      content:
-        answer
-
+    chats[currentChatId].messages.push({
+      role: "ai",
+      content: answer
     });
 
+    saveChats();
 
-    saveChats(
-      getChats()
-    );
-
-
-    addMessage(
-      "assistant",
+    addMessageToDOM(
+      "ai",
       answer
     );
 
+    renderChatHistory();
+
+    scrollToBottom();
 
   } catch (error) {
 
-    loading.remove();
+    console.error(
+      "Worker error:",
+      error
+    );
 
+    typingWrapper.remove();
 
-    const errorText =
-      "Sorry, something went wrong.\n\n" +
-      error.message;
+    const errorMessage =
+      "Sorry, something went wrong while connecting to LOGIC-LEAF.";
 
-
-    chat.messages.push({
-
-      role:
-        "assistant",
-
-      content:
-        errorText
-
+    chats[currentChatId].messages.push({
+      role: "ai",
+      content: errorMessage
     });
 
+    saveChats();
 
-    saveChats(
-      getChats()
+    addMessageToDOM(
+      "ai",
+      errorMessage
     );
 
-
-    addMessage(
-      "assistant",
-      errorText
-    );
+    showToast("Failed to fetch");
 
   } finally {
 
-    sendButton.disabled =
-      false;
+    isGenerating = false;
 
-    input.focus();
+    if (sendBtn) {
+      sendBtn.disabled = false;
+    }
+
+    chatInput?.focus();
 
   }
 
 }
 
-
-// ============================================================
-// EXTRACT AI RESPONSE
-// ============================================================
+/* =========================================================
+   EXTRACT WORKER ANSWER
+========================================================= */
 
 function extractAnswer(data) {
 
-  if (!data)
+  if (!data) {
     return "The AI returned an empty response.";
+  }
 
-
-  if (typeof data === "string")
+  if (typeof data === "string") {
     return data;
+  }
 
+  if (data.response) {
+    return data.response;
+  }
 
-  return (
-    data.response ||
-    data.text ||
-    data.output ||
-    data.content ||
-    data.result?.response ||
-    data.result?.text ||
-    data.message?.content ||
-    data.choices?.[0]?.message?.content ||
-    "The AI returned no response."
+  if (data.answer) {
+    return data.answer;
+  }
+
+  if (data.text) {
+    return data.text;
+  }
+
+  if (data.result) {
+
+    if (typeof data.result === "string") {
+      return data.result;
+    }
+
+    if (data.result.response) {
+      return data.result.response;
+    }
+
+  }
+
+  if (
+    data.choices &&
+    data.choices[0]
+  ) {
+
+    const choice =
+      data.choices[0];
+
+    if (choice.message?.content) {
+      return choice.message.content;
+    }
+
+    if (choice.text) {
+      return choice.text;
+    }
+
+  }
+
+  return JSON.stringify(
+    data,
+    null,
+    2
   );
 
 }
 
+/* =========================================================
+   SEND BUTTON
+========================================================= */
 
-// ============================================================
-// SEND EVENTS
-// ============================================================
+if (sendBtn) {
 
-$("sendBtn")
-  ?.addEventListener(
+  sendBtn.addEventListener(
     "click",
     sendMessage
   );
 
+}
 
-$("messageInput")
-  ?.addEventListener(
+/* =========================================================
+   ENTER TO SEND
+========================================================= */
+
+if (chatInput) {
+
+  chatInput.addEventListener(
     "keydown",
     event => {
 
@@ -1169,641 +1067,270 @@ $("messageInput")
     }
   );
 
+}
 
-// ============================================================
-// TEXTAREA AUTO SIZE
-// ============================================================
+/* =========================================================
+   TEXTAREA AUTO RESIZE
+========================================================= */
 
-$("messageInput")
-  ?.addEventListener(
+function autoResizeTextarea() {
+
+  if (!chatInput) return;
+
+  chatInput.style.height = "auto";
+
+  chatInput.style.height =
+    Math.min(
+      chatInput.scrollHeight,
+      170
+    ) + "px";
+
+}
+
+if (chatInput) {
+
+  chatInput.addEventListener(
     "input",
-    event => {
-
-      const input =
-        event.target;
-
-      input.style.height =
-        "auto";
-
-      input.style.height =
-        Math.min(
-          input.scrollHeight,
-          150
-        ) + "px";
-
-    }
+    autoResizeTextarea
   );
 
+}
 
-// ============================================================
-// QUICK CARDS
-// ============================================================
+/* =========================================================
+   SUGGESTIONS
+========================================================= */
 
-document
-  .querySelectorAll(".quick-card")
-  .forEach(card => {
+document.querySelectorAll(".suggestion").forEach(button => {
 
-    card.addEventListener(
-      "click",
-      () => {
+  button.addEventListener("click", () => {
 
-        const input =
-          $("messageInput");
+    const prompt =
+      button.dataset.prompt ||
+      button.textContent.trim();
 
-        input.value =
-          card.dataset.prompt || "";
+    if (chatInput) {
 
-        input.focus();
+      chatInput.value =
+        prompt;
 
-      }
+      autoResizeTextarea();
+
+      chatInput.focus();
+
+    }
+
+  });
+
+});
+
+/* =========================================================
+   ATTACHMENT MENU
+========================================================= */
+
+if (attachBtn) {
+
+  attachBtn.addEventListener("click", event => {
+
+    event.stopPropagation();
+
+    attachmentMenu?.classList.toggle(
+      "hidden"
     );
 
   });
 
-
-// ============================================================
-// FILE PICKER
-// ============================================================
-
-$("attachBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("fileInput")
-        ?.click();
-
-    }
-  );
-
-
-$("fileInput")
-  ?.addEventListener(
-    "change",
-    event => {
-
-      const file =
-        event.target.files?.[0];
-
-
-      if (!file)
-        return;
-
-
-      selectedFile =
-        file;
-
-      selectedImage =
-        null;
-
-
-      showAttachment(
-        file.name
-      );
-
-    }
-  );
-
-
-// ============================================================
-// IMAGE PICKER
-// ============================================================
-
-$("imageBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("imageInput")
-        ?.click();
-
-    }
-  );
-
-
-$("imageInput")
-  ?.addEventListener(
-    "change",
-    event => {
-
-      const file =
-        event.target.files?.[0];
-
-
-      if (!file)
-        return;
-
-
-      selectedImage =
-        file;
-
-      selectedFile =
-        null;
-
-
-      const url =
-        URL.createObjectURL(file);
-
-
-      $("imagePreview").src =
-        url;
-
-
-      $("imageOverlay")
-        ?.classList.remove("hidden");
-
-    }
-  );
-
-
-// ============================================================
-// IMAGE PREVIEW
-// ============================================================
-
-$("closeImageBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      $("imageOverlay")
-        ?.classList.add("hidden");
-
-    }
-  );
-
-
-$("useImageBtn")
-  ?.addEventListener(
-    "click",
-    () => {
-
-      if (!selectedImage)
-        return;
-
-
-      showAttachment(
-        selectedImage.name
-      );
-
-
-      $("imageOverlay")
-        ?.classList.add("hidden");
-
-    }
-  );
-
-
-// ============================================================
-// ATTACHMENT
-// ============================================================
-
-function showAttachment(name) {
-
-  $("attachmentInfo").textContent =
-    "Attached: " + name;
-
-  $("attachmentBar")
-    ?.classList.remove("hidden");
-
 }
 
+document.addEventListener("click", event => {
 
-$("removeAttachmentBtn")
-  ?.addEventListener(
-    "click",
+  if (
+    attachmentMenu &&
+    !attachmentMenu.contains(event.target) &&
+    event.target !== attachBtn
+  ) {
+
+    hide(attachmentMenu);
+
+  }
+
+});
+
+/* =========================================================
+   FILE UPLOAD
+========================================================= */
+
+document.querySelectorAll("[data-file-upload]").forEach(button => {
+
+  button.addEventListener("click", () => {
+
+    fileInput?.click();
+
+    hide(attachmentMenu);
+
+  });
+
+});
+
+document.querySelectorAll("[data-image-upload]").forEach(button => {
+
+  button.addEventListener("click", () => {
+
+    imageInput?.click();
+
+    hide(attachmentMenu);
+
+  });
+
+});
+
+if (fileInput) {
+
+  fileInput.addEventListener(
+    "change",
     () => {
 
-      selectedFile =
-        null;
-
-      selectedImage =
-        null;
-
-
-      $("fileInput").value =
-        "";
-
-      $("imageInput").value =
-        "";
-
-
-      $("attachmentBar")
-        ?.classList.add("hidden");
-
-    }
-  );
-
-
-// ============================================================
-// VOICE INPUT
-// ============================================================
-
-const SpeechRecognition =
-  window.SpeechRecognition ||
-  window.webkitSpeechRecognition;
-
-
-if (SpeechRecognition) {
-
-  recognition =
-    new SpeechRecognition();
-
-
-  recognition.lang =
-    "en-IN";
-
-
-  recognition.continuous =
-    false;
-
-
-  recognition.interimResults =
-    false;
-
-
-  recognition.onstart =
-    () => {
-
-      $("voiceBtn")
-        ?.classList.add("recording");
-
-    };
-
-
-  recognition.onend =
-    () => {
-
-      $("voiceBtn")
-        ?.classList.remove("recording");
-
-    };
-
-
-  recognition.onresult =
-    event => {
-
-      const text =
-        event.results[0][0]
-          .transcript;
-
-
-      const input =
-        $("messageInput");
-
-
-      input.value +=
-        (
-          input.value
-            ? " "
-            : ""
-        ) + text;
-
-
-      input.dispatchEvent(
-        new Event("input")
-      );
-
-    };
-
-
-  recognition.onerror =
-    error => {
-
-      console.error(
-        "Speech recognition:",
-        error
-      );
-
-    };
-
-
-  $("voiceBtn")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        try {
-
-          recognition.start();
-
-        } catch {}
-
-      }
-    );
-
-} else {
-
-  $("voiceBtn")
-    ?.addEventListener(
-      "click",
-      () => {
-
-        alert(
-          "Voice input is not supported by this browser."
+      const files =
+        Array.from(
+          fileInput.files || []
         );
 
-      }
-    );
+      if (!files.length) return;
+
+      showToast(
+        `${files.length} file selected`
+      );
+
+      /*
+       * The UI accepts files here.
+       * Actual PDF/image AI processing
+       * depends on the Worker endpoint.
+       */
+
+    }
+  );
 
 }
 
+if (imageInput) {
 
-// ============================================================
-// API KEYS
-// ============================================================
+  imageInput.addEventListener(
+    "change",
+    () => {
 
-async function loadApiKeys() {
+      const files =
+        Array.from(
+          imageInput.files || []
+        );
 
-  const list =
-    $("apiKeyList");
+      if (!files.length) return;
 
+      showToast(
+        "Image selected"
+      );
 
-  list.innerHTML =
-    `<div class="empty-state">
-      Loading...
-    </div>`;
+    }
+  );
 
+}
+
+/* =========================================================
+   CLEAR CHAT HISTORY
+========================================================= */
+
+document.querySelectorAll("[data-clear-history]").forEach(button => {
+
+  button.addEventListener("click", () => {
+
+    if (
+      !confirm(
+        "Delete all local chat history?"
+      )
+    ) {
+      return;
+    }
+
+    chats = {};
+
+    currentChatId = null;
+
+    saveChats();
+
+    renderChatHistory();
+
+    createNewChat();
+
+    showToast(
+      "Chat history cleared"
+    );
+
+  });
+
+});
+
+/* =========================================================
+   WORKER HEALTH CHECK
+========================================================= */
+
+async function checkWorker() {
 
   try {
 
-    const data =
-      await workerRequest(
-        "/v1/keys",
+    const response =
+      await fetch(
+        API_URL,
         {
-          method:
-            "GET"
+          method: "GET"
         }
       );
 
+    if (!response.ok) {
+      throw new Error("Worker offline");
+    }
 
-    renderApiKeys(
-      data.keys ||
-      data.data ||
-      []
+    const data =
+      await response.json();
+
+    console.log(
+      "LOGIC-LEAF Worker:",
+      data
     );
-
 
   } catch (error) {
 
-    list.innerHTML =
-      `<div class="empty-state">
-        ${escapeHTML(error.message)}
-      </div>`;
+    console.warn(
+      "Worker health check failed:",
+      error
+    );
 
   }
 
 }
 
+/* =========================================================
+   INITIALIZE
+========================================================= */
 
-function renderApiKeys(keys) {
+renderChatHistory();
 
-  const list =
-    $("apiKeyList");
+if (Object.keys(chats).length) {
 
+  currentChatId =
+    Object.keys(chats)[0];
 
-  list.innerHTML =
-    "";
+  renderMessages();
 
+} else {
 
-  if (!keys.length) {
-
-    list.innerHTML =
-      `<div class="empty-state">
-        No API keys yet.
-      </div>`;
-
-    return;
-
-  }
-
-
-  keys.forEach(key => {
-
-    const item =
-      document.createElement("div");
-
-
-    item.className =
-      "api-key-item";
-
-
-    const left =
-      document.createElement("div");
-
-
-    const name =
-      document.createElement("strong");
-
-    name.textContent =
-      key.name ||
-      "LOGIC-LEAF API Key";
-
-
-    const status =
-      document.createElement("small");
-
-    status.textContent =
-      key.prefix ||
-      key.status ||
-      "active";
-
-
-    left.appendChild(name);
-
-    left.appendChild(status);
-
-    item.appendChild(left);
-
-    list.appendChild(item);
-
-  });
+  createNewChat();
 
 }
 
+updateUserUI();
 
-// ============================================================
-// CREATE API KEY
-// ============================================================
-
-$("createApiKeyBtn")
-  ?.addEventListener(
-    "click",
-    async () => {
-
-      const button =
-        $("createApiKeyBtn");
-
-
-      button.disabled =
-        true;
-
-      button.textContent =
-        "Creating...";
-
-
-      try {
-
-        const data =
-          await workerRequest(
-            "/v1/keys",
-            {
-
-              method:
-                "POST",
-
-              body:
-                JSON.stringify({
-
-                  name:
-                    "LOGIC-LEAF API Key"
-
-                })
-
-            }
-          );
-
-
-        const key =
-          data.key ||
-          data.apiKey ||
-          data.api_key;
-
-
-        if (!key) {
-
-          throw new Error(
-            "Worker did not return an API key."
-          );
-
-        }
-
-
-        $("newApiKey").textContent =
-          key;
-
-
-        $("newKeyBox")
-          ?.classList.remove("hidden");
-
-
-        loadApiKeys();
-
-
-      } catch (error) {
-
-        alert(
-          error.message
-        );
-
-      } finally {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          "+ Create API key";
-
-      }
-
-    }
-  );
-
-
-// ============================================================
-// COPY API KEY
-// ============================================================
-
-$("copyApiKeyBtn")
-  ?.addEventListener(
-    "click",
-    async () => {
-
-      const key =
-        $("newApiKey")
-          ?.textContent;
-
-
-      if (
-        !key ||
-        key === "—"
-      )
-        return;
-
-
-      try {
-
-        await navigator.clipboard
-          .writeText(key);
-
-
-        const button =
-          $("copyApiKeyBtn");
-
-
-        button.textContent =
-          "Copied";
-
-
-        setTimeout(
-          () => {
-
-            button.textContent =
-              "Copy";
-
-          },
-          1500
-        );
-
-
-      } catch {
-
-        alert(
-          "Could not copy the API key."
-        );
-
-      }
-
-    }
-  );
-
-
-// ============================================================
-// ESCAPE HTML
-// ============================================================
-
-function escapeHTML(value) {
-
-  return String(value)
-
-    .replaceAll("&", "&amp;")
-
-    .replaceAll("<", "&lt;")
-
-    .replaceAll(">", "&gt;")
-
-    .replaceAll('"', "&quot;")
-
-    .replaceAll("'", "&#039;");
-
-}
-
-
-// ============================================================
-// STARTUP
-// ============================================================
+checkWorker();
 
 console.log(
-  "LOGIC-LEAF frontend loaded."
+  "%cLOGIC-LEAF%c online",
+  "font-weight:800",
+  "font-weight:400"
 );
-
-console.log(
-  "Firebase project:",
-  firebaseConfig.projectId
-);
-
-console.log(
-  "Worker:",
-  API_URL
-);
-
-renderHistory();
