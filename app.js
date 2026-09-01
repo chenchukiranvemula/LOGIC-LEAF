@@ -1,192 +1,463 @@
-// =====================================================
-// LOGIC-LEAF — COMPLETE FRONTEND APP.JS
-// =====================================================
+// ============================================================
+// LOGIC-LEAF APP.JS
+// ============================================================
 
-const API = "https://logic-leaf.qtmkiller6.workers.dev";
+const API =
+  "https://logic-leaf.qtmkiller6.workers.dev";
 
 
-// =====================================================
+// ============================================================
 // FIREBASE
-// =====================================================
+// ============================================================
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw",
-  authDomain: "logic-leaf-64d0d.firebaseapp.com",
-  projectId: "logic-leaf-64d0d",
-  storageBucket: "logic-leaf-64d0d.firebasestorage.app",
-  messagingSenderId: "346443954182",
-  appId: "1:346443954182:web:2ab5bb71b5e52206e62b87",
-  measurementId: "G-ZVVBH04E9M"
+  apiKey:
+    "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw",
+
+  authDomain:
+    "logic-leaf-64d0d.firebaseapp.com",
+
+  projectId:
+    "logic-leaf-64d0d",
+
+  storageBucket:
+    "logic-leaf-64d0d.firebasestorage.app",
+
+  messagingSenderId:
+    "346443954182",
+
+  appId:
+    "1:346443954182:web:2ab5bb71b5e52206e62b87",
+
+  measurementId:
+    "G-ZVVBH04E9M"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
+
+// ============================================================
+// FIREBASE INIT
+// ============================================================
+
+if (
+  typeof firebase !== "undefined"
+) {
+  if (
+    !firebase.apps.length
+  ) {
+    firebase.initializeApp(
+      firebaseConfig
+    );
+  }
 }
 
-const auth = firebase.auth();
+const auth =
+  typeof firebase !== "undefined"
+    ? firebase.auth()
+    : null;
 
 
-// =====================================================
-// DOM
-// =====================================================
-
-const $ = id => document.getElementById(id);
-
-const sidebar = $("sidebar");
-const openSidebar = $("openSidebar");
-const closeSidebar = $("closeSidebar");
-const newChat = $("newChat");
-
-const chat = $("chat");
-const welcome = $("welcome");
-const messages = $("messages");
-
-const messageInput = $("messageInput");
-const sendButton = $("sendButton");
-
-const searchToggle = $("searchToggle");
-const searchIndicator = $("searchIndicator");
-
-const attachButton = $("attachButton");
-const fileInput = $("fileInput");
-const filePreview = $("filePreview");
-
-const imageButton = $("imageButton");
-
-const chatHistory = $("chatHistory");
-const chatSearch = $("chatSearch");
-
-const authModal = $("authModal");
-const apiModal = $("apiModal");
-const settingsModal = $("settingsModal");
-
-const authEmail = $("authEmail");
-const authPassword = $("authPassword");
-
-const emailAuth = $("emailAuth");
-const googleAuth = $("googleAuth");
-const switchAuth = $("switchAuth");
-
-const authTitle = $("authTitle");
-const authSubtitle = $("authSubtitle");
-const authStatus = $("authStatus");
-const authButton = $("authButton");
-
-const accountName = $("accountName");
-const accountEmail = $("accountEmail");
-const avatar = $("avatar");
-const profileButton = $("profileButton");
-
-const apiButton = $("apiButton");
-const createApiKey = $("createApiKey");
-const apiOutput = $("apiOutput");
-
-const settingsButton = $("settingsButton");
-const logoutButton = $("logoutButton");
-
-
-// =====================================================
+// ============================================================
 // STATE
-// =====================================================
+// ============================================================
 
-let searchMode = false;
-let authMode = "login";
-
-let currentUser = null;
+let currentUser =
+  null;
 
 let currentConversation =
   crypto.randomUUID();
 
-let selectedFile = null;
+let searchMode =
+  false;
 
-let conversationMessages = [];
+let selectedFile =
+  null;
+
+let conversationMessages =
+  [];
 
 
-// =====================================================
+// ============================================================
+// DOM
+// ============================================================
+
+const $ = id =>
+  document.getElementById(id);
+
+const sidebar =
+  $("sidebar");
+
+const openSidebar =
+  $("openSidebar");
+
+const closeSidebar =
+  $("closeSidebar");
+
+const newChat =
+  $("newChat");
+
+const messages =
+  $("messages");
+
+const welcome =
+  $("welcome");
+
+const messageInput =
+  $("messageInput");
+
+const sendButton =
+  $("sendButton");
+
+const searchToggle =
+  $("searchToggle");
+
+const searchIndicator =
+  $("searchIndicator");
+
+const fileInput =
+  $("fileInput");
+
+const attachButton =
+  $("attachButton");
+
+const filePreview =
+  $("filePreview");
+
+const imageButton =
+  $("imageButton");
+
+const chatHistory =
+  $("chatHistory");
+
+const chatSearch =
+  $("chatSearch");
+
+const authModal =
+  $("authModal");
+
+const apiModal =
+  $("apiModal");
+
+const settingsModal =
+  $("settingsModal");
+
+const authEmail =
+  $("authEmail");
+
+const authPassword =
+  $("authPassword");
+
+const emailAuth =
+  $("emailAuth");
+
+const googleAuth =
+  $("googleAuth");
+
+const switchAuth =
+  $("switchAuth");
+
+const authTitle =
+  $("authTitle");
+
+const authSubtitle =
+  $("authSubtitle");
+
+const authStatus =
+  $("authStatus");
+
+const authButton =
+  $("authButton");
+
+const accountName =
+  $("accountName");
+
+const accountEmail =
+  $("accountEmail");
+
+const avatar =
+  $("avatar");
+
+const profileButton =
+  $("profileButton");
+
+const apiButton =
+  $("apiButton");
+
+const settingsButton =
+  $("settingsButton");
+
+const logoutButton =
+  $("logoutButton");
+
+const createApiKey =
+  $("createApiKey");
+
+const apiOutput =
+  $("apiOutput");
+
+
+// ============================================================
+// SAFE ELEMENT HELPER
+// ============================================================
+
+function exists(element) {
+  return !!element;
+}
+
+
+// ============================================================
 // SIDEBAR
-// =====================================================
+// ============================================================
 
-if (openSidebar) {
-  openSidebar.onclick = () => {
-    sidebar?.classList.remove("closed");
-  };
+if (exists(openSidebar)) {
+  openSidebar.onclick =
+    () => {
+      sidebar?.classList.remove(
+        "closed"
+      );
+    };
 }
 
-if (closeSidebar) {
-  closeSidebar.onclick = () => {
-    sidebar?.classList.add("closed");
-  };
+if (exists(closeSidebar)) {
+  closeSidebar.onclick =
+    () => {
+      sidebar?.classList.add(
+        "closed"
+      );
+    };
 }
 
 
-// =====================================================
+// ============================================================
 // NEW CHAT
-// =====================================================
+// ============================================================
 
-if (newChat) {
-  newChat.onclick = () => {
+if (exists(newChat)) {
+  newChat.onclick =
+    () => {
 
-    currentConversation =
-      crypto.randomUUID();
+      currentConversation =
+        crypto.randomUUID();
 
-    conversationMessages = [];
+      conversationMessages =
+        [];
 
-    if (messages) {
-      messages.innerHTML = "";
-    }
+      if (exists(messages)) {
+        messages.innerHTML =
+          "";
+      }
 
-    if (welcome) {
-      welcome.classList.remove("hidden");
-    }
+      welcome?.classList.remove(
+        "hidden"
+      );
 
-    clearAttachment();
+      if (exists(messageInput)) {
+        messageInput.value =
+          "";
 
-    messageInput?.focus();
+        resizeTextarea();
 
-    if (window.innerWidth < 700) {
-      sidebar?.classList.add("closed");
-    }
-  };
+        messageInput.focus();
+      }
+
+      selectedFile =
+        null;
+
+      if (exists(filePreview)) {
+        filePreview.textContent =
+          "";
+      }
+
+      if (
+        window.innerWidth < 700
+      ) {
+        sidebar?.classList.add(
+          "closed"
+        );
+      }
+    };
 }
 
 
-// =====================================================
-// SEARCH MODE
-// =====================================================
+// ============================================================
+// SEARCH
+// ============================================================
 
-if (searchToggle) {
+if (exists(searchToggle)) {
+  searchToggle.onclick =
+    () => {
 
-  searchToggle.onclick = () => {
+      searchMode =
+        !searchMode;
 
-    searchMode = !searchMode;
+      searchToggle.classList.toggle(
+        "active",
+        searchMode
+      );
 
-    searchToggle.classList.toggle(
-      "active",
-      searchMode
+      searchIndicator?.classList.toggle(
+        "hidden",
+        !searchMode
+      );
+    };
+}
+
+
+// ============================================================
+// SEND
+// ============================================================
+
+async function sendMessage() {
+
+  if (!exists(messageInput))
+    return;
+
+  const text =
+    messageInput.value.trim();
+
+  if (!text)
+    return;
+
+  messageInput.value =
+    "";
+
+  resizeTextarea();
+
+  welcome?.classList.add(
+    "hidden"
+  );
+
+  addMessage(
+    "user",
+    text
+  );
+
+  conversationMessages.push({
+    role: "user",
+    content: text
+  });
+
+  sendButton.disabled =
+    true;
+
+  const loading =
+    addLoadingMessage();
+
+  try {
+
+    const userId =
+      currentUser
+        ? currentUser.uid
+        : "anonymous";
+
+    const response =
+      await fetch(
+        API + "/v1/chat",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            message: text,
+
+            search:
+              searchMode,
+
+            userId,
+
+            conversationId:
+              currentConversation,
+
+            history:
+              conversationMessages
+                .slice(-30)
+                .slice(
+                  0,
+                  -1
+                )
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    loading.remove();
+
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
+      const error =
+        data?.error ||
+        "Server error.";
+
+      addMessage(
+        "ai",
+        "Sorry, I couldn't process that request.\n\n" +
+        error
+      );
+
+      return;
+    }
+
+    const answer =
+      data.answer ||
+      "No answer returned.";
+
+    addAIMessage(
+      answer,
+      data.sources || []
     );
 
-    searchIndicator?.classList.toggle(
-      "hidden",
-      !searchMode
+    conversationMessages.push({
+      role: "assistant",
+      content: answer
+    });
+
+    if (
+      currentUser
+    ) {
+      loadHistory();
+    }
+
+  } catch (error) {
+
+    console.error(
+      error
     );
-  };
+
+    loading.remove();
+
+    addMessage(
+      "ai",
+      "Connection error. Please check that the Worker is deployed and the API URL is correct."
+    );
+
+  } finally {
+
+    sendButton.disabled =
+      false;
+
+    messageInput.focus();
+  }
 }
 
 
-// =====================================================
-// SEND BUTTON
-// =====================================================
-
-if (sendButton) {
-  sendButton.onclick = sendMessage;
+if (exists(sendButton)) {
+  sendButton.onclick =
+    sendMessage;
 }
 
 
-// =====================================================
-// ENTER TO SEND
-// =====================================================
+// ============================================================
+// ENTER
+// ============================================================
 
-if (messageInput) {
+if (exists(messageInput)) {
 
   messageInput.addEventListener(
     "keydown",
@@ -211,901 +482,54 @@ if (messageInput) {
 }
 
 
-// =====================================================
-// SEND MESSAGE
-// =====================================================
+function resizeTextarea() {
 
-async function sendMessage() {
-
-  const text =
-    messageInput?.value.trim();
-
-  if (!text && !selectedFile) {
+  if (!exists(messageInput))
     return;
-  }
 
-  const file = selectedFile;
+  messageInput.style.height =
+    "auto";
 
-  const displayText =
-    text ||
-    `Please analyze this file: ${file?.name || ""}`;
-
-  messageInput.value = "";
-
-  resizeTextarea();
-
-  welcome?.classList.add("hidden");
-
-  addMessage(
-    "user",
-    displayText
-  );
-
-  sendButton.disabled = true;
-
-  const loading =
-    addLoadingMessage();
-
-  try {
-
-    let data;
-
-    // -------------------------------------------------
-    // FILE / IMAGE
-    // -------------------------------------------------
-
-    if (file) {
-
-      data =
-        await sendFileToWorker(
-          file,
-          text
-        );
-
-      clearAttachment();
-
-    }
-
-    // -------------------------------------------------
-    // NORMAL CHAT
-    // -------------------------------------------------
-
-    else {
-
-      const userId =
-        currentUser
-          ? currentUser.uid
-          : "anonymous";
-
-      const response =
-        await fetch(
-          API + "/v1/chat",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body: JSON.stringify({
-
-              message: text,
-
-              search:
-                searchMode,
-
-              userId,
-
-              conversationId:
-                currentConversation,
-
-              history:
-                conversationMessages.slice(-20)
-
-            })
-          }
-        );
-
-      data =
-        await safeJSON(response);
-
-      if (!response.ok) {
-
-        throw new Error(
-          data?.error ||
-          "Server error"
-        );
-      }
-    }
-
-    loading.remove();
-
-    if (!data?.ok) {
-
-      addMessage(
-        "ai",
-        data?.error ||
-        "I couldn't process that request."
-      );
-
-      return;
-    }
-
-    const answer =
-      data.answer ||
-      data.response ||
-      "I couldn't generate a response.";
-
-    addAIMessage(
-      answer,
-      data.sources || []
-    );
-
-    conversationMessages.push(
-      {
-        role: "user",
-        content: displayText
-      },
-      {
-        role: "assistant",
-        content: answer
-      }
-    );
-
-    loadHistory();
-
-  } catch (error) {
-
-    loading.remove();
-
-    console.error(
-      "CHAT ERROR:",
-      error
-    );
-
-    addMessage(
-      "ai",
-      "Connection error.\n\n" +
-      (error?.message ||
-        "Please check the Worker.")
-    );
-
-  } finally {
-
-    sendButton.disabled = false;
-
-    messageInput?.focus();
-  }
+  messageInput.style.height =
+    Math.min(
+      messageInput.scrollHeight,
+      180
+    ) + "px";
 }
 
 
-// =====================================================
-// FILE SEND
-// =====================================================
-
-async function sendFileToWorker(
-  file,
-  userMessage
-) {
-
-  const isImage =
-    file.type.startsWith("image/");
-
-  const isPDF =
-    file.type === "application/pdf" ||
-    /\.pdf$/i.test(file.name);
-
-  const isText =
-    file.type.startsWith("text/") ||
-    /\.(js|css|html|py|java|cpp|c|md|json|csv|xml|txt)$/i
-      .test(file.name);
-
-  // ---------------------------------------------------
-  // TEXT / CODE FILE
-  // ---------------------------------------------------
-
-  if (isText) {
-
-    const content =
-      await file.text();
-
-    const response =
-      await fetch(
-        API + "/v1/chat",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            message:
-              `${userMessage || "Analyze this file."}
-
-FILE NAME:
-${file.name}
-
-FILE CONTENT:
-${content}`,
-
-            search:
-              searchMode,
-
-            userId:
-              currentUser?.uid ||
-              "anonymous",
-
-            conversationId:
-              currentConversation,
-
-            history:
-              conversationMessages.slice(-20)
-          })
-        }
-      );
-
-    return safeJSON(response);
-  }
-
-
-  // ---------------------------------------------------
-  // IMAGE / CAMERA PHOTO
-  // ---------------------------------------------------
-
-  if (isImage) {
-
-    const base64 =
-      await fileToBase64(file);
-
-    const response =
-      await fetch(
-        API + "/v1/vision",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            message:
-              userMessage ||
-              "Analyze this image carefully.",
-
-            image:
-              base64,
-
-            fileName:
-              file.name,
-
-            userId:
-              currentUser?.uid ||
-              "anonymous",
-
-            conversationId:
-              currentConversation
-          })
-        }
-      );
-
-    return safeJSON(response);
-  }
-
-
-  // ---------------------------------------------------
-  // PDF
-  // ---------------------------------------------------
-
-  if (isPDF) {
-
-    const base64 =
-      await fileToBase64(file);
-
-    const response =
-      await fetch(
-        API + "/v1/pdf",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            action: "analyze",
-
-            message:
-              userMessage ||
-              "Analyze this PDF.",
-
-            file:
-              base64,
-
-            fileName:
-              file.name,
-
-            userId:
-              currentUser?.uid ||
-              "anonymous",
-
-            conversationId:
-              currentConversation
-          })
-        }
-      );
-
-    return safeJSON(response);
-  }
-
-
-  throw new Error(
-    "This file type is not supported."
-  );
-}
-
-
-// =====================================================
-// IMAGE GENERATION
-// =====================================================
-
-if (imageButton) {
-
-  imageButton.onclick =
-    generateImage;
-}
-
-
-async function generateImage() {
-
-  const prompt =
-    messageInput?.value.trim();
-
-  if (!prompt) {
-
-    messageInput?.focus();
-
-    return;
-  }
-
-  messageInput.value = "";
-
-  resizeTextarea();
-
-  welcome?.classList.add(
-    "hidden"
-  );
-
-  addMessage(
-    "user",
-    "Generate an image: " +
-    prompt
-  );
-
-  const loading =
-    addLoadingMessage();
-
-  try {
-
-    const response =
-      await fetch(
-        API + "/v1/image",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            prompt
-          })
-        }
-      );
-
-    loading.remove();
-
-    const type =
-      response.headers.get(
-        "content-type"
-      ) || "";
-
-    // -----------------------------------------------
-    // REAL IMAGE
-    // -----------------------------------------------
-
-    if (
-      response.ok &&
-      type.includes("image/")
-    ) {
-
-      const blob =
-        await response.blob();
-
-      const imageURL =
-        URL.createObjectURL(blob);
-
-      const wrapper =
-        addMessage(
-          "ai",
-          "Generated image"
-        );
-
-      const image =
-        document.createElement("img");
-
-      image.src = imageURL;
-
-      image.alt =
-        "Generated by LOGIC-LEAF";
-
-      image.style.width =
-        "100%";
-
-      image.style.maxWidth =
-        "720px";
-
-      image.style.display =
-        "block";
-
-      image.style.borderRadius =
-        "16px";
-
-      image.style.marginTop =
-        "12px";
-
-      wrapper
-        .querySelector(
-          ".message-inner"
-        )
-        ?.appendChild(image);
-
-      return;
-    }
-
-    // -----------------------------------------------
-    // JSON ERROR / RESPONSE
-    // -----------------------------------------------
-
-    const data =
-      await safeJSON(response);
-
-    if (!response.ok || !data?.ok) {
-
-      addMessage(
-        "ai",
-        data?.error ||
-        "Image generation is unavailable. Check the Cloudflare AI image model/binding."
-      );
-
-      return;
-    }
-
-    if (data.image) {
-
-      const wrapper =
-        addMessage(
-          "ai",
-          "Generated image"
-        );
-
-      const image =
-        document.createElement("img");
-
-      image.src =
-        data.image;
-
-      image.style.width =
-        "100%";
-
-      image.style.maxWidth =
-        "720px";
-
-      image.style.borderRadius =
-        "16px";
-
-      image.style.marginTop =
-        "12px";
-
-      wrapper
-        .querySelector(
-          ".message-inner"
-        )
-        ?.appendChild(image);
-
-      return;
-    }
-
-    addMessage(
-      "ai",
-      data.answer ||
-      "The image model returned no image."
-    );
-
-  } catch (error) {
-
-    loading.remove();
-
-    console.error(
-      "IMAGE ERROR:",
-      error
-    );
-
-    addMessage(
-      "ai",
-      "Image generation failed.\n\n" +
-      error.message
-    );
-  }
-}
-
-
-// =====================================================
-// FILE BUTTON
-// =====================================================
-
-if (attachButton) {
-
-  attachButton.onclick = () => {
-
-    fileInput?.click();
-  };
-}
-
-
-// =====================================================
-// FILE INPUT
-// =====================================================
-
-if (fileInput) {
-
-  fileInput.onchange =
-    event => {
-
-      const file =
-        event.target.files?.[0];
-
-      if (!file) return;
-
-      selectedFile = file;
-
-      showFilePreview(file);
-
-      // Do NOT automatically dump the file
-      // into the text box.
-      //
-      // This allows:
-      // - PDF upload
-      // - image upload
-      // - camera image
-      // - code files
-      // - normal documents
-    };
-}
-
-
-// =====================================================
-// FILE PREVIEW
-// =====================================================
-
-function showFilePreview(file) {
-
-  if (!filePreview) return;
-
-  filePreview.classList.remove(
-    "hidden"
-  );
-
-  filePreview.innerHTML = "";
-
-  const wrapper =
-    document.createElement("div");
-
-  wrapper.style.display =
-    "flex";
-
-  wrapper.style.alignItems =
-    "center";
-
-  wrapper.style.gap =
-    "8px";
-
-  const name =
-    document.createElement("span");
-
-  name.textContent =
-    `Attached: ${file.name}`;
-
-  const remove =
-    document.createElement("button");
-
-  remove.type = "button";
-
-  remove.textContent = "×";
-
-  remove.style.border = "0";
-
-  remove.style.background =
-    "transparent";
-
-  remove.style.color =
-    "inherit";
-
-  remove.style.cursor =
-    "pointer";
-
-  remove.onclick =
-    clearAttachment;
-
-  wrapper.appendChild(name);
-  wrapper.appendChild(remove);
-
-  filePreview.appendChild(wrapper);
-}
-
-
-// =====================================================
-// CLEAR FILE
-// =====================================================
-
-function clearAttachment() {
-
-  selectedFile = null;
-
-  if (fileInput) {
-    fileInput.value = "";
-  }
-
-  if (filePreview) {
-
-    filePreview.innerHTML = "";
-
-    filePreview.classList.add(
-      "hidden"
-    );
-  }
-}
-
-
-// =====================================================
-// CAMERA SUPPORT
-// =====================================================
-//
-// Your HTML camera button should use:
-// id="cameraButton"
-// and the hidden input:
-//
-// <input
-//   id="cameraInput"
-//   type="file"
-//   accept="image/*"
-//   capture="environment"
-// >
-//
-
-const cameraButton =
-  $("cameraButton");
-
-const cameraInput =
-  $("cameraInput");
-
-if (cameraButton) {
-
-  cameraButton.onclick = () => {
-
-    cameraInput?.click();
-  };
-}
-
-if (cameraInput) {
-
-  cameraInput.onchange =
-    event => {
-
-      const file =
-        event.target.files?.[0];
-
-      if (!file) return;
-
-      selectedFile = file;
-
-      showFilePreview(file);
-    };
-}
-
-
-// =====================================================
-// PDF GENERATION
-// =====================================================
-//
-// HTML should contain:
-// id="pdfButton"
-//
-
-const pdfButton =
-  $("pdfButton");
-
-if (pdfButton) {
-
-  pdfButton.onclick =
-    generatePDF;
-}
-
-
-async function generatePDF() {
-
-  const prompt =
-    messageInput?.value.trim();
-
-  if (!prompt) {
-
-    messageInput?.focus();
-
-    return;
-  }
-
-  messageInput.value = "";
-
-  resizeTextarea();
-
-  welcome?.classList.add(
-    "hidden"
-  );
-
-  addMessage(
-    "user",
-    "Create PDF: " +
-    prompt
-  );
-
-  const loading =
-    addLoadingMessage();
-
-  try {
-
-    const response =
-      await fetch(
-        API + "/v1/pdf",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            action:
-              "generate",
-
-            prompt,
-
-            title:
-              "LOGIC-LEAF Document",
-
-            userId:
-              currentUser?.uid ||
-              "anonymous"
-          })
-        }
-      );
-
-    loading.remove();
-
-    const type =
-      response.headers.get(
-        "content-type"
-      ) || "";
-
-    if (
-      response.ok &&
-      type.includes("text/html")
-    ) {
-
-      const html =
-        await response.text();
-
-      const blob =
-        new Blob(
-          [html],
-          {
-            type:
-              "text/html;charset=utf-8"
-          }
-        );
-
-      const url =
-        URL.createObjectURL(blob);
-
-      const wrapper =
-        addMessage(
-          "ai",
-          "PDF document created."
-        );
-
-      const button =
-        document.createElement(
-          "a"
-        );
-
-      button.href = url;
-
-      button.download =
-        "logic-leaf-document.html";
-
-      button.textContent =
-        "Open document";
-
-      button.style.display =
-        "inline-block";
-
-      button.style.marginTop =
-        "12px";
-
-      wrapper
-        .querySelector(
-          ".message-inner"
-        )
-        ?.appendChild(button);
-
-      return;
-    }
-
-    const data =
-      await safeJSON(response);
-
-    addMessage(
-      "ai",
-      data?.answer ||
-      data?.error ||
-      "PDF generation failed."
-    );
-
-  } catch (error) {
-
-    loading.remove();
-
-    addMessage(
-      "ai",
-      "PDF generation failed.\n\n" +
-      error.message
-    );
-  }
-}
-
-
-// =====================================================
-// MESSAGE RENDERING
-// =====================================================
+// ============================================================
+// ADD MESSAGE
+// ============================================================
 
 function addMessage(
   role,
   text
 ) {
 
+  if (!exists(messages))
+    return null;
+
   const wrapper =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   wrapper.className =
-    `message ${role}`;
+    "message " + role;
 
   const inner =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   inner.className =
     "message-inner";
 
   const label =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   label.className =
     "message-label";
@@ -1116,21 +540,33 @@ function addMessage(
       : "LOGIC-LEAF";
 
   const content =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
   content.className =
     "message-content";
 
   content.innerHTML =
-    formatText(text);
+    formatText(
+      text
+    );
 
-  inner.appendChild(label);
+  inner.appendChild(
+    label
+  );
 
-  inner.appendChild(content);
+  inner.appendChild(
+    content
+  );
 
-  wrapper.appendChild(inner);
+  wrapper.appendChild(
+    inner
+  );
 
-  messages?.appendChild(wrapper);
+  messages.appendChild(
+    wrapper
+  );
 
   scrollBottom();
 
@@ -1138,9 +574,13 @@ function addMessage(
 }
 
 
+// ============================================================
+// AI MESSAGE
+// ============================================================
+
 function addAIMessage(
   text,
-  sources = []
+  sources
 ) {
 
   const wrapper =
@@ -1150,77 +590,58 @@ function addAIMessage(
     );
 
   if (
-    Array.isArray(sources) &&
-    sources.length
+    !wrapper ||
+    !sources ||
+    !sources.length
   ) {
-
-    const sourceBox =
-      document.createElement(
-        "div"
-      );
-
-    sourceBox.className =
-      "sources";
-
-    sources.forEach(
-      source => {
-
-        const item =
-          document.createElement(
-            "div"
-          );
-
-        item.className =
-          "source";
-
-        const title =
-          source.source ||
-          source.title ||
-          "Indexed source";
-
-        item.textContent =
-          `Source ${source.id || ""}: ${title}`;
-
-        if (source.url) {
-
-          item.style.cursor =
-            "pointer";
-
-          item.title =
-            source.url;
-
-          item.onclick = () => {
-
-            window.open(
-              source.url,
-              "_blank",
-              "noopener"
-            );
-          };
-        }
-
-        sourceBox.appendChild(
-          item
-        );
-      }
-    );
-
-    wrapper
-      .querySelector(
-        ".message-inner"
-      )
-      ?.appendChild(
-        sourceBox
-      );
+    return;
   }
 
-  return wrapper;
+  const sourceBox =
+    document.createElement(
+      "div"
+    );
+
+  sourceBox.className =
+    "sources";
+
+  sources.forEach(
+    source => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "source";
+
+      const name =
+        source.source ||
+        "Indexed source";
+
+      item.textContent =
+        `Source ${source.id}: ${name}`;
+
+      sourceBox.appendChild(
+        item
+      );
+    }
+  );
+
+  wrapper
+    .querySelector(
+      ".message-inner"
+    )
+    ?.appendChild(
+      sourceBox
+    );
 }
 
 
-// =====================================================
+// ============================================================
 // LOADING
-// =====================================================
+// ============================================================
 
 function addLoadingMessage() {
 
@@ -1239,14 +660,14 @@ function addLoadingMessage() {
       </div>
 
       <div class="message-content">
-        <span class="thinking-dots">
-          Thinking...
+        <span class="thinking">
+          Thinking…
         </span>
       </div>
     </div>
   `;
 
-  messages?.appendChild(
+  messages.appendChild(
     wrapper
   );
 
@@ -1256,39 +677,31 @@ function addLoadingMessage() {
 }
 
 
-// =====================================================
-// MARKDOWN FORMATTER
-// =====================================================
+// ============================================================
+// FORMAT
+// ============================================================
 
-function formatText(text) {
+function formatText(
+  text
+) {
 
   let safe =
     escapeHTML(
-      String(text ?? "")
+      String(text)
     );
 
   // Code blocks
   safe =
     safe.replace(
-      /```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g,
+      /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g,
       (_, language, code) => {
 
-        const lang =
-          language
-            ? `<div style="font-size:10px;opacity:.6;margin-bottom:7px">${language}</div>`
-            : "";
-
         return `
-          <pre>${lang}<code>${code}</code></pre>
+          <pre>
+            <code>${code}</code>
+          </pre>
         `;
       }
-    );
-
-  // Bold
-  safe =
-    safe.replace(
-      /\*\*(.*?)\*\*/g,
-      "<strong>$1</strong>"
     );
 
   // Inline code
@@ -1296,6 +709,13 @@ function formatText(text) {
     safe.replace(
       /`([^`]+)`/g,
       "<code>$1</code>"
+    );
+
+  // Bold
+  safe =
+    safe.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
     );
 
   // Headings
@@ -1317,7 +737,7 @@ function formatText(text) {
       "<h2>$1</h2>"
     );
 
-  // Bullet points
+  // Bullets
   safe =
     safe.replace(
       /^\s*[-*]\s+(.+)$/gm,
@@ -1341,12 +761,9 @@ function formatText(text) {
 }
 
 
-// =====================================================
-// ESCAPE HTML
-// =====================================================
-
-function escapeHTML(text) {
-
+function escapeHTML(
+  text
+) {
   return String(text)
     .replace(
       /&/g,
@@ -1371,41 +788,27 @@ function escapeHTML(text) {
 }
 
 
-// =====================================================
-// TEXTAREA
-// =====================================================
-
-function resizeTextarea() {
-
-  if (!messageInput) return;
-
-  messageInput.style.height =
-    "auto";
-
-  messageInput.style.height =
-    Math.min(
-      messageInput.scrollHeight,
-      180
-    ) + "px";
-}
-
-
-// =====================================================
+// ============================================================
 // SCROLL
-// =====================================================
+// ============================================================
 
 function scrollBottom() {
 
-  if (!chat) return;
+  const chat =
+    document.getElementById(
+      "chat"
+    );
 
-  chat.scrollTop =
-    chat.scrollHeight;
+  if (chat) {
+    chat.scrollTop =
+      chat.scrollHeight;
+  }
 }
 
 
-// =====================================================
+// ============================================================
 // QUICK PROMPTS
-// =====================================================
+// ============================================================
 
 document
   .querySelectorAll(
@@ -1414,274 +817,878 @@ document
   .forEach(
     button => {
 
-      button.onclick = () => {
+      button.onclick =
+        () => {
 
-        if (!messageInput) return;
+          if (
+            !exists(messageInput)
+          )
+            return;
 
-        messageInput.value =
-          button.dataset.prompt ||
-          button.textContent.trim();
+          messageInput.value =
+            button.dataset.prompt ||
+            button.textContent ||
+            "";
 
-        resizeTextarea();
+          resizeTextarea();
 
-        messageInput.focus();
-      };
+          messageInput.focus();
+        };
     }
   );
 
 
-// =====================================================
-// CHAT HISTORY
-// =====================================================
+// ============================================================
+// FILE BUTTON
+// ============================================================
 
-async function loadHistory() {
+if (exists(attachButton)) {
 
-  if (!currentUser) return;
-
-  try {
-
-    const response =
-      await fetch(
-        API + "/v1/history",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            userId:
-              currentUser.uid
-          })
-        }
-      );
-
-    const data =
-      await safeJSON(response);
-
-    if (!data?.ok) return;
-
-    if (!chatHistory) return;
-
-    chatHistory.innerHTML = "";
-
-    (data.chats || [])
-      .forEach(
-        chatItem => {
-
-          const item =
-            document.createElement(
-              "div"
-            );
-
-          item.className =
-            "history-item";
-
-          item.textContent =
-            chatItem.title ||
-            "New conversation";
-
-          item.onclick =
-            () =>
-              loadConversation(
-                chatItem.conversation_id
-              );
-
-          chatHistory.appendChild(
-            item
-          );
-        }
-      );
-
-  } catch (error) {
-
-    console.warn(
-      "History unavailable:",
-      error
-    );
-  }
-}
-
-
-// =====================================================
-// LOAD CONVERSATION
-// =====================================================
-
-async function loadConversation(
-  conversationId
-) {
-
-  try {
-
-    const response =
-      await fetch(
-        API + "/v1/conversation",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            conversationId
-          })
-        }
-      );
-
-    const data =
-      await safeJSON(response);
-
-    if (!data?.ok) return;
-
-    currentConversation =
-      conversationId;
-
-    conversationMessages = [];
-
-    messages.innerHTML = "";
-
-    welcome?.classList.add(
-      "hidden"
-    );
-
-    (data.messages || [])
-      .forEach(
-        message => {
-
-          const role =
-            message.role ===
-            "assistant"
-              ? "ai"
-              : "user";
-
-          addMessage(
-            role,
-            message.content
-          );
-
-          conversationMessages.push({
-            role:
-              message.role,
-            content:
-              message.content
-          });
-        }
-      );
-
-    if (window.innerWidth < 700) {
-
-      sidebar?.classList.add(
-        "closed"
-      );
-    }
-
-  } catch (error) {
-
-    console.error(
-      "Conversation error:",
-      error
-    );
-  }
-}
-
-
-// =====================================================
-// HISTORY SEARCH
-// =====================================================
-
-if (chatSearch) {
-
-  chatSearch.oninput =
+  attachButton.onclick =
     () => {
 
-      const query =
-        chatSearch.value
-          .toLowerCase()
-          .trim();
-
-      document
-        .querySelectorAll(
-          ".history-item"
-        )
-        .forEach(
-          item => {
-
-            item.style.display =
-              item.textContent
-                .toLowerCase()
-                .includes(query)
-                ? ""
-                : "none";
-          }
-        );
+      fileInput?.click();
     };
 }
 
 
-// =====================================================
+// ============================================================
+// FILE INPUT
+// ============================================================
+
+if (exists(fileInput)) {
+
+  fileInput.onchange =
+    async event => {
+
+      const file =
+        event.target.files?.[0];
+
+      if (!file)
+        return;
+
+      selectedFile =
+        file;
+
+      if (filePreview) {
+        filePreview.textContent =
+          `Attached: ${file.name}`;
+      }
+
+      // ------------------------------------------------------
+      // IMAGE
+      // ------------------------------------------------------
+
+      if (
+        file.type.startsWith(
+          "image/"
+        )
+      ) {
+
+        await prepareImage(
+          file
+        );
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // TEXT / CODE
+      // ------------------------------------------------------
+
+      if (
+        file.type.startsWith(
+          "text/"
+        ) ||
+        /\.(js|css|html|py|java|cpp|c|md|json|csv|txt|xml)$/i
+          .test(file.name)
+      ) {
+
+        try {
+
+          const text =
+            await file.text();
+
+          messageInput.value =
+            `Please analyze this file.
+
+FILE: ${file.name}
+
+${text}`;
+
+          resizeTextarea();
+
+          messageInput.focus();
+
+        } catch {
+
+          messageInput.value =
+            `Please analyze ${file.name}.`;
+
+          resizeTextarea();
+        }
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // PDF
+      // ------------------------------------------------------
+
+      if (
+        file.type ===
+          "application/pdf" ||
+        /\.pdf$/i.test(
+          file.name
+        )
+      ) {
+
+        messageInput.value =
+          `Please analyze the attached PDF named "${file.name}".`;
+
+        resizeTextarea();
+
+        messageInput.focus();
+
+        return;
+      }
+
+      messageInput.value =
+        `Please analyze the attached file: ${file.name}`;
+
+      resizeTextarea();
+    };
+}
+
+
+// ============================================================
+// IMAGE → VISION
+// ============================================================
+
+async function prepareImage(
+  file
+) {
+
+  try {
+
+    const dataURL =
+      await fileToDataURL(
+        file
+      );
+
+    const preview =
+      addImagePreview(
+        dataURL,
+        file.name
+      );
+
+    if (!preview)
+      return;
+
+    // Ask user what to do with image.
+    messageInput.value =
+      "Describe this image and explain what you see.";
+
+    messageInput.dataset.imageData =
+      dataURL;
+
+    resizeTextarea();
+
+    messageInput.focus();
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+    addMessage(
+      "ai",
+      "I couldn't read that image."
+    );
+  }
+}
+
+
+// ============================================================
+// IMAGE PREVIEW
+// ============================================================
+
+function addImagePreview(
+  dataURL,
+  fileName
+) {
+
+  if (!exists(messages))
+    return null;
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+  wrapper.className =
+    "message user";
+
+  const inner =
+    document.createElement(
+      "div"
+    );
+
+  inner.className =
+    "message-inner";
+
+  const label =
+    document.createElement(
+      "div"
+    );
+
+  label.className =
+    "message-label";
+
+  label.textContent =
+    "You";
+
+  const content =
+    document.createElement(
+      "div"
+    );
+
+  content.className =
+    "message-content";
+
+  const image =
+    document.createElement(
+      "img"
+    );
+
+  image.src =
+    dataURL;
+
+  image.alt =
+    fileName ||
+    "Attached image";
+
+  image.style.maxWidth =
+    "100%";
+
+  image.style.maxHeight =
+    "400px";
+
+  image.style.borderRadius =
+    "16px";
+
+  content.appendChild(
+    image
+  );
+
+  inner.appendChild(
+    label
+  );
+
+  inner.appendChild(
+    content
+  );
+
+  wrapper.appendChild(
+    inner
+  );
+
+  messages.appendChild(
+    wrapper
+  );
+
+  scrollBottom();
+
+  return wrapper;
+}
+
+
+// ============================================================
+// FILE TO DATA URL
+// ============================================================
+
+function fileToDataURL(
+  file
+) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        () =>
+          resolve(
+            reader.result
+          );
+
+      reader.onerror =
+        reject;
+
+      reader.readAsDataURL(
+        file
+      );
+    }
+  );
+}
+
+
+// ============================================================
+// SEND IMAGE TO VISION
+// ============================================================
+
+async function analyzeImage() {
+
+  const image =
+    messageInput?.dataset
+      ?.imageData;
+
+  if (!image)
+    return false;
+
+  const prompt =
+    messageInput.value.trim() ||
+    "Describe this image.";
+
+  messageInput.value =
+    "";
+
+  delete messageInput.dataset
+    .imageData;
+
+  welcome?.classList.add(
+    "hidden"
+  );
+
+  addMessage(
+    "user",
+    prompt
+  );
+
+  const loading =
+    addLoadingMessage();
+
+  try {
+
+    const response =
+      await fetch(
+        API + "/v1/vision",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify({
+            image,
+            prompt
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    loading.remove();
+
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
+
+      addMessage(
+        "ai",
+        data.error ||
+        "Vision request failed."
+      );
+
+      return true;
+    }
+
+    addMessage(
+      "ai",
+      data.answer
+    );
+
+  } catch {
+
+    loading.remove();
+
+    addMessage(
+      "ai",
+      "Unable to analyze the image."
+    );
+  }
+
+  return true;
+}
+
+
+// ============================================================
+// OVERRIDE SEND FOR IMAGE
+// ============================================================
+
+const originalSend =
+  sendMessage;
+
+async function smartSend() {
+
+  if (
+    messageInput?.dataset
+      ?.imageData
+  ) {
+
+    await analyzeImage();
+
+    return;
+  }
+
+  await originalSend();
+}
+
+if (exists(sendButton)) {
+  sendButton.onclick =
+    smartSend;
+}
+
+
+// ============================================================
+// IMAGE GENERATION
+// ============================================================
+
+if (exists(imageButton)) {
+
+  imageButton.onclick =
+    async () => {
+
+      const prompt =
+        messageInput.value.trim();
+
+      if (!prompt) {
+
+        messageInput.focus();
+
+        return;
+      }
+
+      messageInput.value =
+        "";
+
+      resizeTextarea();
+
+      welcome?.classList.add(
+        "hidden"
+      );
+
+      addMessage(
+        "user",
+        "Generate an image: " +
+        prompt
+      );
+
+      const loading =
+        addLoadingMessage();
+
+      try {
+
+        const response =
+          await fetch(
+            API + "/v1/image",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+                  prompt
+                })
+            }
+          );
+
+        const contentType =
+          response.headers.get(
+            "content-type"
+          ) || "";
+
+        if (
+          !response.ok
+        ) {
+
+          const data =
+            await response
+              .json()
+              .catch(
+                () => ({})
+              );
+
+          loading.remove();
+
+          addMessage(
+            "ai",
+            data.error ||
+            "Image generation failed."
+          );
+
+          return;
+        }
+
+        // --------------------------------------------------
+        // DIRECT IMAGE
+        // --------------------------------------------------
+
+        if (
+          contentType.includes(
+            "image/"
+          )
+        ) {
+
+          const blob =
+            await response.blob();
+
+          const imageURL =
+            URL.createObjectURL(
+              blob
+            );
+
+          loading.remove();
+
+          addGeneratedImage(
+            imageURL
+          );
+
+          return;
+        }
+
+        // --------------------------------------------------
+        // JSON IMAGE
+        // --------------------------------------------------
+
+        const data =
+          await response.json();
+
+        loading.remove();
+
+        if (
+          data.image
+        ) {
+
+          let imageURL =
+            data.image;
+
+          if (
+            imageURL.startsWith(
+              "data:"
+            )
+          ) {
+
+            addGeneratedImage(
+              imageURL
+            );
+
+          } else {
+
+            addGeneratedImage(
+              "data:image/png;base64," +
+              imageURL
+            );
+          }
+
+          return;
+        }
+
+        addMessage(
+          "ai",
+          "The image model did not return an image."
+        );
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+        loading.remove();
+
+        addMessage(
+          "ai",
+          "Image generation request failed."
+        );
+      }
+    };
+}
+
+
+// ============================================================
+// GENERATED IMAGE
+// ============================================================
+
+function addGeneratedImage(
+  src
+) {
+
+  const wrapper =
+    addMessage(
+      "ai",
+      "Generated image:"
+    );
+
+  if (!wrapper)
+    return;
+
+  const image =
+    document.createElement(
+      "img"
+    );
+
+  image.src =
+    src;
+
+  image.alt =
+    "Generated by LOGIC-LEAF";
+
+  image.style.width =
+    "100%";
+
+  image.style.maxWidth =
+    "800px";
+
+  image.style.borderRadius =
+    "18px";
+
+  image.style.display =
+    "block";
+
+  image.style.marginTop =
+    "12px";
+
+  wrapper
+    .querySelector(
+      ".message-inner"
+    )
+    ?.appendChild(
+      image
+    );
+}
+
+
+// ============================================================
+// PDF GENERATION
+// ============================================================
+
+async function generatePDF() {
+
+  const prompt =
+    messageInput.value.trim();
+
+  if (!prompt)
+    return;
+
+  messageInput.value =
+    "";
+
+  resizeTextarea();
+
+  addMessage(
+    "user",
+    "Create a PDF: " +
+    prompt
+  );
+
+  const loading =
+    addLoadingMessage();
+
+  try {
+
+    const response =
+      await fetch(
+        API + "/v1/pdf",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              prompt,
+
+              title:
+                "LOGIC-LEAF Document"
+            })
+        }
+      );
+
+    const html =
+      await response.text();
+
+    loading.remove();
+
+    if (!response.ok) {
+
+      addMessage(
+        "ai",
+        "PDF generation failed."
+      );
+
+      return;
+    }
+
+    const blob =
+      new Blob(
+        [html],
+        {
+          type:
+            "text/html"
+        }
+      );
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    link.href =
+      url;
+
+    link.target =
+      "_blank";
+
+    link.rel =
+      "noopener";
+
+    link.textContent =
+      "Open generated document";
+
+    link.className =
+      "pdf-link";
+
+    const wrapper =
+      addMessage(
+        "ai",
+        "Your document is ready."
+      );
+
+    wrapper
+      ?.querySelector(
+        ".message-content"
+      )
+      ?.appendChild(
+        document.createElement(
+          "br"
+        )
+      );
+
+    wrapper
+      ?.querySelector(
+        ".message-content"
+      )
+      ?.appendChild(
+        link
+      );
+
+  } catch {
+
+    loading.remove();
+
+    addMessage(
+      "ai",
+      "PDF generation failed."
+    );
+  }
+}
+
+
+// ============================================================
+// OPTIONAL PDF BUTTON
+// ============================================================
+
+const pdfButton =
+  $("pdfButton");
+
+if (pdfButton) {
+  pdfButton.onclick =
+    generatePDF;
+}
+
+
+// ============================================================
 // AUTH
-// =====================================================
+// ============================================================
 
-if (authButton) {
+if (exists(authButton)) {
 
-  authButton.onclick = () => {
+  authButton.onclick =
+    () => {
 
-    if (currentUser) {
+      if (currentUser) {
 
-      openModal(
-        settingsModal
-      );
+        openModal(
+          settingsModal
+        );
 
-    } else {
+      } else {
 
-      openModal(
-        authModal
-      );
-    }
-  };
+        openModal(
+          authModal
+        );
+      }
+    };
 }
 
 
-if (profileButton) {
+if (exists(profileButton)) {
 
-  profileButton.onclick = () => {
+  profileButton.onclick =
+    () => {
 
-    if (currentUser) {
+      if (currentUser) {
 
-      openModal(
-        settingsModal
-      );
+        openModal(
+          settingsModal
+        );
 
-    } else {
+      } else {
 
-      openModal(
-        authModal
-      );
-    }
-  };
+        openModal(
+          authModal
+        );
+      }
+    };
 }
 
 
-// =====================================================
-// GOOGLE LOGIN
-// =====================================================
+// ============================================================
+// GOOGLE
+// ============================================================
 
-if (googleAuth) {
+if (exists(googleAuth)) {
 
   googleAuth.onclick =
     async () => {
 
       authStatus.textContent =
-        "Opening Google...";
+        "Opening Google…";
 
       try {
 
         const provider =
-          new firebase.auth.GoogleAuthProvider();
+          new firebase.auth
+            .GoogleAuthProvider();
 
         await auth.signInWithPopup(
           provider
@@ -1698,17 +1705,18 @@ if (googleAuth) {
         );
 
         authStatus.textContent =
-          error.message;
+          error.message ||
+          "Google sign-in failed.";
       }
     };
 }
 
 
-// =====================================================
-// EMAIL LOGIN
-// =====================================================
+// ============================================================
+// EMAIL
+// ============================================================
 
-if (emailAuth) {
+if (exists(emailAuth)) {
 
   emailAuth.onclick =
     async () => {
@@ -1719,7 +1727,10 @@ if (emailAuth) {
       const password =
         authPassword.value;
 
-      if (!email || !password) {
+      if (
+        !email ||
+        !password
+      ) {
 
         authStatus.textContent =
           "Enter email and password.";
@@ -1727,55 +1738,57 @@ if (emailAuth) {
         return;
       }
 
-      authStatus.textContent =
-        "Please wait...";
-
       try {
 
         if (
-          authMode === "login"
+          authMode ===
+          "login"
         ) {
 
-          await auth.signInWithEmailAndPassword(
-            email,
-            password
-          );
+          await auth
+            .signInWithEmailAndPassword(
+              email,
+              password
+            );
 
         } else {
 
-          await auth.createUserWithEmailAndPassword(
-            email,
-            password
-          );
+          await auth
+            .createUserWithEmailAndPassword(
+              email,
+              password
+            );
         }
 
         closeModal(
           authModal
         );
 
-        authStatus.textContent =
-          "";
-
       } catch (error) {
 
         authStatus.textContent =
-          error.message;
+          error.message ||
+          "Authentication failed.";
       }
     };
 }
 
 
-// =====================================================
-// SWITCH AUTH
-// =====================================================
+// ============================================================
+// AUTH MODE
+// ============================================================
 
-if (switchAuth) {
+let authMode =
+  "login";
+
+if (exists(switchAuth)) {
 
   switchAuth.onclick =
     () => {
 
       if (
-        authMode === "login"
+        authMode ===
+        "login"
       ) {
 
         authMode =
@@ -1814,81 +1827,309 @@ if (switchAuth) {
 }
 
 
-// =====================================================
+// ============================================================
 // AUTH STATE
-// =====================================================
+// ============================================================
 
-auth.onAuthStateChanged(
-  async user => {
+if (auth) {
 
-    currentUser =
-      user;
+  auth.onAuthStateChanged(
+    async user => {
 
-    if (user) {
+      currentUser =
+        user;
 
-      const name =
-        user.displayName ||
-        user.email?.split("@")[0] ||
-        "User";
+      if (user) {
 
-      if (accountName)
-        accountName.textContent =
-          name;
+        const name =
+          user.displayName ||
+          user.email
+            ?.split("@")[0] ||
+          "User";
 
-      if (accountEmail)
-        accountEmail.textContent =
-          user.email || "";
+        if (accountName)
+          accountName.textContent =
+            name;
 
-      if (avatar)
-        avatar.textContent =
-          name.charAt(0).toUpperCase();
+        if (accountEmail)
+          accountEmail.textContent =
+            user.email || "";
 
-      if (profileButton)
-        profileButton.textContent =
-          name.charAt(0).toUpperCase();
+        if (avatar)
+          avatar.textContent =
+            name
+              .charAt(0)
+              .toUpperCase();
 
-      if (authButton)
-        authButton.textContent =
-          "Account";
+        if (profileButton)
+          profileButton.textContent =
+            name
+              .charAt(0)
+              .toUpperCase();
 
-      await loadHistory();
+        if (authButton)
+          authButton.textContent =
+            "Account";
 
-    } else {
+        await loadHistory();
 
-      if (accountName)
-        accountName.textContent =
-          "Guest";
+      } else {
 
-      if (accountEmail)
-        accountEmail.textContent =
-          "Not signed in";
+        if (accountName)
+          accountName.textContent =
+            "Guest";
 
-      if (avatar)
-        avatar.textContent = "?";
+        if (accountEmail)
+          accountEmail.textContent =
+            "Not signed in";
 
-      if (profileButton)
-        profileButton.textContent = "?";
+        if (avatar)
+          avatar.textContent =
+            "?";
 
-      if (authButton)
-        authButton.textContent =
-          "Sign in";
+        if (profileButton)
+          profileButton.textContent =
+            "?";
+
+        if (authButton)
+          authButton.textContent =
+            "Sign in";
+      }
     }
+  );
+}
+
+
+// ============================================================
+// HISTORY
+// ============================================================
+
+async function loadHistory() {
+
+  if (!currentUser)
+    return;
+
+  if (!chatHistory)
+    return;
+
+  try {
+
+    const response =
+      await fetch(
+        API + "/v1/history",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              userId:
+                currentUser.uid
+            })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    chatHistory.innerHTML =
+      "";
+
+    if (
+      !data.ok ||
+      !Array.isArray(
+        data.chats
+      )
+    ) {
+      return;
+    }
+
+    data.chats.forEach(
+      chat => {
+
+        const item =
+          document.createElement(
+            "div"
+          );
+
+        item.className =
+          "history-item";
+
+        item.textContent =
+          chat.title ||
+          "New conversation";
+
+        item.dataset.id =
+          chat.conversation_id;
+
+        item.onclick =
+          () =>
+            loadConversation(
+              chat.conversation_id
+            );
+
+        chatHistory.appendChild(
+          item
+        );
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "HISTORY",
+      error
+    );
   }
-);
+}
 
 
-// =====================================================
+// ============================================================
+// LOAD CONVERSATION
+// ============================================================
+
+async function loadConversation(
+  conversationId
+) {
+
+  if (!currentUser)
+    return;
+
+  try {
+
+    const response =
+      await fetch(
+        API + "/v1/conversation",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              conversationId,
+              userId:
+                currentUser.uid
+            })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !data.ok
+    )
+      return;
+
+    currentConversation =
+      conversationId;
+
+    conversationMessages =
+      [];
+
+    messages.innerHTML =
+      "";
+
+    welcome?.classList.add(
+      "hidden"
+    );
+
+    data.messages.forEach(
+      message => {
+
+        const role =
+          message.role ===
+          "assistant"
+            ? "ai"
+            : "user";
+
+        addMessage(
+          role,
+          message.content
+        );
+
+        conversationMessages.push({
+          role:
+            message.role,
+          content:
+            message.content
+        });
+      }
+    );
+
+    if (
+      window.innerWidth < 700
+    ) {
+      sidebar?.classList.add(
+        "closed"
+      );
+    }
+
+  } catch (error) {
+
+    console.error(
+      "CONVERSATION",
+      error
+    );
+  }
+}
+
+
+// ============================================================
+// SEARCH HISTORY
+// ============================================================
+
+if (chatSearch) {
+
+  chatSearch.oninput =
+    () => {
+
+      const query =
+        chatSearch.value
+          .toLowerCase()
+          .trim();
+
+      document
+        .querySelectorAll(
+          ".history-item"
+        )
+        .forEach(
+          item => {
+
+            item.style.display =
+              item.textContent
+                .toLowerCase()
+                .includes(
+                  query
+                )
+                ? ""
+                : "none";
+          }
+        );
+    };
+}
+
+
+// ============================================================
 // API KEY
-// =====================================================
+// ============================================================
 
 if (apiButton) {
 
   apiButton.onclick =
     () => {
 
-      if (apiOutput) {
-        apiOutput.textContent = "";
-      }
+      if (apiOutput)
+        apiOutput.textContent =
+          "";
 
       openModal(
         apiModal
@@ -1913,28 +2154,31 @@ if (createApiKey) {
       try {
 
         const token =
-          await currentUser.getIdToken();
+          await currentUser
+            .getIdToken();
 
         const response =
           await fetch(
-            API + "/v1/keys/create",
+            API +
+            "/v1/keys/create",
             {
               method: "POST",
 
               headers: {
                 Authorization:
-                  "Bearer " + token
+                  "Bearer " +
+                  token
               }
             }
           );
 
         const data =
-          await safeJSON(response);
+          await response.json();
 
-        if (!data?.ok) {
+        if (!data.ok) {
 
           apiOutput.textContent =
-            data?.error ||
+            data.error ||
             "Could not create API key.";
 
           return;
@@ -1943,7 +2187,7 @@ if (createApiKey) {
         apiOutput.textContent =
           data.apiKey;
 
-      } catch (error) {
+      } catch {
 
         apiOutput.textContent =
           "Could not create API key.";
@@ -1952,9 +2196,9 @@ if (createApiKey) {
 }
 
 
-// =====================================================
+// ============================================================
 // SETTINGS
-// =====================================================
+// ============================================================
 
 if (settingsButton) {
 
@@ -1968,29 +2212,34 @@ if (settingsButton) {
 }
 
 
-// =====================================================
+// ============================================================
 // LOGOUT
-// =====================================================
+// ============================================================
 
 if (logoutButton) {
 
   logoutButton.onclick =
     async () => {
 
-      await auth.signOut();
+      try {
 
-      closeModal(
-        settingsModal
-      );
+        await auth.signOut();
 
-      newChat?.click();
+      } finally {
+
+        closeModal(
+          settingsModal
+        );
+
+        newChat?.click();
+      }
     };
 }
 
 
-// =====================================================
+// ============================================================
 // MODALS
-// =====================================================
+// ============================================================
 
 document
   .querySelectorAll(
@@ -2002,42 +2251,50 @@ document
       button.onclick =
         () => {
 
-          closeModal(
+          const id =
+            button.dataset.close;
+
+          const modal =
             document.getElementById(
-              button.dataset.close
-            )
+              id
+            );
+
+          closeModal(
+            modal
           );
         };
     }
   );
 
 
-function openModal(element) {
+function openModal(
+  element
+) {
 
-  if (!element) return;
-
-  element.classList.remove(
+  element?.classList.remove(
     "hidden"
   );
 }
 
 
-function closeModal(element) {
+function closeModal(
+  element
+) {
 
-  if (!element) return;
-
-  element.classList.add(
+  element?.classList.add(
     "hidden"
   );
 }
 
 
-// =====================================================
+// ============================================================
 // CLOSE MOBILE SIDEBAR
-// =====================================================
+// ============================================================
 
 document
-  .querySelector(".main")
+  .querySelector(
+    ".main"
+  )
   ?.addEventListener(
     "click",
     () => {
@@ -2054,72 +2311,84 @@ document
   );
 
 
-// =====================================================
-// FILE TO BASE64
-// =====================================================
+// ============================================================
+// CAMERA
+// ============================================================
 
-function fileToBase64(file) {
+// Your HTML camera button should have:
+// id="cameraButton"
+// and a hidden input:
+// id="cameraInput"
 
-  return new Promise(
-    (resolve, reject) => {
+const cameraButton =
+  $("cameraButton");
 
-      const reader =
-        new FileReader();
+const cameraInput =
+  $("cameraInput");
 
-      reader.onload =
-        () => {
+if (cameraButton) {
 
-          resolve(
-            reader.result
-          );
-        };
+  cameraButton.onclick =
+    () => {
 
-      reader.onerror =
-        reject;
+      if (cameraInput) {
+        cameraInput.click();
+      }
+    };
+}
 
-      reader.readAsDataURL(
+if (cameraInput) {
+
+  cameraInput.onchange =
+    async event => {
+
+      const file =
+        event.target.files?.[0];
+
+      if (!file)
+        return;
+
+      selectedFile =
+        file;
+
+      if (
+        !file.type.startsWith(
+          "image/"
+        )
+      ) {
+
+        addMessage(
+          "ai",
+          "Please select an image."
+        );
+
+        return;
+      }
+
+      await prepareImage(
         file
       );
-    }
-  );
+    };
 }
 
 
-// =====================================================
-// SAFE JSON
-// =====================================================
+// ============================================================
+// PDF QUICK BUTTON
+// ============================================================
 
-async function safeJSON(
-  response
-) {
+const createPdfButton =
+  $("createPdfButton");
 
-  const type =
-    response.headers.get(
-      "content-type"
-    ) || "";
+if (createPdfButton) {
 
-  if (
-    type.includes(
-      "application/json"
-    )
-  ) {
-
-    return response.json();
-  }
-
-  const text =
-    await response.text();
-
-  return {
-    ok: response.ok,
-    answer: text
-  };
+  createPdfButton.onclick =
+    generatePDF;
 }
 
 
-// =====================================================
-// STARTUP
-// =====================================================
+// ============================================================
+// INITIAL
+// ============================================================
 
 console.log(
   "LOGIC-LEAF frontend loaded."
