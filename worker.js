@@ -1,3 +1,8 @@
+// ============================================================
+// LOGIC-LEAF WORKER
+// Chat + Vision + Image + PDF + Search + History + API Keys
+// ============================================================
+
 const APP_NAME = "LOGIC-LEAF";
 
 const CHAT_MODEL =
@@ -11,6 +16,8 @@ const IMAGE_MODEL =
 
 const SEARCH_INSTANCE =
   "logic-leaf-search";
+
+const MAX_HISTORY = 30;
 
 export default {
   async fetch(request, env) {
@@ -33,10 +40,9 @@ export default {
     const url = new URL(request.url);
 
     try {
-
-      // =========================================
+      // ======================================================
       // HEALTH
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/" ||
@@ -46,41 +52,129 @@ export default {
           ok: true,
           name: APP_NAME,
           status: "online",
+
           ai: !!env.AI,
           database: !!env.DB,
           kv: !!env.QTM_KEYS,
           search: !!env.AI_SEARCH,
-          endpoints: [
-            "/v1/chat",
-            "/v1/search",
-            "/v1/vision",
-            "/v1/image",
-            "/v1/pdf",
-            "/v1/history",
-            "/v1/conversation",
-            "/v1/keys/create",
-            "/v1/keys/revoke",
-            "/v1/api/chat"
-          ]
+
+          endpoints: {
+            chat: "/v1/chat",
+            vision: "/v1/vision",
+            image: "/v1/image",
+            pdf: "/v1/pdf",
+            search: "/v1/search",
+            history: "/v1/history",
+            conversation: "/v1/conversation",
+            createKey: "/v1/keys/create",
+            revokeKey: "/v1/keys/revoke",
+            api: "/v1/api/chat"
+          }
         }, cors);
       }
 
+      // ======================================================
+      // SEARCH
+      // ======================================================
 
-      // =========================================
+      if (
+        url.pathname === "/v1/search" &&
+        request.method === "POST"
+      ) {
+        const body = await request.json();
+
+        const query = String(
+          body.query ||
+          body.message ||
+          ""
+        ).trim();
+
+        if (!query) {
+          return json({
+            ok: false,
+            error: "Search query required"
+          }, cors, 400);
+        }
+
+        if (!env.AI_SEARCH) {
+          return json({
+            ok: false,
+            error: "AI Search binding is missing"
+          }, cors, 500);
+        }
+
+        const instance =
+          env.AI_SEARCH.get(
+            SEARCH_INSTANCE
+          );
+
+        const result =
+          await instance.search({
+            messages: [
+              {
+                role: "user",
+                content: query
+              }
+            ]
+          });
+
+        const chunks =
+          Array.isArray(result?.chunks)
+            ? result.chunks
+            : [];
+
+        const sources =
+          chunks.map((chunk, index) => ({
+            id: index + 1,
+
+            text:
+              chunk.text ||
+              chunk.content ||
+              "",
+
+            source:
+              chunk.source ||
+              chunk.filename ||
+              chunk.file_name ||
+              chunk.title ||
+              "Indexed source",
+
+            score:
+              chunk.score ?? null,
+
+            url:
+              chunk.url || null
+          }));
+
+        return json({
+          ok: true,
+          query,
+          count: sources.length,
+          results: sources
+        }, cors);
+      }
+
+      // ======================================================
       // CHAT
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/chat" &&
         request.method === "POST"
       ) {
-        const body = await request.json();
+        const body =
+          await request.json();
 
         const message =
-          String(body.message || "").trim();
+          String(
+            body.message || ""
+          ).trim();
 
         const userId =
-          String(body.userId || "anonymous");
+          String(
+            body.userId ||
+            "anonymous"
+          );
 
         const conversationId =
           String(
@@ -88,9 +182,14 @@ export default {
             crypto.randomUUID()
           );
 
-        const useSearch =
+        const searchEnabled =
           body.search === true ||
           body.useSearch === true;
+
+        const clientHistory =
+          Array.isArray(body.history)
+            ? body.history
+            : [];
 
         if (!message) {
           return json({
@@ -99,25 +198,25 @@ export default {
           }, cors, 400);
         }
 
-        let searchContext = "";
-        let sources = [];
-
-        // -----------------------------------------
+        // ----------------------------------------------------
         // SEARCH
-        // -----------------------------------------
+        // ----------------------------------------------------
+
+        let sources = [];
+        let searchContext = "";
 
         if (
-          useSearch &&
+          searchEnabled &&
           env.AI_SEARCH
         ) {
           try {
-            const search =
+            const instance =
               env.AI_SEARCH.get(
                 SEARCH_INSTANCE
               );
 
-            const result =
-              await search.search({
+            const searchResult =
+              await instance.search({
                 messages: [
                   {
                     role: "user",
@@ -127,31 +226,43 @@ export default {
               });
 
             const chunks =
-              Array.isArray(result?.chunks)
-                ? result.chunks
+              Array.isArray(
+                searchResult?.chunks
+              )
+                ? searchResult.chunks
                 : [];
 
             sources =
-              chunks.map((item, index) => ({
-                id: index + 1,
-                text:
-                  item.text ||
-                  item.content ||
-                  "",
-                source:
-                  item.source ||
-                  item.filename ||
-                  item.title ||
-                  "Indexed source",
-                url:
-                  item.url || null
-              }));
+              chunks.map(
+                (chunk, index) => ({
+                  id: index + 1,
+
+                  text:
+                    chunk.text ||
+                    chunk.content ||
+                    "",
+
+                  source:
+                    chunk.source ||
+                    chunk.filename ||
+                    chunk.file_name ||
+                    chunk.title ||
+                    "Indexed source",
+
+                  score:
+                    chunk.score ?? null,
+
+                  url:
+                    chunk.url || null
+                })
+              );
 
             searchContext =
               sources
                 .map(
-                  item =>
-                    `[Source ${item.id}]\n${item.text}`
+                  source =>
+                    `[Source ${source.id}]
+${source.text}`
                 )
                 .join("\n\n");
 
@@ -163,126 +274,148 @@ export default {
           }
         }
 
-
-        // =========================================
+        // ----------------------------------------------------
         // SYSTEM PROMPT
-        // =========================================
+        // IMPORTANT: LET, NOT CONST
+        // ----------------------------------------------------
 
         let systemPrompt = `
-You are LOGIC-LEAF, a general-purpose AI assistant.
+You are LOGIC-LEAF.
+
+You are a general-purpose AI assistant.
 
 Developer:
 V.CHENCHUKIRAN
+CLOUD SECURITY
 
 Your job is to provide useful, accurate,
-clear and helpful answers.
+clear and context-aware answers.
 
 You can help with:
 
 - General questions
+- Reasoning
 - Mathematics
 - Science
 - Education
-- JEE preparation
 - Programming
 - Coding
 - Debugging
-- HTML
-- CSS
-- JavaScript
-- Python
-- Java
-- C/C++
-- Projects
+- Web development
+- Project development
 - Writing
-- Reasoning
-- Problem solving
+- Summaries
+- Study assistance
 - Technical explanations
+- Creative ideas
 
-Conversation behavior:
+CONVERSATION RULES:
 
-Remember the conversation context provided
-to you and continue the user's topic naturally.
+1. Remember the conversation context supplied
+   in the messages.
 
-Do not assume that the user is asking about
-a foreign country.
+2. If the user continues a topic, continue that
+   topic instead of starting a completely new answer.
 
-When the user asks about India, Indian exams,
-Indian education, Indian currency, Indian
-colleges or Indian services, answer in the
-Indian context unless the user requests another
-country.
+3. Do not unnecessarily assume that the user is
+   asking about another country.
 
-Do not claim to be ChatGPT, Gemini or Claude.
+4. When the user's location or country matters
+   and is not known, explain the assumption or
+   ask when necessary.
 
-You are LOGIC-LEAF.
+5. Answer the actual question first.
+
+6. Do not claim to be ChatGPT, Gemini, Claude,
+   or another company's assistant.
+
+7. You are LOGIC-LEAF.
+
+CODING:
 
 When providing code:
-
-- Give complete usable code.
 - Use Markdown code blocks.
-- Specify the language.
-- Do not intentionally leave broken syntax.
-- Explain important changes when useful.
+- Identify the language.
+- Give complete usable code when appropriate.
+- Do not intentionally leave required sections
+  unfinished.
+
+STYLE:
+
+Be natural, helpful and concise unless the user
+asks for detailed information.
 `;
 
-        if (useSearch) {
+        if (searchEnabled) {
           systemPrompt += `
 
-Search mode is enabled.
+SEARCH MODE:
 
-Use the supplied search information when useful.
-Do not invent facts from search results.
-If the search information is insufficient,
-say so clearly.
+Search results are provided below.
+
+Use them when they are relevant.
+Do not invent facts from them.
+If the sources do not contain enough information,
+say that clearly.
+
+SEARCH RESULTS:
+${searchContext || "No useful indexed results found."}
 `;
         }
 
-        let userPrompt = message;
+        // ----------------------------------------------------
+        // CONVERSATION CONTEXT
+        // ----------------------------------------------------
 
-        if (
-          useSearch &&
-          searchContext
+        const cleanHistory =
+          clientHistory
+            .filter(
+              item =>
+                item &&
+                (item.role === "user" ||
+                 item.role === "assistant") &&
+                typeof item.content === "string"
+            )
+            .slice(-MAX_HISTORY);
+
+        const messages = [
+          {
+            role: "system",
+            content: systemPrompt
+          }
+        ];
+
+        for (
+          const item of cleanHistory
         ) {
-          userPrompt = `
-USER QUESTION:
-${message}
-
-SEARCH INFORMATION:
-${searchContext}
-
-Answer the user's question using the
-information above when relevant.
-`;
+          messages.push({
+            role: item.role,
+            content: item.content
+          });
         }
 
+        messages.push({
+          role: "user",
+          content: message
+        });
 
-        // =========================================
+        // ----------------------------------------------------
         // AI
-        // =========================================
-
-        if (!env.AI) {
-          return json({
-            ok: false,
-            error: "Cloudflare AI binding is missing"
-          }, cors, 500);
-        }
+        // ----------------------------------------------------
 
         const result =
           await env.AI.run(
             CHAT_MODEL,
             {
-              messages: [
-                {
-                  role: "system",
-                  content: systemPrompt
-                },
-                {
-                  role: "user",
-                  content: userPrompt
-                }
-              ],
+              messages,
               max_tokens: 4096
+            },
+            {
+              gateway: {
+                id: "default",
+                skipCache: false,
+                collectLog: true
+              }
             }
           );
 
@@ -291,14 +424,16 @@ information above when relevant.
           result?.result?.response ||
           "I could not generate a response.";
 
-
-        // =========================================
-        // SAVE HISTORY
-        // =========================================
+        // ----------------------------------------------------
+        // D1 HISTORY
+        // ----------------------------------------------------
 
         if (env.DB) {
           try {
             await ensureDatabase(env);
+
+            const now =
+              new Date().toISOString();
 
             await env.DB.prepare(`
               INSERT INTO messages
@@ -316,7 +451,7 @@ information above when relevant.
                 userId,
                 "user",
                 message,
-                new Date().toISOString()
+                now
               )
               .run();
 
@@ -342,105 +477,32 @@ information above when relevant.
 
           } catch (error) {
             console.error(
-              "D1 ERROR",
+              "D1 SAVE ERROR",
               error
             );
           }
         }
 
-
         return json({
           ok: true,
+
           answer,
+
           conversationId,
+
           search_used:
-            useSearch && sources.length > 0,
+            searchEnabled,
+
           sources,
-          model: CHAT_MODEL
+
+          model:
+            CHAT_MODEL
         }, cors);
       }
 
-
-      // =========================================
-      // SEARCH ENDPOINT
-      // =========================================
-
-      if (
-        url.pathname === "/v1/search" &&
-        request.method === "POST"
-      ) {
-        if (!env.AI_SEARCH) {
-          return json({
-            ok: false,
-            error: "AI Search binding missing"
-          }, cors, 500);
-        }
-
-        const body =
-          await request.json();
-
-        const query =
-          String(
-            body.query ||
-            body.message ||
-            ""
-          ).trim();
-
-        if (!query) {
-          return json({
-            ok: false,
-            error: "Search query required"
-          }, cors, 400);
-        }
-
-        const search =
-          env.AI_SEARCH.get(
-            SEARCH_INSTANCE
-          );
-
-        const result =
-          await search.search({
-            messages: [
-              {
-                role: "user",
-                content: query
-              }
-            ]
-          });
-
-        const chunks =
-          Array.isArray(result?.chunks)
-            ? result.chunks
-            : [];
-
-        const results =
-          chunks.map((item, index) => ({
-            id: index + 1,
-            text:
-              item.text ||
-              item.content ||
-              "",
-            source:
-              item.source ||
-              item.filename ||
-              item.title ||
-              "Indexed source",
-            url:
-              item.url || null
-          }));
-
-        return json({
-          ok: true,
-          query,
-          count: results.length,
-          results
-        }, cors);
-      }
-
-
-      // =========================================
+      // ======================================================
       // VISION
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/vision" &&
@@ -453,12 +515,12 @@ information above when relevant.
           String(
             body.prompt ||
             "Describe and analyze this image."
-          );
+          ).trim();
 
         const image =
-          body.image ||
-          body.imageBase64 ||
-          body.data;
+          String(
+            body.image || ""
+          ).trim();
 
         if (!image) {
           return json({
@@ -467,28 +529,17 @@ information above when relevant.
           }, cors, 400);
         }
 
-        if (!env.AI) {
+        if (
+          !image.startsWith(
+            "data:image/"
+          )
+        ) {
           return json({
             ok: false,
-            error: "Cloudflare AI binding missing"
-          }, cors, 500);
+            error:
+              "Image must be a data:image/... URL"
+          }, cors, 400);
         }
-
-        let imageData = image;
-
-        if (
-          typeof imageData === "string" &&
-          imageData.includes(",")
-        ) {
-          imageData =
-            imageData.split(",")[1];
-        }
-
-        const binary =
-          Uint8Array.from(
-            atob(imageData),
-            char => char.charCodeAt(0)
-          );
 
         const result =
           await env.AI.run(
@@ -498,39 +549,33 @@ information above when relevant.
                 {
                   role: "system",
                   content:
-                    "You are LOGIC-LEAF vision AI. Analyze images accurately and clearly."
+                    "You are LOGIC-LEAF vision assistant. Analyze the supplied image accurately and answer the user's request."
                 },
                 {
                   role: "user",
-                  content: [
-                    {
-                      type: "text",
-                      text: prompt
-                    },
-                    {
-                      type: "image",
-                      image: Array.from(binary)
-                    }
-                  ]
+                  content: prompt
                 }
               ],
-              max_tokens: 2048
+              image
             }
           );
 
+        const answer =
+          result?.response ||
+          result?.result ||
+          result?.text ||
+          "I could not analyze the image.";
+
         return json({
           ok: true,
-          answer:
-            result?.response ||
-            result?.result?.response ||
-            ""
+          answer,
+          model: VISION_MODEL
         }, cors);
       }
 
-
-      // =========================================
+      // ======================================================
       // IMAGE GENERATION
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/image" &&
@@ -547,101 +592,96 @@ information above when relevant.
         if (!prompt) {
           return json({
             ok: false,
-            error: "Image prompt required"
+            error:
+              "Image prompt required"
           }, cors, 400);
         }
 
-        if (!env.AI) {
-          return json({
-            ok: false,
-            error: "Cloudflare AI binding missing"
-          }, cors, 500);
+        const image =
+          await env.AI.run(
+            IMAGE_MODEL,
+            {
+              prompt
+            }
+          );
+
+        // Cloudflare can return a stream
+        // or image-related response depending
+        // on the model/runtime.
+
+        if (
+          image instanceof ReadableStream
+        ) {
+          return new Response(
+            image,
+            {
+              status: 200,
+              headers: {
+                ...cors,
+                "Content-Type":
+                  "image/png",
+                "Cache-Control":
+                  "no-store"
+              }
+            }
+          );
         }
 
-        try {
-          const image =
-            await env.AI.run(
-              IMAGE_MODEL,
-              {
-                prompt
+        if (
+          image instanceof ArrayBuffer
+        ) {
+          return new Response(
+            image,
+            {
+              status: 200,
+              headers: {
+                ...cors,
+                "Content-Type":
+                  "image/png",
+                "Cache-Control":
+                  "no-store"
               }
-            );
-
-          if (
-            image instanceof ReadableStream
-          ) {
-            return new Response(
-              image,
-              {
-                status: 200,
-                headers: {
-                  ...cors,
-                  "Content-Type":
-                    "image/png"
-                }
-              }
-            );
-          }
-
-          if (
-            image instanceof ArrayBuffer
-          ) {
-            return new Response(
-              image,
-              {
-                status: 200,
-                headers: {
-                  ...cors,
-                  "Content-Type":
-                    "image/png"
-                }
-              }
-            );
-          }
-
-          if (
-            image?.image
-          ) {
-            const bytes =
-              Uint8Array.from(
-                atob(image.image),
-                c =>
-                  c.charCodeAt(0)
-              );
-
-            return new Response(
-              bytes,
-              {
-                status: 200,
-                headers: {
-                  ...cors,
-                  "Content-Type":
-                    "image/png"
-                }
-              }
-            );
-          }
-
-          return json({
-            ok: true,
-            result: image
-          }, cors);
-
-        } catch (error) {
-          return json({
-            ok: false,
-            error:
-              "Image generation failed",
-            details:
-              error?.message || ""
-          }, cors, 500);
+            }
+          );
         }
+
+        // Some runtime responses may contain
+        // image data inside an object.
+
+        if (
+          image &&
+          typeof image === "object"
+        ) {
+          if (
+            image.image &&
+            typeof image.image === "string"
+          ) {
+            return json({
+              ok: true,
+              image: image.image
+            }, cors);
+          }
+
+          if (
+            image.result &&
+            typeof image.result === "string"
+          ) {
+            return json({
+              ok: true,
+              image: image.result
+            }, cors);
+          }
+        }
+
+        return json({
+          ok: true,
+          result: image
+        }, cors);
       }
 
-
-      // =========================================
+      // ======================================================
       // PDF / DOCUMENT GENERATION
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/pdf" &&
@@ -659,12 +699,13 @@ information above when relevant.
           String(
             body.title ||
             "LOGIC-LEAF Document"
-          );
+          ).trim();
 
         if (!prompt) {
           return json({
             ok: false,
-            error: "PDF request required"
+            error:
+              "PDF request required"
           }, cors, 400);
         }
 
@@ -676,34 +717,41 @@ information above when relevant.
                 {
                   role: "system",
                   content: `
-Create a professional printable document.
+You create professional printable documents.
 
-Return ONLY HTML.
+Return ONLY the document body HTML.
 
-Do not use Markdown fences.
-Do not include JavaScript.
+Do NOT return:
+- Markdown fences
+- JavaScript
+- <html>
+- <head>
+- <body>
 
-Use:
-headings,
-paragraphs,
-lists,
-tables,
-sections.
+You may use:
+h1, h2, h3, p, ul, ol, li,
+table, thead, tbody, tr, th, td,
+strong and em.
 
-Make the document clean and suitable
-for printing.
+Make the document clean and readable.
 `
                 },
                 {
                   role: "user",
                   content:
-                    `Title: ${title}
+                    `Document title:
+${title}
 
-Request:
+User request:
 ${prompt}`
                 }
               ],
-              max_tokens: 4096
+              max_tokens: 6000
+            },
+            {
+              gateway: {
+                id: "default"
+              }
             }
           );
 
@@ -711,7 +759,7 @@ ${prompt}`
           result?.response || "";
 
         content =
-          content
+          String(content)
             .replace(
               /^```html\s*/i,
               ""
@@ -727,7 +775,7 @@ ${prompt}`
             .trim();
 
         const document = `
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -741,48 +789,107 @@ ${prompt}`
   margin: 18mm;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   font-family:
     Arial,
     Helvetica,
     sans-serif;
 
-  color: #111;
-  line-height: 1.6;
+  color: #151515;
+
+  line-height: 1.65;
+
   font-size: 14px;
+
+  margin: 0;
+}
+
+.header {
+  border-bottom:
+    2px solid #151515;
+
+  padding-bottom:
+    12px;
+
+  margin-bottom:
+    28px;
+}
+
+.header strong {
+  font-size:
+    18px;
 }
 
 h1 {
-  font-size: 28px;
+  font-size:
+    28px;
+
+  margin:
+    0 0 22px;
 }
 
 h2 {
-  margin-top: 28px;
+  margin-top:
+    28px;
+}
+
+h3 {
+  margin-top:
+    22px;
 }
 
 table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 18px 0;
+  width:
+    100%;
+
+  border-collapse:
+    collapse;
+
+  margin:
+    18px 0;
 }
 
 th,
 td {
-  border: 1px solid #999;
-  padding: 8px;
-}
+  border:
+    1px solid #aaa;
 
-.header {
-  border-bottom: 2px solid #111;
-  padding-bottom: 12px;
-  margin-bottom: 25px;
+  padding:
+    8px;
+
+  vertical-align:
+    top;
 }
 
 .footer {
-  border-top: 1px solid #aaa;
-  margin-top: 40px;
-  padding-top: 10px;
-  font-size: 10px;
+  border-top:
+    1px solid #aaa;
+
+  margin-top:
+    40px;
+
+  padding-top:
+    10px;
+
+  font-size:
+    10px;
+
+  color:
+    #666;
+}
+
+@media print {
+  .footer {
+    position:
+      fixed;
+
+    bottom:
+      0;
+  }
 }
 
 </style>
@@ -813,18 +920,15 @@ Created with LOGIC-LEAF
             headers: {
               ...cors,
               "Content-Type":
-                "text/html; charset=UTF-8",
-              "Content-Disposition":
-                `attachment; filename="${safeFilename(title)}.html"`
+                "text/html; charset=UTF-8"
             }
           }
         );
       }
 
-
-      // =========================================
+      // ======================================================
       // HISTORY
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/history" &&
@@ -852,16 +956,13 @@ Created with LOGIC-LEAF
           await env.DB.prepare(`
             SELECT
               conversation_id,
+              MIN(created_at) AS created_at,
               MAX(created_at) AS updated_at,
-              SUBSTR(
-                MIN(
-                  CASE
-                    WHEN role = 'user'
-                    THEN content
-                  END
-                ),
-                1,
-                80
+              MAX(
+                CASE
+                  WHEN role = 'user'
+                  THEN content
+                END
               ) AS title
             FROM messages
             WHERE user_id = ?
@@ -872,17 +973,34 @@ Created with LOGIC-LEAF
             .bind(userId)
             .all();
 
+        const chats =
+          (result.results || [])
+            .map(chat => ({
+              conversation_id:
+                chat.conversation_id,
+
+              title:
+                String(
+                  chat.title ||
+                  "New conversation"
+                ).slice(0, 80),
+
+              created_at:
+                chat.created_at,
+
+              updated_at:
+                chat.updated_at
+            }));
+
         return json({
           ok: true,
-          chats:
-            result.results || []
+          chats
         }, cors);
       }
 
-
-      // =========================================
+      // ======================================================
       // CONVERSATION
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/conversation" &&
@@ -898,12 +1016,19 @@ Created with LOGIC-LEAF
         const body =
           await request.json();
 
-        const conversationId =
+        const id =
           String(
-            body.conversationId || ""
-          );
+            body.conversationId ||
+            ""
+          ).trim();
 
-        if (!conversationId) {
+        const userId =
+          String(
+            body.userId ||
+            ""
+          ).trim();
+
+        if (!id) {
           return json({
             ok: false,
             error:
@@ -913,18 +1038,36 @@ Created with LOGIC-LEAF
 
         await ensureDatabase(env);
 
-        const result =
-          await env.DB.prepare(`
-            SELECT
-              role,
-              content,
-              created_at
-            FROM messages
-            WHERE conversation_id = ?
-            ORDER BY id ASC
-          `)
-            .bind(conversationId)
-            .all();
+        let result;
+
+        if (userId) {
+          result =
+            await env.DB.prepare(`
+              SELECT
+                role,
+                content,
+                created_at
+              FROM messages
+              WHERE conversation_id = ?
+              AND user_id = ?
+              ORDER BY id ASC
+            `)
+              .bind(id, userId)
+              .all();
+        } else {
+          result =
+            await env.DB.prepare(`
+              SELECT
+                role,
+                content,
+                created_at
+              FROM messages
+              WHERE conversation_id = ?
+              ORDER BY id ASC
+            `)
+              .bind(id)
+              .all();
+        }
 
         return json({
           ok: true,
@@ -933,10 +1076,9 @@ Created with LOGIC-LEAF
         }, cors);
       }
 
-
-      // =========================================
+      // ======================================================
       // CREATE API KEY
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/keys/create" &&
@@ -962,15 +1104,15 @@ Created with LOGIC-LEAF
           }, cors, 500);
         }
 
-        const key =
+        const rawKey =
           "ll_live_" +
           randomToken(32);
 
         const hash =
-          await sha256(key);
+          await sha256(rawKey);
 
         await env.QTM_KEYS.put(
-          "apikey:" + hash,
+          `apikey:${hash}`,
           JSON.stringify({
             uid: auth.uid,
             createdAt:
@@ -980,16 +1122,15 @@ Created with LOGIC-LEAF
 
         return json({
           ok: true,
-          apiKey: key,
+          apiKey: rawKey,
           warning:
-            "Save this key now. It will not be shown again."
+            "Copy this API key now. It will not be shown again."
         }, cors);
       }
 
-
-      // =========================================
+      // ======================================================
       // REVOKE API KEY
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/keys/revoke" &&
@@ -1021,12 +1162,13 @@ Created with LOGIC-LEAF
         const key =
           String(
             body.apiKey || ""
-          );
+          ).trim();
 
         if (!key) {
           return json({
             ok: false,
-            error: "API key required"
+            error:
+              "API key required"
           }, cors, 400);
         }
 
@@ -1035,7 +1177,7 @@ Created with LOGIC-LEAF
 
         const record =
           await env.QTM_KEYS.get(
-            "apikey:" + hash,
+            `apikey:${hash}`,
             "json"
           );
 
@@ -1045,12 +1187,13 @@ Created with LOGIC-LEAF
         ) {
           return json({
             ok: false,
-            error: "API key not found"
+            error:
+              "API key not found"
           }, cors, 404);
         }
 
         await env.QTM_KEYS.delete(
-          "apikey:" + hash
+          `apikey:${hash}`
         );
 
         return json({
@@ -1058,10 +1201,9 @@ Created with LOGIC-LEAF
         }, cors);
       }
 
-
-      // =========================================
+      // ======================================================
       // PUBLIC API
-      // =========================================
+      // ======================================================
 
       if (
         url.pathname === "/v1/api/chat" &&
@@ -1091,7 +1233,8 @@ Created with LOGIC-LEAF
         if (!message) {
           return json({
             ok: false,
-            error: "Message required"
+            error:
+              "Message required"
           }, cors, 400);
         }
 
@@ -1111,6 +1254,11 @@ Created with LOGIC-LEAF
                 }
               ],
               max_tokens: 4096
+            },
+            {
+              gateway: {
+                id: "default"
+              }
             }
           );
 
@@ -1123,18 +1271,17 @@ Created with LOGIC-LEAF
         }, cors);
       }
 
-
-      // =========================================
+      // ======================================================
       // 404
-      // =========================================
+      // ======================================================
 
       return json({
         ok: false,
-        error: "Endpoint not found"
+        error:
+          "Endpoint not found"
       }, cors, 404);
 
     } catch (error) {
-
       console.error(
         "WORKER ERROR",
         error
@@ -1151,12 +1298,11 @@ Created with LOGIC-LEAF
 };
 
 
-// =================================================
-// DATABASE
-// =================================================
+// ============================================================
+// D1
+// ============================================================
 
 async function ensureDatabase(env) {
-
   if (!env.DB) return;
 
   await env.DB.prepare(`
@@ -1184,16 +1330,15 @@ async function ensureDatabase(env) {
 }
 
 
-// =================================================
+// ============================================================
 // FIREBASE AUTH
-// =================================================
+// ============================================================
 
 async function authenticateFirebase(
   request,
   env
 ) {
   try {
-
     const header =
       request.headers.get(
         "Authorization"
@@ -1202,7 +1347,8 @@ async function authenticateFirebase(
     if (!header) {
       return {
         ok: false,
-        error: "Login required"
+        error:
+          "Login required"
       };
     }
 
@@ -1214,13 +1360,19 @@ async function authenticateFirebase(
         )
         .trim();
 
-    if (
-      !token ||
-      !env.FIREBASE_WEB_API_KEY
-    ) {
+    if (!token) {
       return {
         ok: false,
-        error: "Authentication configuration missing"
+        error:
+          "Invalid authentication"
+      };
+    }
+
+    if (!env.FIREBASE_WEB_API_KEY) {
+      return {
+        ok: false,
+        error:
+          "Firebase API key is not configured"
       };
     }
 
@@ -1232,10 +1384,12 @@ async function authenticateFirebase(
         ),
         {
           method: "POST",
+
           headers: {
             "Content-Type":
               "application/json"
           },
+
           body: JSON.stringify({
             idToken: token
           })
@@ -1259,18 +1413,25 @@ async function authenticateFirebase(
     if (!user) {
       return {
         ok: false,
-        error: "User not found"
+        error:
+          "User not found"
       };
     }
 
     return {
       ok: true,
-      uid: user.localId,
+      uid:
+        user.localId,
       email:
         user.email || ""
     };
 
-  } catch {
+  } catch (error) {
+    console.error(
+      "FIREBASE AUTH ERROR",
+      error
+    );
+
     return {
       ok: false,
       error:
@@ -1280,20 +1441,20 @@ async function authenticateFirebase(
 }
 
 
-// =================================================
+// ============================================================
 // API KEY AUTH
-// =================================================
+// ============================================================
 
 async function authenticateApiKey(
   request,
   env
 ) {
   try {
-
     if (!env.QTM_KEYS) {
       return {
         ok: false,
-        error: "KV unavailable"
+        error:
+          "KV unavailable"
       };
     }
 
@@ -1305,7 +1466,8 @@ async function authenticateApiKey(
     if (!header) {
       return {
         ok: false,
-        error: "API key required"
+        error:
+          "API key required"
       };
     }
 
@@ -1318,11 +1480,14 @@ async function authenticateApiKey(
         .trim();
 
     if (
-      !key.startsWith("ll_live_")
+      !key.startsWith(
+        "ll_live_"
+      )
     ) {
       return {
         ok: false,
-        error: "Invalid API key"
+        error:
+          "Invalid API key"
       };
     }
 
@@ -1331,7 +1496,7 @@ async function authenticateApiKey(
 
     const record =
       await env.QTM_KEYS.get(
-        "apikey:" + hash,
+        `apikey:${hash}`,
         "json"
       );
 
@@ -1345,10 +1510,16 @@ async function authenticateApiKey(
 
     return {
       ok: true,
-      uid: record.uid
+      uid:
+        record.uid
     };
 
-  } catch {
+  } catch (error) {
+    console.error(
+      "API KEY ERROR",
+      error
+    );
+
     return {
       ok: false,
       error:
@@ -1358,14 +1529,14 @@ async function authenticateApiKey(
 }
 
 
-// =================================================
-// SHA256
-// =================================================
+// ============================================================
+// SHA-256
+// ============================================================
 
 async function sha256(text) {
-
   const data =
-    new TextEncoder().encode(text);
+    new TextEncoder()
+      .encode(text);
 
   const hash =
     await crypto.subtle.digest(
@@ -1386,14 +1557,15 @@ async function sha256(text) {
 }
 
 
-// =================================================
+// ============================================================
 // RANDOM TOKEN
-// =================================================
+// ============================================================
 
 function randomToken(length) {
-
   const bytes =
-    new Uint8Array(length);
+    new Uint8Array(
+      length
+    );
 
   crypto.getRandomValues(
     bytes
@@ -1410,12 +1582,11 @@ function randomToken(length) {
 }
 
 
-// =================================================
+// ============================================================
 // HTML ESCAPE
-// =================================================
+// ============================================================
 
 function escapeHTML(value) {
-
   return String(value)
     .replace(
       /&/g,
@@ -1440,30 +1611,9 @@ function escapeHTML(value) {
 }
 
 
-// =================================================
-// SAFE FILE NAME
-// =================================================
-
-function safeFilename(value) {
-
-  return String(value)
-    .replace(
-      /[^a-z0-9-_ ]/gi,
-      ""
-    )
-    .trim()
-    .replace(
-      /\s+/g,
-      "-"
-    )
-    .slice(0, 80) ||
-    "logic-leaf-document";
-}
-
-
-// =================================================
+// ============================================================
 // JSON RESPONSE
-// =================================================
+// ============================================================
 
 function json(
   data,
@@ -1474,11 +1624,13 @@ function json(
     JSON.stringify(data),
     {
       status,
+
       headers: {
         ...cors,
+
         "Content-Type":
           "application/json; charset=UTF-8"
       }
     }
   );
-          }
+            }
