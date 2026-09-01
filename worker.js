@@ -1,1051 +1,1198 @@
-// ============================================================
-// LOGIC-LEAF AI
-// Cloudflare Worker Backend
-// ============================================================
-
-const CHAT_MODEL =
-  "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
-
-const VISION_MODEL =
-  "@cf/meta/llama-3.2-11b-vision-instruct";
-
-const IMAGE_MODEL =
-  "@cf/black-forest-labs/flux-1-schnell";
-
-// ============================================================
-// CORS
-// ============================================================
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods":
-    "GET, POST, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers":
-    "Content-Type, Authorization, X-User-ID",
-  "Access-Control-Max-Age": "86400"
-};
-
-// ============================================================
-// RESPONSE HELPERS
-// ============================================================
-
-function json(data, status = 200) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status,
-      headers: {
-        ...CORS_HEADERS,
-        "Content-Type":
-          "application/json; charset=utf-8"
-      }
-    }
-  );
-}
-
-function makeId() {
-  return crypto.randomUUID();
-}
-
-// ============================================================
-// DATABASE SETUP
-// ============================================================
-
-async function ensureTables(env) {
-  if (!env.DB) return;
-
-  await env.DB.batch([
-    env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS chats (
-        id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        title TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      )
-    `),
-
-    env.DB.prepare(`
-      CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        chat_id TEXT NOT NULL,
-        role TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      )
-    `),
-
-    env.DB.prepare(`
-      CREATE INDEX IF NOT EXISTS
-      idx_chats_user
-      ON chats(user_id)
-    `),
-
-    env.DB.prepare(`
-      CREATE INDEX IF NOT EXISTS
-      idx_messages_chat
-      ON messages(chat_id)
-    `)
-  ]);
-}
-
-// ============================================================
-// USER ID
-// ============================================================
-
-function getUserId(request, body = {}) {
-  return (
-    request.headers.get("X-User-ID") ||
-    body.userId ||
-    body.uid ||
-    "guest"
-  );
-}
-
-// ============================================================
-// MAIN WORKER
-// ============================================================
+const APP_NAME = "LOGIC-LEAF";
+const SEARCH_INSTANCE = "logic-leaf-search";
+const AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
 
 export default {
-
   async fetch(request, env) {
+    const cors = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+      "Access-Control-Allow-Headers":
+        "Content-Type, Authorization",
+      "Access-Control-Max-Age": "86400"
+    };
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: cors
+      });
+    }
+
+    const url = new URL(request.url);
 
     try {
 
-      // ------------------------------------------------------
-      // CORS PREFLIGHT
-      // ------------------------------------------------------
-
-      if (request.method === "OPTIONS") {
-        return new Response(null, {
-          status: 204,
-          headers: CORS_HEADERS
-        });
-      }
-
-      const url = new URL(request.url);
-      const path = url.pathname;
-
-      // ------------------------------------------------------
-      // ROOT
-      // ------------------------------------------------------
-
-      if (
-        path === "/" &&
-        request.method === "GET"
-      ) {
-
-        return json({
-          ok: true,
-          name: "LOGIC-LEAF",
-          status: "online",
-          message:
-            "LOGIC-LEAF AI Worker is running.",
-          endpoints: [
-            "/health",
-            "/v1/chat",
-            "/v1/image",
-            "/v1/vision",
-            "/v1/history",
-            "/v1/history/save",
-            "/v1/api/keys"
-          ]
-        });
-
-      }
-
-      // ------------------------------------------------------
+      // ======================================
       // HEALTH
-      // ------------------------------------------------------
+      // ======================================
 
       if (
-        path === "/health" &&
-        request.method === "GET"
+        url.pathname === "/" ||
+        url.pathname === "/health"
       ) {
-
         return json({
           ok: true,
-          name: "LOGIC-LEAF",
+          name: APP_NAME,
           status: "online",
           ai: !!env.AI,
+          ai_gateway: true,
+          ai_search: !!env.AI_SEARCH,
           database: !!env.DB,
           kv: !!env.QTM_KEYS,
-          endpoint: "/v1/chat"
-        });
-
+          endpoint: "/v1/chat",
+          search: "/v1/search",
+          image: "/v1/image",
+          pdf: "/v1/pdf",
+          keys: "/v1/keys"
+        }, cors);
       }
 
-      // ======================================================
-      // AI CHAT
-      // ======================================================
+
+      // ======================================
+      // SEARCH
+      // ======================================
 
       if (
-        path === "/v1/chat" &&
+        url.pathname === "/v1/search" &&
         request.method === "POST"
       ) {
+        const body = await request.json();
 
-        if (!env.AI) {
+        const query = String(
+          body.query ||
+          body.message ||
+          ""
+        ).trim();
+
+        if (!query) {
           return json({
             ok: false,
-            error:
-              "Workers AI binding is missing."
-          }, 500);
+            error: "Search query required"
+          }, cors, 400);
         }
 
-        const body =
-          await request.json();
+        if (!env.AI_SEARCH) {
+          return json({
+            ok: false,
+            error: "AI Search binding missing"
+          }, cors, 500);
+        }
 
-        let messages =
-          Array.isArray(body.messages)
-            ? body.messages
+        const instance =
+          env.AI_SEARCH.get(SEARCH_INSTANCE);
+
+        const result =
+          await instance.search({
+            messages: [
+              {
+                role: "user",
+                content: query
+              }
+            ]
+          });
+
+        const chunks =
+          Array.isArray(result?.chunks)
+            ? result.chunks
             : [];
 
-        const prompt =
-          body.prompt ||
-          body.message ||
-          "";
+        const sources = chunks.map(
+          (chunk, i) => ({
+            id: i + 1,
+            text:
+              chunk.text ||
+              chunk.content ||
+              "",
+            score:
+              chunk.score ?? null,
+            source:
+              chunk.source ||
+              chunk.filename ||
+              chunk.file_name ||
+              chunk.title ||
+              "Indexed source",
+            url:
+              chunk.url || null
+          })
+        );
 
-        if (
-          messages.length === 0 &&
-          !prompt
-        ) {
+        return json({
+          ok: true,
+          query,
+          count: sources.length,
+          results: sources
+        }, cors);
+      }
 
+
+      // ======================================
+      // CHAT
+      // ======================================
+
+      if (
+        url.pathname === "/v1/chat" &&
+        request.method === "POST"
+      ) {
+        const body = await request.json();
+
+        const message =
+          String(body.message || "").trim();
+
+        const searchEnabled =
+          body.search === true ||
+          body.useSearch === true;
+
+        const userId =
+          String(
+            body.userId ||
+            "anonymous"
+          );
+
+        const conversationId =
+          String(
+            body.conversationId ||
+            crypto.randomUUID()
+          );
+
+        if (!message) {
           return json({
             ok: false,
-            error:
-              "No message provided."
-          }, 400);
-
+            error: "Message required"
+          }, cors, 400);
         }
 
-        if (messages.length === 0) {
+        let sources = [];
+        let searchContext = "";
 
-          messages = [
-            {
-              role: "user",
-              content: prompt
-            }
-          ];
+        // ====================================
+        // AI SEARCH
+        // ====================================
 
+        if (
+          searchEnabled &&
+          env.AI_SEARCH
+        ) {
+          try {
+            const instance =
+              env.AI_SEARCH.get(
+                SEARCH_INSTANCE
+              );
+
+            const searchResult =
+              await instance.search({
+                messages: [
+                  {
+                    role: "user",
+                    content: message
+                  }
+                ]
+              });
+
+            const chunks =
+              Array.isArray(
+                searchResult?.chunks
+              )
+                ? searchResult.chunks
+                : [];
+
+            sources =
+              chunks.map(
+                (chunk, i) => ({
+                  id: i + 1,
+                  text:
+                    chunk.text ||
+                    chunk.content ||
+                    "",
+                  score:
+                    chunk.score ?? null,
+                  source:
+                    chunk.source ||
+                    chunk.filename ||
+                    chunk.file_name ||
+                    "Indexed source",
+                  url:
+                    chunk.url || null
+                })
+              );
+
+            searchContext =
+              sources
+                .map(
+                  s =>
+                    `[Source ${s.id}]
+${s.text}`
+                )
+                .join("\n\n");
+
+          } catch (error) {
+            console.error(
+              "SEARCH ERROR",
+              error
+            );
+          }
         }
 
-        const systemMessage = {
-          role: "system",
-          content: `
-You are LOGIC-LEAF, a general-purpose AI assistant.
 
-Help users with:
+        // ====================================
+        // SYSTEM PROMPT
+        // ====================================
+
+        let systemPrompt = `
+You are LOGIC-LEAF.
+
+Developer:
+V.CHENCHUKIRAN
+CLOUD SECURITY
+ETHICAL HACKER
+DEVSECOPS
+
+You are a highly capable general AI assistant.
+
+Help with:
 - General questions
 - Reasoning
 - Mathematics
 - Science
-- Programming
+- Study
 - Coding
-- Study assistance
+- Debugging
+- Programming
 - Writing
-- Problem solving
+- Technical subjects
+- Project development
 
-Give clear, useful and accurate answers.
+When generating code:
+- Use proper Markdown code blocks.
+- Identify the language.
+- Make code complete and usable.
+- Explain important parts when appropriate.
 
-When a problem is complicated,
-break it into understandable steps.
+Never claim to be ChatGPT, Gemini, Claude,
+or another company's assistant.
 
-Do not claim that you performed an
-action when you did not actually perform it.
-          `.trim()
-        };
+You are LOGIC-LEAF.
+`;
 
-        const result =
-          await env.AI.run(
-            CHAT_MODEL,
-            {
-              messages: [
-                systemMessage,
-                ...messages
-              ],
-              max_tokens:
-                body.max_tokens || 4096,
-              temperature:
-                typeof body.temperature ===
-                "number"
-                  ? body.temperature
-                  : 0.7
-            }
-          );
+        if (searchEnabled) {
+          systemPrompt += `
 
-        const answer =
-          result?.response ||
-          result?.output_text ||
-          result?.text ||
-          "";
+SEARCH MODE IS ENABLED.
 
-        return json({
-          ok: true,
-          type: "chat",
-          model: CHAT_MODEL,
-          response: answer,
-          answer
-        });
-
-      }
-
-      // ======================================================
-      // IMAGE GENERATION
-      // ======================================================
-
-      if (
-        path === "/v1/image" &&
-        request.method === "POST"
-      ) {
-
-        if (!env.AI) {
-          return json({
-            ok: false,
-            error:
-              "Workers AI binding is missing."
-          }, 500);
+Use the provided search results when relevant.
+Do not invent information from those results.
+If the indexed sources do not contain enough
+information, say so.
+`;
         }
 
-        const body =
-          await request.json();
 
-        const prompt =
-          String(
-            body.prompt ||
-            body.message ||
-            ""
-          ).trim();
-
-        if (!prompt) {
-
-          return json({
-            ok: false,
-            error:
-              "Image prompt is required."
-          }, 400);
-
-        }
-
-        const result =
-          await env.AI.run(
-            IMAGE_MODEL,
-            {
-              prompt,
-              num_steps:
-                body.num_steps || 4
-            }
-          );
-
-        // Workers AI image models
-        // commonly return a Response.
+        let userPrompt = message;
 
         if (
-          result instanceof Response
+          searchEnabled &&
+          searchContext
         ) {
+          userPrompt = `
+QUESTION:
+${message}
 
-          return new Response(
-            result.body,
+SEARCH RESULTS:
+${searchContext}
+
+Answer using the search results when useful.
+`;
+        }
+
+
+        // ====================================
+        // AI + AI GATEWAY
+        // ====================================
+
+        const result =
+          await env.AI.run(
+            AI_MODEL,
             {
-              status: result.status,
-              headers: {
-                ...CORS_HEADERS,
-                "Content-Type":
-                  result.headers.get(
-                    "Content-Type"
-                  ) ||
-                  "image/png"
+              messages: [
+                {
+                  role: "system",
+                  content: systemPrompt
+                },
+                {
+                  role: "user",
+                  content: userPrompt
+                }
+              ],
+              max_tokens: 4096
+            },
+            {
+              gateway: {
+                id: "default",
+                skipCache: false,
+                collectLog: true
               }
             }
           );
 
+        const answer =
+          result?.response ||
+          result?.result?.response ||
+          "I could not generate a response.";
+
+
+        // ====================================
+        // SAVE TO D1
+        // ====================================
+
+        if (env.DB) {
+          try {
+            await ensureDatabase(env);
+
+            await env.DB.prepare(`
+              INSERT INTO messages
+              (
+                conversation_id,
+                user_id,
+                role,
+                content,
+                created_at
+              )
+              VALUES (?, ?, ?, ?, ?)
+            `)
+              .bind(
+                conversationId,
+                userId,
+                "user",
+                message,
+                new Date().toISOString()
+              )
+              .run();
+
+            await env.DB.prepare(`
+              INSERT INTO messages
+              (
+                conversation_id,
+                user_id,
+                role,
+                content,
+                created_at
+              )
+              VALUES (?, ?, ?, ?, ?)
+            `)
+              .bind(
+                conversationId,
+                userId,
+                "assistant",
+                answer,
+                new Date().toISOString()
+              )
+              .run();
+
+          } catch (dbError) {
+            console.error(
+              "D1 ERROR",
+              dbError
+            );
+          }
         }
 
-        // Fallback for object responses.
-
-        if (result?.image) {
-
-          return json({
-            ok: true,
-            type: "image",
-            image: result.image
-          });
-
-        }
 
         return json({
           ok: true,
-          type: "image",
-          result
-        });
-
+          answer,
+          conversationId,
+          search_used: searchEnabled,
+          sources,
+          model: AI_MODEL,
+          gateway: "default"
+        }, cors);
       }
 
-      // ======================================================
-      // IMAGE UNDERSTANDING / VISION
-      // ======================================================
+
+      // ======================================
+      // CHAT HISTORY
+      // ======================================
 
       if (
-        path === "/v1/vision" &&
+        url.pathname === "/v1/history" &&
         request.method === "POST"
       ) {
-
-        if (!env.AI) {
+        if (!env.DB) {
           return json({
             ok: false,
-            error:
-              "Workers AI binding is missing."
-          }, 500);
+            error: "D1 unavailable"
+          }, cors, 500);
         }
 
         const body =
           await request.json();
 
-        const prompt =
-          body.prompt ||
-          body.message ||
-          "Analyze this image and explain what you see.";
-
-        const image =
-          body.image ||
-          body.image_base64 ||
-          body.imageBase64;
-
-        if (!image) {
-
-          return json({
-            ok: false,
-            error:
-              "Image data is required."
-          }, 400);
-
-        }
-
-        let base64 =
-          String(image);
-
-        if (
-          base64.includes(",")
-        ) {
-          base64 =
-            base64.split(",")[1];
-        }
-
-        let bytes;
-
-        try {
-
-          bytes =
-            Uint8Array.from(
-              atob(base64),
-              c =>
-                c.charCodeAt(0)
-            );
-
-        } catch {
-
-          return json({
-            ok: false,
-            error:
-              "Invalid base64 image data."
-          }, 400);
-
-        }
-
-        const result =
-          await env.AI.run(
-            VISION_MODEL,
-            {
-              messages: [
-                {
-                  role: "user",
-                  content: prompt,
-                  image:
-                    Array.from(bytes)
-                }
-              ]
-            }
+        const userId =
+          String(
+            body.userId ||
+            "anonymous"
           );
 
-        const answer =
-          result?.response ||
-          result?.output_text ||
-          result?.text ||
-          "";
-
-        return json({
-          ok: true,
-          type: "vision",
-          model: VISION_MODEL,
-          response: answer,
-          answer
-        });
-
-      }
-
-      // ======================================================
-      // GET CHAT HISTORY
-      // ======================================================
-
-      if (
-        path === "/v1/history" &&
-        request.method === "GET"
-      ) {
-
-        if (!env.DB) {
-
-          return json({
-            ok: false,
-            error:
-              "D1 database binding is missing."
-          }, 500);
-
-        }
-
-        await ensureTables(env);
-
-        const userId =
-          request.headers.get(
-            "X-User-ID"
-          ) ||
-          url.searchParams.get(
-            "userId"
-          ) ||
-          "guest";
+        await ensureDatabase(env);
 
         const result =
           await env.DB.prepare(`
             SELECT
-              id,
-              title,
-              created_at,
-              updated_at
-            FROM chats
+              conversation_id,
+              MAX(created_at) AS updated_at,
+              SUBSTR(
+                MAX(
+                  CASE
+                    WHEN role = 'user'
+                    THEN content
+                  END
+                ),
+                1,
+                80
+              ) AS title
+            FROM messages
             WHERE user_id = ?
+            GROUP BY conversation_id
             ORDER BY updated_at DESC
+            LIMIT 100
           `)
-          .bind(userId)
-          .all();
+            .bind(userId)
+            .all();
 
         return json({
           ok: true,
-          chats:
-            result.results || []
-        });
-
+          chats: result.results || []
+        }, cors);
       }
 
-      // ======================================================
-      // GET ONE CHAT
-      // ======================================================
+
+      // ======================================
+      // GET CONVERSATION
+      // ======================================
 
       if (
-        path.startsWith(
-          "/v1/history/"
-        ) &&
-        request.method === "GET"
+        url.pathname === "/v1/conversation" &&
+        request.method === "POST"
       ) {
+        const body =
+          await request.json();
 
-        if (!env.DB) {
+        const id =
+          String(
+            body.conversationId || ""
+          );
 
+        if (!id || !env.DB) {
           return json({
             ok: false,
-            error:
-              "D1 database binding is missing."
-          }, 500);
-
+            error: "Conversation unavailable"
+          }, cors, 400);
         }
 
-        await ensureTables(env);
-
-        const chatId =
-          path
-            .replace(
-              "/v1/history/",
-              ""
-            )
-            .trim();
-
-        if (!chatId) {
-
-          return json({
-            ok: false,
-            error:
-              "Chat ID required."
-          }, 400);
-
-        }
+        await ensureDatabase(env);
 
         const result =
           await env.DB.prepare(`
             SELECT
-              id,
-              chat_id,
               role,
               content,
               created_at
             FROM messages
-            WHERE chat_id = ?
-            ORDER BY created_at ASC
+            WHERE conversation_id = ?
+            ORDER BY id ASC
           `)
-          .bind(chatId)
-          .all();
+            .bind(id)
+            .all();
 
         return json({
           ok: true,
-          chatId,
           messages:
             result.results || []
-        });
-
+        }, cors);
       }
 
-      // ======================================================
-      // SAVE CHAT
-      // ======================================================
+
+      // ======================================
+      // IMAGE GENERATION
+      // ======================================
 
       if (
-        path ===
-          "/v1/history/save" &&
+        url.pathname === "/v1/image" &&
         request.method === "POST"
       ) {
-
-        if (!env.DB) {
-
-          return json({
-            ok: false,
-            error:
-              "D1 database binding is missing."
-          }, 500);
-
-        }
-
         const body =
           await request.json();
 
-        await ensureTables(env);
+        const prompt =
+          String(body.prompt || "").trim();
 
-        const userId =
-          getUserId(
-            request,
-            body
-          );
-
-        const chatId =
-          body.chatId ||
-          body.id ||
-          makeId();
-
-        const title =
-          body.title ||
-          "New chat";
-
-        const messages =
-          Array.isArray(
-            body.messages
-          )
-            ? body.messages
-            : [];
-
-        const now =
-          new Date().toISOString();
-
-        const existing =
-          await env.DB.prepare(`
-            SELECT id
-            FROM chats
-            WHERE id = ?
-          `)
-          .bind(chatId)
-          .first();
-
-        if (!existing) {
-
-          await env.DB.prepare(`
-            INSERT INTO chats
-            (
-              id,
-              user_id,
-              title,
-              created_at,
-              updated_at
-            )
-            VALUES (?, ?, ?, ?, ?)
-          `)
-          .bind(
-            chatId,
-            userId,
-            title,
-            now,
-            now
-          )
-          .run();
-
-        } else {
-
-          await env.DB.prepare(`
-            UPDATE chats
-            SET
-              title = ?,
-              updated_at = ?
-            WHERE id = ?
-          `)
-          .bind(
-            title,
-            now,
-            chatId
-          )
-          .run();
-
-        }
-
-        await env.DB.prepare(`
-          DELETE FROM messages
-          WHERE chat_id = ?
-        `)
-        .bind(chatId)
-        .run();
-
-        for (
-          const message of messages
-        ) {
-
-          if (
-            !message ||
-            !message.role
-          ) {
-            continue;
-          }
-
-          const content =
-            typeof message.content ===
-            "string"
-              ? message.content
-              : JSON.stringify(
-                  message.content
-                );
-
-          await env.DB.prepare(`
-            INSERT INTO messages
-            (
-              id,
-              chat_id,
-              role,
-              content,
-              created_at
-            )
-            VALUES (?, ?, ?, ?, ?)
-          `)
-          .bind(
-            makeId(),
-            chatId,
-            message.role,
-            content,
-            message.created_at ||
-              now
-          )
-          .run();
-
-        }
-
-        return json({
-          ok: true,
-          chatId,
-          saved:
-            messages.length
-        });
-
-      }
-
-      // ======================================================
-      // DELETE CHAT
-      // ======================================================
-
-      if (
-        path.startsWith(
-          "/v1/history/"
-        ) &&
-        request.method === "DELETE"
-      ) {
-
-        if (!env.DB) {
-
+        if (!prompt) {
           return json({
             ok: false,
-            error:
-              "D1 database binding is missing."
-          }, 500);
-
+            error: "Image prompt required"
+          }, cors, 400);
         }
 
-        await ensureTables(env);
+        /*
+          Cloudflare model availability can vary
+          by account. This endpoint attempts the
+          current FLUX model configured for the app.
+        */
 
-        const chatId =
-          path
+        const image =
+          await env.AI.run(
+            "@cf/black-forest-labs/flux-1-schnell",
+            {
+              prompt
+            }
+          );
+
+        return new Response(
+          image instanceof ReadableStream
+            ? image
+            : JSON.stringify(image),
+          {
+            status: 200,
+            headers: {
+              ...cors,
+              "Content-Type":
+                image instanceof ReadableStream
+                  ? "image/png"
+                  : "application/json"
+            }
+          }
+        );
+      }
+
+
+      // ======================================
+      // PDF GENERATION
+      // ======================================
+
+      if (
+        url.pathname === "/v1/pdf" &&
+        request.method === "POST"
+      ) {
+        const body =
+          await request.json();
+
+        const prompt =
+          String(body.prompt || "").trim();
+
+        const title =
+          String(
+            body.title ||
+            "LOGIC-LEAF Document"
+          );
+
+        if (!prompt) {
+          return json({
+            ok: false,
+            error: "PDF request required"
+          }, cors, 400);
+        }
+
+        const result =
+          await env.AI.run(
+            AI_MODEL,
+            {
+              messages: [
+                {
+                  role: "system",
+                  content: `
+Create a professional printable document.
+
+Return ONLY HTML content.
+Do not use markdown fences.
+Do not include JavaScript.
+Use headings, paragraphs, lists and tables
+where appropriate.
+`
+                },
+                {
+                  role: "user",
+                  content:
+                    `Title: ${title}
+
+Request:
+${prompt}`
+                }
+              ]
+            },
+            {
+              gateway: {
+                id: "default"
+              }
+            }
+          );
+
+        let content =
+          result?.response || "";
+
+        content =
+          content
             .replace(
-              "/v1/history/",
+              /^```html\s*/i,
+              ""
+            )
+            .replace(
+              /^```\s*/i,
+              ""
+            )
+            .replace(
+              /\s*```$/i,
               ""
             )
             .trim();
 
-        if (!chatId) {
+        const document = `
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
 
-          return json({
-            ok: false,
-            error:
-              "Chat ID required."
-          }, 400);
+<title>${escapeHTML(title)}</title>
 
-        }
+<style>
 
-        await env.DB.prepare(`
-          DELETE FROM messages
-          WHERE chat_id = ?
-        `)
-        .bind(chatId)
-        .run();
+@page {
+  size: A4;
+  margin: 18mm;
+}
 
-        await env.DB.prepare(`
-          DELETE FROM chats
-          WHERE id = ?
-        `)
-        .bind(chatId)
-        .run();
+body {
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
 
-        return json({
-          ok: true,
-          deleted: chatId
-        });
+  color: #111;
+  line-height: 1.6;
+  font-size: 14px;
+}
 
+h1 {
+  font-size: 28px;
+}
+
+h2 {
+  margin-top: 28px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+}
+
+th,
+td {
+  border: 1px solid #999;
+  padding: 8px;
+}
+
+.header {
+  border-bottom: 2px solid #111;
+  margin-bottom: 25px;
+  padding-bottom: 12px;
+}
+
+.footer {
+  border-top: 1px solid #aaa;
+  margin-top: 40px;
+  padding-top: 10px;
+  font-size: 10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<strong>LOGIC-LEAF</strong>
+</div>
+
+<h1>${escapeHTML(title)}</h1>
+
+${content}
+
+<div class="footer">
+Created with LOGIC-LEAF
+</div>
+
+</body>
+</html>
+`;
+
+        return new Response(
+          document,
+          {
+            status: 200,
+            headers: {
+              ...cors,
+              "Content-Type":
+                "text/html; charset=UTF-8"
+            }
+          }
+        );
       }
 
-      // ======================================================
+
+      // ======================================
       // CREATE API KEY
-      // ======================================================
+      // ======================================
 
       if (
-        path === "/v1/api/keys" &&
+        url.pathname === "/v1/keys/create" &&
         request.method === "POST"
       ) {
-
-        if (!env.QTM_KEYS) {
-
-          return json({
-            ok: false,
-            error:
-              "QTM_KEYS KV binding is missing."
-          }, 500);
-
-        }
-
-        const body =
-          await request.json();
-
-        const userId =
-          getUserId(
+        const auth =
+          await authenticateFirebase(
             request,
-            body
+            env
           );
 
-        const key =
-          "ll_" +
-          crypto.randomUUID()
-            .replaceAll("-", "");
+        if (!auth.ok) {
+          return json({
+            ok: false,
+            error: auth.error
+          }, cors, 401);
+        }
 
-        const record = {
-          userId,
-          createdAt:
-            new Date().toISOString()
-        };
+        if (!env.QTM_KEYS) {
+          return json({
+            ok: false,
+            error: "KV unavailable"
+          }, cors, 500);
+        }
+
+        const rawKey =
+          "ll_live_" +
+          randomToken(32);
+
+        const hash =
+          await sha256(rawKey);
 
         await env.QTM_KEYS.put(
-          key,
-          JSON.stringify(record)
+          `apikey:${hash}`,
+          JSON.stringify({
+            uid: auth.uid,
+            createdAt:
+              new Date().toISOString()
+          })
         );
 
         return json({
           ok: true,
-          apiKey: key,
-          createdAt:
-            record.createdAt
-        });
-
+          apiKey: rawKey,
+          warning:
+            "Copy this key now. It is not shown again."
+        }, cors);
       }
 
-      // ======================================================
-      // LIST API KEYS
-      // ======================================================
+
+      // ======================================
+      // REVOKE API KEY
+      // ======================================
 
       if (
-        path === "/v1/api/keys" &&
-        request.method === "GET"
+        url.pathname === "/v1/keys/revoke" &&
+        request.method === "POST"
       ) {
+        const auth =
+          await authenticateFirebase(
+            request,
+            env
+          );
 
-        if (!env.QTM_KEYS) {
-
+        if (!auth.ok) {
           return json({
             ok: false,
-            error:
-              "QTM_KEYS KV binding is missing."
-          }, 500);
-
-        }
-
-        const userId =
-          request.headers.get(
-            "X-User-ID"
-          ) || "guest";
-
-        const list =
-          await env.QTM_KEYS.list();
-
-        const keys = [];
-
-        for (
-          const item of list.keys
-        ) {
-
-          const value =
-            await env.QTM_KEYS.get(
-              item.name,
-              "json"
-            );
-
-          if (
-            value &&
-            value.userId === userId
-          ) {
-
-            keys.push({
-              key:
-                item.name.slice(
-                  0,
-                  8
-                ) + "••••••••",
-              createdAt:
-                value.createdAt
-            });
-
-          }
-
-        }
-
-        return json({
-          ok: true,
-          keys
-        });
-
-      }
-
-      // ======================================================
-      // DELETE API KEY
-      // ======================================================
-
-      if (
-        path === "/v1/api/keys" &&
-        request.method === "DELETE"
-      ) {
-
-        if (!env.QTM_KEYS) {
-
-          return json({
-            ok: false,
-            error:
-              "QTM_KEYS KV binding is missing."
-          }, 500);
-
+            error: auth.error
+          }, cors, 401);
         }
 
         const body =
           await request.json();
 
         const key =
-          body.key;
+          String(body.apiKey || "");
 
         if (!key) {
-
           return json({
             ok: false,
-            error:
-              "API key required."
-          }, 400);
-
+            error: "API key required"
+          }, cors, 400);
         }
 
-        const value =
+        const hash =
+          await sha256(key);
+
+        const record =
           await env.QTM_KEYS.get(
-            key,
+            `apikey:${hash}`,
             "json"
           );
 
-        if (!value) {
-
-          return json({
-            ok: false,
-            error:
-              "API key not found."
-          }, 404);
-
-        }
-
-        const userId =
-          getUserId(
-            request,
-            body
-          );
-
         if (
-          value.userId !==
-          userId
+          !record ||
+          record.uid !== auth.uid
         ) {
-
           return json({
             ok: false,
-            error:
-              "You cannot revoke this API key."
-          }, 403);
-
+            error: "API key not found"
+          }, cors, 404);
         }
 
         await env.QTM_KEYS.delete(
-          key
+          `apikey:${hash}`
         );
 
         return json({
-          ok: true,
-          revoked: true
-        });
-
+          ok: true
+        }, cors);
       }
 
-      // ======================================================
+
+      // ======================================
+      // PUBLIC API
+      // ======================================
+
+      if (
+        url.pathname === "/v1/api/chat" &&
+        request.method === "POST"
+      ) {
+        const auth =
+          await authenticateApiKey(
+            request,
+            env
+          );
+
+        if (!auth.ok) {
+          return json({
+            ok: false,
+            error: auth.error
+          }, cors, 401);
+        }
+
+        const body =
+          await request.json();
+
+        const message =
+          String(body.message || "").trim();
+
+        if (!message) {
+          return json({
+            ok: false,
+            error: "Message required"
+          }, cors, 400);
+        }
+
+        const result =
+          await env.AI.run(
+            AI_MODEL,
+            {
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "You are LOGIC-LEAF API."
+                },
+                {
+                  role: "user",
+                  content: message
+                }
+              ]
+            },
+            {
+              gateway: {
+                id: "default"
+              }
+            }
+          );
+
+        return json({
+          ok: true,
+          answer:
+            result?.response || ""
+        }, cors);
+      }
+
+
+      // ======================================
       // NOT FOUND
-      // ======================================================
+      // ======================================
 
       return json({
         ok: false,
-        error:
-          "Endpoint not found.",
-        path
-      }, 404);
+        error: "Endpoint not found"
+      }, cors, 404);
 
     } catch (error) {
 
       console.error(
-        "LOGIC-LEAF ERROR:",
+        "WORKER ERROR:",
         error
       );
 
       return json({
         ok: false,
         error:
-          "Worker request failed.",
-        message:
           error?.message ||
-          String(error)
-      }, 500);
+          "Server error"
+      }, cors, 500);
+    }
+  }
+};
 
+
+// ==========================================
+// DATABASE
+// ==========================================
+
+async function ensureDatabase(env) {
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS
+    idx_messages_conversation
+    ON messages(conversation_id)
+  `).run();
+
+  await env.DB.prepare(`
+    CREATE INDEX IF NOT EXISTS
+    idx_messages_user
+    ON messages(user_id)
+  `).run();
+}
+
+
+// ==========================================
+// FIREBASE AUTH VERIFICATION
+// ==========================================
+
+async function authenticateFirebase(
+  request,
+  env
+) {
+  try {
+
+    const header =
+      request.headers.get(
+        "Authorization"
+      );
+
+    if (!header) {
+      return {
+        ok: false,
+        error: "Login required"
+      };
     }
 
-  }
+    const idToken =
+      header.replace(
+        /^Bearer\s+/i,
+        ""
+      ).trim();
 
-};
+    if (!idToken) {
+      return {
+        ok: false,
+        error: "Invalid authentication"
+      };
+    }
+
+    const response =
+      await fetch(
+        `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${encodeURIComponent(env.FIREBASE_WEB_API_KEY)}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            idToken
+          })
+        }
+      );
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: "Firebase authentication failed"
+      };
+    }
+
+    const data =
+      await response.json();
+
+    const user =
+      data?.users?.[0];
+
+    if (!user) {
+      return {
+        ok: false,
+        error: "User not found"
+      };
+    }
+
+    return {
+      ok: true,
+      uid: user.localId,
+      email: user.email || ""
+    };
+
+  } catch (error) {
+
+    return {
+      ok: false,
+      error:
+        "Authentication verification failed"
+    };
+  }
+}
+
+
+// ==========================================
+// API KEY AUTH
+// ==========================================
+
+async function authenticateApiKey(
+  request,
+  env
+) {
+  try {
+
+    const header =
+      request.headers.get(
+        "Authorization"
+      );
+
+    if (!header) {
+      return {
+        ok: false,
+        error: "API key required"
+      };
+    }
+
+    const key =
+      header.replace(
+        /^Bearer\s+/i,
+        ""
+      ).trim();
+
+    if (!key.startsWith("ll_live_")) {
+      return {
+        ok: false,
+        error: "Invalid API key"
+      };
+    }
+
+    const hash =
+      await sha256(key);
+
+    const record =
+      await env.QTM_KEYS.get(
+        `apikey:${hash}`,
+        "json"
+      );
+
+    if (!record) {
+      return {
+        ok: false,
+        error: "Invalid or revoked API key"
+      };
+    }
+
+    return {
+      ok: true,
+      uid: record.uid
+    };
+
+  } catch {
+    return {
+      ok: false,
+      error: "API authentication failed"
+    };
+  }
+}
+
+
+// ==========================================
+// CRYPTO
+// ==========================================
+
+async function sha256(text) {
+  const data =
+    new TextEncoder().encode(text);
+
+  const hash =
+    await crypto.subtle.digest(
+      "SHA-256",
+      data
+    );
+
+  return [...new Uint8Array(hash)]
+    .map(
+      b =>
+        b.toString(16)
+          .padStart(2, "0")
+    )
+    .join("");
+}
+
+
+function randomToken(length) {
+  const bytes =
+    new Uint8Array(length);
+
+  crypto.getRandomValues(bytes);
+
+  return [...bytes]
+    .map(
+      b =>
+        b.toString(16)
+          .padStart(2, "0")
+    )
+    .join("");
+}
+
+
+function escapeHTML(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+function json(
+  data,
+  cors,
+  status = 200
+) {
+  return new Response(
+    JSON.stringify(data),
+    {
+      status,
+      headers: {
+        ...cors,
+        "Content-Type":
+          "application/json; charset=UTF-8"
+      }
+    }
+  );
+              }
