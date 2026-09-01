@@ -1,243 +1,288 @@
-// =====================================================
-// LOGIC-LEAF — COMPLETE FRONTEND APP.JS
-// =====================================================
-
-const APP_NAME = "LOGIC-LEAF";
+/* =====================================================
+   LOGIC-LEAF FRONTEND
+===================================================== */
 
 const API =
   "https://logic-leaf.qtmkiller6.workers.dev";
 
-// =====================================================
-// FIREBASE CONFIG
-// =====================================================
+
+/* =====================================================
+   FIREBASE
+===================================================== */
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw",
-  authDomain: "logic-leaf-64d0d.firebaseapp.com",
-  projectId: "logic-leaf-64d0d",
-  storageBucket: "logic-leaf-64d0d.firebasestorage.app",
-  messagingSenderId: "346443954182",
-  appId: "1:346443954182:web:2ab5bb71b5e52206e62b87",
-  measurementId: "G-ZVVBH04E9M"
+
+  apiKey:
+    "AIzaSyB5bg4U8aMJAhbWgU0sL37BN4JTTRpmMw",
+
+  authDomain:
+    "logic-leaf-64d0d.firebaseapp.com",
+
+  projectId:
+    "logic-leaf-64d0d",
+
+  storageBucket:
+    "logic-leaf-64d0d.firebasestorage.app",
+
+  messagingSenderId:
+    "346443954182",
+
+  appId:
+    "1:346443954182:web:2ab5bb71b5e52206e62b87",
+
+  measurementId:
+    "G-ZVVBH04E9M"
 };
 
-if (!firebase.apps.length) {
+
+if (
+  typeof firebase !== "undefined"
+) {
   firebase.initializeApp(firebaseConfig);
 }
 
-const auth = firebase.auth();
+
+const auth =
+  typeof firebase !== "undefined"
+    ? firebase.auth()
+    : null;
 
 
-// =====================================================
-// DOM HELPERS
-// =====================================================
+/* =====================================================
+   DOM
+===================================================== */
 
 const $ = id =>
   document.getElementById(id);
 
-const sidebar = $("sidebar");
-const openSidebar = $("openSidebar");
-const closeSidebar = $("closeSidebar");
+const sidebar =
+  $("sidebar");
 
-const newChat = $("newChat");
+const openSidebar =
+  $("openSidebar");
 
-const chat = $("chat");
-const welcome = $("welcome");
-const messages = $("messages");
+const closeSidebar =
+  $("closeSidebar");
 
-const messageInput = $("messageInput");
-const sendButton = $("sendButton");
+const newChat =
+  $("newChat");
 
-const searchToggle = $("searchToggle");
-const searchIndicator = $("searchIndicator");
+const messageInput =
+  $("messageInput");
 
-const fileInput = $("fileInput");
-const attachButton = $("attachButton");
-const filePreview = $("filePreview");
+const sendButton =
+  $("sendButton");
 
-const imageButton = $("imageButton");
+const messages =
+  $("messages");
 
-const chatHistory = $("chatHistory");
-const chatSearch = $("chatSearch");
+const welcome =
+  $("welcome");
 
-const authModal = $("authModal");
-const apiModal = $("apiModal");
-const settingsModal = $("settingsModal");
+const searchToggle =
+  $("searchToggle");
 
-const authEmail = $("authEmail");
-const authPassword = $("authPassword");
+const searchIndicator =
+  $("searchIndicator");
 
-const emailAuth = $("emailAuth");
-const googleAuth = $("googleAuth");
-const switchAuth = $("switchAuth");
-
-const authTitle = $("authTitle");
-const authSubtitle = $("authSubtitle");
-const authStatus = $("authStatus");
-const authButton = $("authButton");
-
-const accountName = $("accountName");
-const accountEmail = $("accountEmail");
-const avatar = $("avatar");
-const profileButton = $("profileButton");
-
-const apiButton = $("apiButton");
-const createApiKey = $("createApiKey");
-const apiOutput = $("apiOutput");
-
-const settingsButton = $("settingsButton");
-const logoutButton = $("logoutButton");
-
-
-// =====================================================
-// OPTIONAL CAMERA ELEMENTS
-// =====================================================
-
-const cameraButton =
-  $("cameraButton");
+const fileInput =
+  $("fileInput");
 
 const cameraInput =
   $("cameraInput");
 
+const attachButton =
+  $("attachButton");
 
-// =====================================================
-// STATE
-// =====================================================
+const cameraButton =
+  $("cameraButton");
 
-let currentUser = null;
+const filePreview =
+  $("filePreview");
 
-let authMode = "login";
+const imageButton =
+  $("imageButton");
+
+const pdfButton =
+  $("pdfButton");
+
+const chatHistory =
+  $("chatHistory");
+
+const chatSearch =
+  $("chatSearch");
+
+const authModal =
+  $("authModal");
+
+const apiModal =
+  $("apiModal");
+
+const settingsModal =
+  $("settingsModal");
+
+const authEmail =
+  $("authEmail");
+
+const authPassword =
+  $("authPassword");
+
+const emailAuth =
+  $("emailAuth");
+
+const googleAuth =
+  $("googleAuth");
+
+const switchAuth =
+  $("switchAuth");
+
+const authTitle =
+  $("authTitle");
+
+const authSubtitle =
+  $("authSubtitle");
+
+const authStatus =
+  $("authStatus");
+
+const authButton =
+  $("authButton");
+
+const accountName =
+  $("accountName");
+
+const accountEmail =
+  $("accountEmail");
+
+const avatar =
+  $("avatar");
+
+const profileButton =
+  $("profileButton");
+
+const apiButton =
+  $("apiButton");
+
+const settingsButton =
+  $("settingsButton");
+
+const logoutButton =
+  $("logoutButton");
+
+const createApiKey =
+  $("createApiKey");
+
+const apiOutput =
+  $("apiOutput");
+
+
+/* =====================================================
+   STATE
+===================================================== */
 
 let searchMode = false;
 
-let selectedFile = null;
+let authMode = "login";
+
+let currentUser = null;
 
 let currentConversation =
   crypto.randomUUID();
 
+let selectedFile = null;
 
-// =====================================================
-// SIDEBAR
-// =====================================================
 
-if (openSidebar) {
-  openSidebar.onclick = () => {
-    sidebar.classList.remove("closed");
-  };
-}
+/* =====================================================
+   SIDEBAR
+===================================================== */
 
-if (closeSidebar) {
-  closeSidebar.onclick = () => {
+openSidebar.onclick = () => {
+  sidebar.classList.remove("closed");
+};
+
+closeSidebar.onclick = () => {
+  sidebar.classList.add("closed");
+};
+
+
+/* =====================================================
+   NEW CHAT
+===================================================== */
+
+newChat.onclick = () => {
+
+  currentConversation =
+    crypto.randomUUID();
+
+  messages.innerHTML = "";
+
+  welcome.classList.remove("hidden");
+
+  selectedFile = null;
+
+  filePreview.textContent = "";
+  filePreview.classList.add("hidden");
+
+  messageInput.value = "";
+
+  resizeTextarea();
+
+  updateSendButton();
+
+  messageInput.focus();
+
+  if (window.innerWidth < 700) {
     sidebar.classList.add("closed");
-  };
-}
+  }
+};
 
 
-// =====================================================
-// NEW CHAT
-// =====================================================
+/* =====================================================
+   SEARCH
+===================================================== */
 
-if (newChat) {
+searchToggle.onclick = () => {
 
-  newChat.onclick = () => {
+  searchMode =
+    !searchMode;
 
-    currentConversation =
-      crypto.randomUUID();
+  searchToggle.classList.toggle(
+    "active",
+    searchMode
+  );
 
-    messages.innerHTML = "";
+  searchIndicator.classList.toggle(
+    "hidden",
+    !searchMode
+  );
+};
 
-    welcome?.classList.remove("hidden");
 
-    selectedFile = null;
+/* =====================================================
+   SEND BUTTON STATE
+===================================================== */
 
-    if (filePreview) {
-      filePreview.textContent = "";
-      filePreview.classList.add("hidden");
-    }
-
-    if (fileInput) {
-      fileInput.value = "";
-    }
-
-    messageInput.value = "";
+messageInput.addEventListener(
+  "input",
+  () => {
 
     resizeTextarea();
 
-    messageInput.focus();
+    updateSendButton();
+  }
+);
 
-    if (window.innerWidth < 700) {
-      sidebar.classList.add("closed");
-    }
-  };
+
+function updateSendButton() {
+
+  sendButton.disabled =
+    !messageInput.value.trim();
 }
 
 
-// =====================================================
-// SEARCH MODE
-// =====================================================
-
-if (searchToggle) {
-
-  searchToggle.onclick = () => {
-
-    searchMode = !searchMode;
-
-    searchToggle.classList.toggle(
-      "active",
-      searchMode
-    );
-
-    searchIndicator?.classList.toggle(
-      "hidden",
-      !searchMode
-    );
-  };
-}
-
-
-// =====================================================
-// SEND BUTTON
-// =====================================================
-
-if (sendButton) {
-
-  sendButton.onclick =
-    sendMessage;
-}
-
-
-// =====================================================
-// ENTER TO SEND
-// =====================================================
-
-if (messageInput) {
-
-  messageInput.addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-
-        event.preventDefault();
-
-        sendMessage();
-      }
-    }
-  );
-
-  messageInput.addEventListener(
-    "input",
-    resizeTextarea
-  );
-}
-
-
-// =====================================================
-// SEND MESSAGE
-// =====================================================
+/* =====================================================
+   SEND CHAT
+===================================================== */
 
 async function sendMessage() {
 
@@ -248,104 +293,144 @@ async function sendMessage() {
     return;
   }
 
-  welcome?.classList.add("hidden");
-
-  const displayText =
-    text ||
-    `Please analyze the attached file: ${
-      selectedFile?.name || "file"
-    }`;
-
-  addMessage(
-    "user",
-    displayText
-  );
+  const file =
+    selectedFile;
 
   messageInput.value = "";
 
   resizeTextarea();
 
-  sendButton.disabled = true;
+  updateSendButton();
+
+  welcome.classList.add("hidden");
+
+  if (file) {
+
+    addFileUserMessage(
+      text ||
+      `Please analyze ${file.name}.`,
+      file
+    );
+
+  } else {
+
+    addMessage(
+      "user",
+      text
+    );
+  }
 
   const loading =
     addLoadingMessage();
 
   try {
 
-    // -------------------------------------------------
-    // FILE / IMAGE REQUEST
-    // -------------------------------------------------
-
-    if (selectedFile) {
-
-      const result =
-        await sendFileToWorker(
-          selectedFile,
-          text
-        );
-
-      loading.remove();
-
-      if (!result.ok) {
-
-        addMessage(
-          "ai",
-          result.error ||
-          "I couldn't process that file."
-        );
-
-      } else {
-
-        addAIMessage(
-          result.answer ||
-          "File processed successfully.",
-          result.sources || []
-        );
-      }
-
-      clearSelectedFile();
-
-      return;
-    }
-
-
-    // -------------------------------------------------
-    // NORMAL CHAT
-    // -------------------------------------------------
-
     const userId =
       currentUser
         ? currentUser.uid
         : "anonymous";
 
-    const response =
-      await fetch(
-        API + "/v1/chat",
-        {
-          method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+    let response;
 
-          body: JSON.stringify({
-            message: text,
 
-            search: searchMode,
+    /* =========================================
+       FILE / IMAGE REQUEST
+    ========================================= */
 
-            userId,
+    if (file) {
 
-            conversationId:
-              currentConversation
-          })
-        }
-      );
+      const base64 =
+        await fileToDataURL(file);
+
+      response =
+        await fetch(
+          API + "/v1/chat",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+
+              message:
+                text ||
+                `Analyze this file: ${file.name}`,
+
+              userId,
+
+              conversationId:
+                currentConversation,
+
+              search:
+                searchMode,
+
+              file: {
+                name:
+                  file.name,
+
+                type:
+                  file.type,
+
+                size:
+                  file.size,
+
+                data:
+                  base64
+              }
+
+            })
+          }
+        );
+
+    }
+
+
+    /* =========================================
+       NORMAL CHAT
+    ========================================= */
+
+    else {
+
+      response =
+        await fetch(
+          API + "/v1/chat",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+
+              message:
+                text,
+
+              userId,
+
+              conversationId:
+                currentConversation,
+
+              search:
+                searchMode
+
+            })
+          }
+        );
+    }
+
 
     const data =
-      await safeJSON(response);
+      await response.json();
+
 
     loading.remove();
+
 
     if (
       !response.ok ||
@@ -355,748 +440,108 @@ async function sendMessage() {
       addMessage(
         "ai",
         data.error ||
-        "LOGIC-LEAF could not process the request."
+        "I couldn't process that request."
       );
 
       return;
     }
 
+
+    currentConversation =
+      data.conversationId ||
+      currentConversation;
+
+
     addAIMessage(
-      data.answer || "",
+      data.answer ||
+      "",
       data.sources || []
     );
 
+
     loadHistory();
 
-  } catch (error) {
 
-    console.error(error);
+  } catch (error) {
 
     loading.remove();
 
     addMessage(
       "ai",
-      "Connection error. Please check that your LOGIC-LEAF Worker is online."
+      "Connection error. Please check that the LOGIC-LEAF Worker is deployed."
     );
+
+    console.error(error);
 
   } finally {
 
-    sendButton.disabled = false;
+    selectedFile = null;
 
-    messageInput.focus();
-  }
-}
-
-
-// =====================================================
-// FILE UPLOAD
-// =====================================================
-
-if (attachButton) {
-
-  attachButton.onclick = () => {
-
-    fileInput?.click();
-  };
-}
-
-
-if (fileInput) {
-
-  fileInput.onchange =
-    event => {
-
-      const file =
-        event.target.files?.[0];
-
-      if (!file) {
-        return;
-      }
-
-      selectFile(file);
-    };
-}
-
-
-// =====================================================
-// SELECT FILE
-// =====================================================
-
-function selectFile(file) {
-
-  selectedFile = file;
-
-  if (filePreview) {
-
-    filePreview.classList.remove(
-      "hidden"
-    );
-
-    filePreview.innerHTML = `
-      <div class="selected-file">
-        <span class="selected-file-icon">
-          ${getFileIcon(file)}
-        </span>
-
-        <span class="selected-file-name">
-          ${escapeHTML(file.name)}
-        </span>
-
-        <button
-          type="button"
-          class="remove-file"
-          id="removeSelectedFile"
-          aria-label="Remove file"
-        >
-          ×
-        </button>
-      </div>
-    `;
-
-    const remove =
-      $("removeSelectedFile");
-
-    if (remove) {
-
-      remove.onclick =
-        clearSelectedFile;
-    }
-  }
-
-  // ---------------------------------------------------
-  // Automatically prepare text/code files
-  // ---------------------------------------------------
-
-  if (
-    isTextFile(file)
-  ) {
-
-    file.text()
-      .then(text => {
-
-        messageInput.value =
-          `Please analyze this file.
-
-FILE: ${file.name}
-
-${text}`;
-
-        resizeTextarea();
-
-        messageInput.focus();
-
-      })
-      .catch(() => {});
-  }
-
-  // ---------------------------------------------------
-  // PDF
-  // ---------------------------------------------------
-
-  else if (
-    file.type === "application/pdf" ||
-    file.name.toLowerCase().endsWith(".pdf")
-  ) {
-
-    messageInput.value =
-      `Please analyze the attached PDF: ${file.name}`;
-
-    resizeTextarea();
-
-    messageInput.focus();
-  }
-
-  // ---------------------------------------------------
-  // IMAGE
-  // ---------------------------------------------------
-
-  else if (
-    file.type.startsWith("image/")
-  ) {
-
-    messageInput.value =
-      `Please analyze this image.`;
-
-    resizeTextarea();
-
-    messageInput.focus();
-  }
-}
-
-
-// =====================================================
-// CLEAR FILE
-// =====================================================
-
-function clearSelectedFile() {
-
-  selectedFile = null;
-
-  if (fileInput) {
-    fileInput.value = "";
-  }
-
-  if (filePreview) {
-
-    filePreview.innerHTML = "";
+    filePreview.textContent = "";
 
     filePreview.classList.add(
       "hidden"
     );
-  }
-}
 
-
-// =====================================================
-// FILE TYPES
-// =====================================================
-
-function isTextFile(file) {
-
-  return (
-    file.type.startsWith("text/") ||
-    /\.(txt|md|json|csv|js|jsx|ts|tsx|css|html|xml|py|java|c|cpp|h|hpp|sql|yaml|yml|sh)$/i
-      .test(file.name)
-  );
-}
-
-
-function getFileIcon(file) {
-
-  const name =
-    file.name.toLowerCase();
-
-  if (file.type.startsWith("image/")) {
-    return "IMG";
-  }
-
-  if (name.endsWith(".pdf")) {
-    return "PDF";
-  }
-
-  if (
-    /\.(js|jsx|ts|tsx|py|java|c|cpp|h|hpp|css|html)$/i
-      .test(name)
-  ) {
-    return "CODE";
-  }
-
-  return "FILE";
-}
-
-
-// =====================================================
-// SEND FILE TO WORKER
-// =====================================================
-
-async function sendFileToWorker(
-  file,
-  message
-) {
-
-  try {
-
-    /*
-      FormData is used so the Worker can receive
-      real files instead of only filenames.
-    */
-
-    const formData =
-      new FormData();
-
-    formData.append(
-      "file",
-      file,
-      file.name
-    );
-
-    formData.append(
-      "message",
-      message || ""
-    );
-
-    formData.append(
-      "userId",
-      currentUser
-        ? currentUser.uid
-        : "anonymous"
-    );
-
-    formData.append(
-      "conversationId",
-      currentConversation
-    );
-
-    const response =
-      await fetch(
-        API + "/v1/file",
-        {
-          method: "POST",
-          body: formData
-        }
-      );
-
-    return await safeJSON(response);
-
-  } catch (error) {
-
-    console.error(
-      "FILE ERROR",
-      error
-    );
-
-    return {
-      ok: false,
-      error:
-        "File upload failed."
-    };
-  }
-}
-
-
-// =====================================================
-// CAMERA
-// =====================================================
-
-if (cameraButton) {
-
-  cameraButton.onclick = () => {
+    if (fileInput) {
+      fileInput.value = "";
+    }
 
     if (cameraInput) {
-      cameraInput.click();
+      cameraInput.value = "";
     }
-  };
-}
-
-
-if (cameraInput) {
-
-  cameraInput.onchange =
-    event => {
-
-      const file =
-        event.target.files?.[0];
-
-      if (!file) {
-        return;
-      }
-
-      selectFile(file);
-    };
-}
-
-
-// =====================================================
-// IMAGE GENERATION
-// =====================================================
-
-if (imageButton) {
-
-  imageButton.onclick =
-    generateImage;
-}
-
-
-async function generateImage() {
-
-  const prompt =
-    messageInput.value.trim();
-
-  if (!prompt) {
 
     messageInput.focus();
-
-    return;
   }
+}
 
-  welcome?.classList.add("hidden");
 
-  addMessage(
-    "user",
-    "Generate an image:\n\n" +
-    prompt
-  );
+sendButton.onclick =
+  sendMessage;
 
-  messageInput.value = "";
 
-  resizeTextarea();
+/* =====================================================
+   ENTER
+===================================================== */
 
-  imageButton.disabled = true;
-
-  const loading =
-    addLoadingMessage();
-
-  try {
-
-    const response =
-      await fetch(
-        API + "/v1/image",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            prompt
-          })
-        }
-      );
-
-    loading.remove();
-
-    const type =
-      response.headers.get(
-        "content-type"
-      ) || "";
-
-    // -----------------------------------------------
-    // IMAGE RESPONSE
-    // -----------------------------------------------
+messageInput.addEventListener(
+  "keydown",
+  event => {
 
     if (
-      response.ok &&
-      type.includes("image/")
+      event.key === "Enter" &&
+      !event.shiftKey
     ) {
 
-      const blob =
-        await response.blob();
+      event.preventDefault();
 
-      const imageURL =
-        URL.createObjectURL(blob);
-
-      addGeneratedImage(
-        imageURL
-      );
-
-      return;
+      sendMessage();
     }
 
-    // -----------------------------------------------
-    // JSON RESPONSE
-    // -----------------------------------------------
-
-    const data =
-      await safeJSON(response);
-
-    addMessage(
-      "ai",
-      data.error ||
-      "Image generation is currently unavailable."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "IMAGE ERROR",
-      error
-    );
-
-    loading.remove();
-
-    addMessage(
-      "ai",
-      "Image generation failed."
-    );
-
-  } finally {
-
-    imageButton.disabled = false;
-
-    messageInput.focus();
   }
+);
+
+
+/* =====================================================
+   RESIZE
+===================================================== */
+
+function resizeTextarea() {
+
+  messageInput.style.height =
+    "auto";
+
+  messageInput.style.height =
+    Math.min(
+      messageInput.scrollHeight,
+      180
+    ) + "px";
 }
 
 
-// =====================================================
-// GENERATED IMAGE UI
-// =====================================================
-
-function addGeneratedImage(
-  imageURL
-) {
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message ai";
-
-  const inner =
-    document.createElement(
-      "div"
-    );
-
-  inner.className =
-    "message-inner";
-
-  const label =
-    document.createElement(
-      "div"
-    );
-
-  label.className =
-    "message-label";
-
-  label.textContent =
-    APP_NAME;
-
-  const content =
-    document.createElement(
-      "div"
-    );
-
-  content.className =
-    "message-content";
-
-  const image =
-    document.createElement(
-      "img"
-    );
-
-  image.src =
-    imageURL;
-
-  image.alt =
-    "AI generated image";
-
-  image.style.display =
-    "block";
-
-  image.style.width =
-    "100%";
-
-  image.style.maxWidth =
-    "760px";
-
-  image.style.borderRadius =
-    "16px";
-
-  image.style.marginTop =
-    "8px";
-
-  content.appendChild(
-    image
-  );
-
-  inner.appendChild(label);
-
-  inner.appendChild(content);
-
-  wrapper.appendChild(inner);
-
-  messages.appendChild(wrapper);
-
-  scrollBottom();
-}
-
-
-// =====================================================
-// PDF GENERATION
-// =====================================================
-
-async function generatePDF() {
-
-  const prompt =
-    messageInput.value.trim();
-
-  if (!prompt) {
-
-    messageInput.focus();
-
-    return;
-  }
-
-  welcome?.classList.add("hidden");
-
-  addMessage(
-    "user",
-    "Create a PDF:\n\n" +
-    prompt
-  );
-
-  messageInput.value = "";
-
-  resizeTextarea();
-
-  const loading =
-    addLoadingMessage();
-
-  try {
-
-    const response =
-      await fetch(
-        API + "/v1/pdf",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            prompt,
-            title:
-              "LOGIC-LEAF Document"
-          })
-        }
-      );
-
-    loading.remove();
-
-    const type =
-      response.headers.get(
-        "content-type"
-      ) || "";
-
-    if (
-      response.ok &&
-      type.includes("text/html")
-    ) {
-
-      const html =
-        await response.text();
-
-      showPDFResult(
-        html
-      );
-
-      return;
-    }
-
-    const data =
-      await safeJSON(response);
-
-    addMessage(
-      "ai",
-      data.error ||
-      "PDF generation failed."
-    );
-
-  } catch (error) {
-
-    console.error(
-      "PDF ERROR",
-      error
-    );
-
-    loading.remove();
-
-    addMessage(
-      "ai",
-      "PDF generation failed."
-    );
-  }
-}
-
-
-// =====================================================
-// PDF RESULT
-// =====================================================
-
-function showPDFResult(
-  html
-) {
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message ai";
-
-  const inner =
-    document.createElement(
-      "div"
-    );
-
-  inner.className =
-    "message-inner";
-
-  const label =
-    document.createElement(
-      "div"
-    );
-
-  label.className =
-    "message-label";
-
-  label.textContent =
-    APP_NAME;
-
-  const content =
-    document.createElement(
-      "div"
-    );
-
-  content.className =
-    "message-content";
-
-  const text =
-    document.createElement(
-      "p"
-    );
-
-  text.textContent =
-    "Your document is ready.";
-
-  const button =
-    document.createElement(
-      "button"
-    );
-
-  button.className =
-    "primary-btn";
-
-  button.textContent =
-    "Open PDF Document";
-
-  button.onclick =
-    () => {
-
-      const blob =
-        new Blob(
-          [html],
-          {
-            type:
-              "text/html;charset=utf-8"
-          }
-        );
-
-      const url =
-        URL.createObjectURL(blob);
-
-      window.open(
-        url,
-        "_blank"
-      );
-    };
-
-  content.appendChild(text);
-
-  content.appendChild(button);
-
-  inner.appendChild(label);
-
-  inner.appendChild(content);
-
-  wrapper.appendChild(inner);
-
-  messages.appendChild(wrapper);
-
-  scrollBottom();
-}
-
-
-// =====================================================
-// MESSAGE UI
-// =====================================================
+/* =====================================================
+   TEXT MESSAGE
+===================================================== */
 
 function addMessage(
   role,
@@ -1104,25 +549,21 @@ function addMessage(
 ) {
 
   const wrapper =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   wrapper.className =
     `message ${role}`;
 
+
   const inner =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   inner.className =
     "message-inner";
 
+
   const label =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   label.className =
     "message-label";
@@ -1130,18 +571,18 @@ function addMessage(
   label.textContent =
     role === "user"
       ? "You"
-      : APP_NAME;
+      : "LOGIC-LEAF";
+
 
   const content =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   content.className =
     "message-content";
 
   content.innerHTML =
     formatText(text);
+
 
   inner.appendChild(label);
 
@@ -1157,13 +598,56 @@ function addMessage(
 }
 
 
-// =====================================================
-// AI MESSAGE
-// =====================================================
+/* =====================================================
+   FILE USER MESSAGE
+===================================================== */
+
+function addFileUserMessage(
+  text,
+  file
+) {
+
+  const wrapper =
+    addMessage(
+      "user",
+      text
+    );
+
+  const content =
+    wrapper.querySelector(
+      ".message-content"
+    );
+
+
+  if (
+    file.type.startsWith("image/")
+  ) {
+
+    const img =
+      document.createElement("img");
+
+    img.className =
+      "attached-image";
+
+    img.alt =
+      file.name;
+
+    img.src =
+      URL.createObjectURL(file);
+
+    content.appendChild(img);
+  }
+
+}
+
+
+/* =====================================================
+   AI MESSAGE
+===================================================== */
 
 function addAIMessage(
   text,
-  sources = []
+  sources
 ) {
 
   const wrapper =
@@ -1172,89 +656,81 @@ function addAIMessage(
       text
     );
 
+
   if (
-    Array.isArray(sources) &&
+    sources &&
     sources.length
   ) {
 
     const sourceBox =
-      document.createElement(
-        "div"
-      );
+      document.createElement("div");
 
     sourceBox.className =
       "sources";
+
 
     sources.forEach(
       source => {
 
         const item =
-          document.createElement(
-            "div"
-          );
+          document.createElement("div");
 
         item.className =
           "source";
 
-        const name =
+
+        const title =
           source.source ||
-          source.title ||
           "Indexed source";
 
-        item.textContent =
-          `Source ${source.id || ""}: ${name}`;
 
-        sourceBox.appendChild(
-          item
-        );
+        item.textContent =
+          `Source ${source.id || ""}: ${title}`;
+
+
+        sourceBox.appendChild(item);
+
       }
     );
 
+
     wrapper
-      .querySelector(
-        ".message-inner"
-      )
-      .appendChild(
-        sourceBox
-      );
+      .querySelector(".message-inner")
+      .appendChild(sourceBox);
   }
 
-  return wrapper;
+
+  scrollBottom();
 }
 
 
-// =====================================================
-// LOADING
-// =====================================================
+/* =====================================================
+   LOADING
+===================================================== */
 
 function addLoadingMessage() {
 
   const wrapper =
-    document.createElement(
-      "div"
-    );
+    document.createElement("div");
 
   wrapper.className =
     "message ai";
+
 
   wrapper.innerHTML = `
     <div class="message-inner">
 
       <div class="message-label">
-        ${APP_NAME}
+        LOGIC-LEAF
       </div>
 
       <div class="message-content">
-        <span class="thinking">
-          Thinking
-          <span>.</span>
-          <span>.</span>
-          <span>.</span>
-        </span>
+        Thinking…
       </div>
 
     </div>
   `;
+
 
   messages.appendChild(wrapper);
 
@@ -1264,52 +740,52 @@ function addLoadingMessage() {
 }
 
 
-// =====================================================
-// FORMAT RESPONSE
-// =====================================================
+/* =====================================================
+   FORMAT TEXT
+===================================================== */
 
 function formatText(text) {
 
   let safe =
     escapeHTML(
-      String(text ?? "")
+      String(text || "")
     );
 
-  // Code blocks
+
+  /* code blocks */
+
   safe =
     safe.replace(
-      /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g,
+      /```([a-zA-Z0-9_-]*)\n?([\s\S]*?)```/g,
       (_, language, code) => {
 
-        const lang =
-          language
-            ? `<div class="code-language">${language}</div>`
-            : "";
-
         return `
-          <div class="code-block">
-            ${lang}
-            <pre><code>${code.trim()}</code></pre>
-          </div>
+          <pre><code>${code}</code></pre>
         `;
       }
     );
 
-  // Inline code
+
+  /* inline code */
+
   safe =
     safe.replace(
       /`([^`]+)`/g,
       "<code>$1</code>"
     );
 
-  // Bold
+
+  /* bold */
+
   safe =
     safe.replace(
       /\*\*(.*?)\*\*/g,
       "<strong>$1</strong>"
     );
 
-  // Headings
+
+  /* headings */
+
   safe =
     safe.replace(
       /^### (.+)$/gm,
@@ -1328,12 +804,15 @@ function formatText(text) {
       "<h2>$1</h2>"
     );
 
-  // Bullets
+
+  /* bullets */
+
   safe =
     safe.replace(
       /^\s*[-*]\s+(.+)$/gm,
       "<li>$1</li>"
     );
+
 
   safe =
     safe.replace(
@@ -1341,47 +820,53 @@ function formatText(text) {
       "<ul>$1</ul>"
     );
 
-  // Numbered lists
-  safe =
-    safe.replace(
-      /^\s*\d+\.\s+(.+)$/gm,
-      "<li>$1</li>"
-    );
 
-  // New lines
+  /* line breaks */
+
   safe =
-    safe.replace(
-      /\n/g,
-      "<br>"
-    );
+    safe
+      .split(/\n{2,}/)
+      .map(
+        block =>
+          block.trim()
+            ? `<p>${block}</p>`
+            : ""
+      )
+      .join("");
+
 
   return safe;
 }
 
 
-// =====================================================
-// ESCAPE HTML
-// =====================================================
+/* =====================================================
+   ESCAPE HTML
+===================================================== */
 
 function escapeHTML(text) {
 
-  return String(text)
+  return text
+
     .replace(
       /&/g,
       "&amp;"
     )
+
     .replace(
       /</g,
       "&lt;"
     )
+
     .replace(
       />/g,
       "&gt;"
     )
+
     .replace(
       /"/g,
       "&quot;"
     )
+
     .replace(
       /'/g,
       "&#039;"
@@ -1389,377 +874,701 @@ function escapeHTML(text) {
 }
 
 
-// =====================================================
-// SAFE JSON
-// =====================================================
+/* =====================================================
+   SCROLL
+===================================================== */
 
-async function safeJSON(
-  response
-) {
+function scrollBottom() {
 
-  try {
+  const chat =
+    $("chat");
 
-    return await response.json();
+  chat.scrollTop =
+    chat.scrollHeight;
+}
 
-  } catch {
 
-    return {
-      ok: false,
-      error:
-        `Server returned HTTP ${response.status}`
+/* =====================================================
+   QUICK PROMPTS
+===================================================== */
+
+document
+  .querySelectorAll(".quick-grid button")
+  .forEach(button => {
+
+    button.onclick = () => {
+
+      messageInput.value =
+        button.dataset.prompt;
+
+      resizeTextarea();
+
+      updateSendButton();
+
+      messageInput.focus();
     };
+
+  });
+
+
+/* =====================================================
+   FILE ATTACHMENT
+===================================================== */
+
+attachButton.onclick = () => {
+
+  fileInput.click();
+};
+
+
+fileInput.onchange =
+  event => {
+
+    const file =
+      event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    selectFile(file);
+  };
+
+
+function selectFile(file) {
+
+  selectedFile =
+    file;
+
+
+  filePreview.textContent =
+    `Attached: ${file.name}`;
+
+  filePreview.classList.remove(
+    "hidden"
+  );
+
+
+  if (
+    !messageInput.value.trim()
+  ) {
+
+    messageInput.value =
+      `Analyze ${file.name} and explain it clearly.`;
+
+    resizeTextarea();
+
+    updateSendButton();
   }
 }
 
 
-// =====================================================
-// SCROLL
-// =====================================================
+/* =====================================================
+   CAMERA
+===================================================== */
 
-function scrollBottom() {
+cameraButton.onclick =
+  async () => {
 
-  if (!chat) return;
+    /*
+      Mobile browsers usually support
+      the capture input directly.
+    */
 
-  requestAnimationFrame(
-    () => {
+    try {
 
-      chat.scrollTop =
-        chat.scrollHeight;
+      cameraInput.click();
+
+    } catch {
+
+      /*
+        Fallback to normal image picker.
+      */
+
+      fileInput.click();
+    }
+  };
+
+
+cameraInput.onchange =
+  event => {
+
+    const file =
+      event.target.files[0];
+
+    if (!file) {
+      return;
+    }
+
+    selectFile(file);
+  };
+
+
+/* =====================================================
+   FILE → DATA URL
+===================================================== */
+
+function fileToDataURL(file) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      const reader =
+        new FileReader();
+
+      reader.onload =
+        () => resolve(
+          reader.result
+        );
+
+      reader.onerror =
+        reject;
+
+      reader.readAsDataURL(file);
     }
   );
 }
 
 
-// =====================================================
-// AUTO RESIZE
-// =====================================================
+/* =====================================================
+   IMAGE GENERATION
+===================================================== */
 
-function resizeTextarea() {
+imageButton.onclick =
+  async () => {
 
-  if (!messageInput) return;
+    const prompt =
+      messageInput.value.trim();
 
-  messageInput.style.height =
-    "auto";
+    if (!prompt) {
 
-  messageInput.style.height =
-    Math.min(
-      messageInput.scrollHeight,
-      180
-    ) + "px";
-}
+      messageInput.focus();
 
-
-// =====================================================
-// QUICK PROMPTS
-// =====================================================
-
-document
-  .querySelectorAll(
-    ".quick-grid button"
-  )
-  .forEach(
-    button => {
-
-      button.onclick =
-        () => {
-
-          messageInput.value =
-            button.dataset.prompt ||
-            button.textContent.trim();
-
-          resizeTextarea();
-
-          messageInput.focus();
-        };
+      return;
     }
-  );
 
 
-// =====================================================
-// AUTH BUTTON
-// =====================================================
+    messageInput.value = "";
 
-if (authButton) {
+    resizeTextarea();
 
-  authButton.onclick = () => {
+    updateSendButton();
 
-    if (currentUser) {
-
-      openModal(
-        settingsModal
-      );
-
-    } else {
-
-      openModal(
-        authModal
-      );
-    }
-  };
-}
+    welcome.classList.add(
+      "hidden"
+    );
 
 
-if (profileButton) {
-
-  profileButton.onclick = () => {
-
-    if (currentUser) {
-
-      openModal(
-        settingsModal
-      );
-
-    } else {
-
-      openModal(
-        authModal
-      );
-    }
-  };
-}
+    addMessage(
+      "user",
+      `Generate an image: ${prompt}`
+    );
 
 
-// =====================================================
-// GOOGLE LOGIN
-// =====================================================
+    const loading =
+      addLoadingMessage();
 
-if (googleAuth) {
 
-  googleAuth.onclick =
-    async () => {
+    try {
 
-      authStatus.textContent =
-        "Opening Google...";
+      const response =
+        await fetch(
+          API + "/v1/image",
+          {
+            method: "POST",
 
-      try {
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
 
-        const provider =
-          new firebase.auth.GoogleAuthProvider();
-
-        provider.setCustomParameters({
-          prompt: "select_account"
-        });
-
-        await auth.signInWithPopup(
-          provider
+            body: JSON.stringify({
+              prompt
+            })
+          }
         );
 
-        closeModal(
-          authModal
+
+      const data =
+        await response.json();
+
+
+      loading.remove();
+
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+
+        addMessage(
+          "ai",
+          data.error ||
+          "Image generation failed."
         );
-
-      } catch (error) {
-
-        console.error(error);
-
-        authStatus.textContent =
-          firebaseAuthError(
-            error
-          );
-      }
-    };
-}
-
-
-// =====================================================
-// EMAIL LOGIN / SIGNUP
-// =====================================================
-
-if (emailAuth) {
-
-  emailAuth.onclick =
-    async () => {
-
-      const email =
-        authEmail.value.trim();
-
-      const password =
-        authPassword.value;
-
-      if (!email || !password) {
-
-        authStatus.textContent =
-          "Enter your email and password.";
 
         return;
       }
 
-      authStatus.textContent =
-        "Please wait...";
 
-      try {
-
-        if (
-          authMode === "login"
-        ) {
-
-          await auth
-            .signInWithEmailAndPassword(
-              email,
-              password
-            );
-
-        } else {
-
-          await auth
-            .createUserWithEmailAndPassword(
-              email,
-              password
-            );
-        }
-
-        authStatus.textContent =
-          "";
-
-        closeModal(
-          authModal
+      const wrapper =
+        addMessage(
+          "ai",
+          data.message ||
+          "Generated image:"
         );
 
-      } catch (error) {
 
-        console.error(error);
+      if (data.image) {
 
-        authStatus.textContent =
-          firebaseAuthError(
-            error
-          );
+        const img =
+          document.createElement("img");
+
+        img.className =
+          "generated-image";
+
+        img.src =
+          data.image;
+
+        img.alt =
+          "Generated image";
+
+        wrapper
+          .querySelector(
+            ".message-content"
+          )
+          .appendChild(img);
+
       }
-    };
-}
 
 
-// =====================================================
-// SWITCH LOGIN / SIGNUP
-// =====================================================
+    } catch (error) {
 
-if (switchAuth) {
+      loading.remove();
 
-  switchAuth.onclick =
-    () => {
+      addMessage(
+        "ai",
+        "Image generation request failed."
+      );
+
+      console.error(error);
+    }
+  };
+
+
+/* =====================================================
+   PDF GENERATION
+===================================================== */
+
+pdfButton.onclick =
+  async () => {
+
+    const prompt =
+      messageInput.value.trim();
+
+
+    if (!prompt) {
+
+      messageInput.value =
+        "Create a professional PDF about ";
+
+      resizeTextarea();
+
+      updateSendButton();
+
+      messageInput.focus();
+
+      return;
+    }
+
+
+    messageInput.value = "";
+
+    resizeTextarea();
+
+    updateSendButton();
+
+    welcome.classList.add(
+      "hidden"
+    );
+
+
+    addMessage(
+      "user",
+      `Create PDF: ${prompt}`
+    );
+
+
+    const loading =
+      addLoadingMessage();
+
+
+    try {
+
+      const response =
+        await fetch(
+          API + "/v1/pdf",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              prompt
+            })
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      loading.remove();
+
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+
+        addMessage(
+          "ai",
+          data.error ||
+          "PDF creation failed."
+        );
+
+        return;
+      }
+
+
+      const wrapper =
+        addMessage(
+          "ai",
+          "Your document is ready."
+        );
+
+
+      const link =
+        document.createElement("a");
+
+
+      link.href =
+        data.url;
+
+
+      link.target =
+        "_blank";
+
+
+      link.rel =
+        "noopener";
+
+
+      link.textContent =
+        "Open generated document";
+
+
+      link.style.display =
+        "inline-block";
+
+
+      link.style.marginTop =
+        "10px";
+
+
+      link.style.color =
+        "#dce4ee";
+
+
+      wrapper
+        .querySelector(
+          ".message-content"
+        )
+        .appendChild(link);
+
+
+    } catch {
+
+      loading.remove();
+
+      addMessage(
+        "ai",
+        "PDF request failed."
+      );
+    }
+  };
+
+
+/* =====================================================
+   AUTH BUTTON
+===================================================== */
+
+authButton.onclick =
+  () => {
+
+    if (currentUser) {
+
+      openModal(
+        settingsModal
+      );
+
+    } else {
+
+      openModal(
+        authModal
+      );
+    }
+  };
+
+
+profileButton.onclick =
+  () => {
+
+    if (currentUser) {
+
+      openModal(
+        settingsModal
+      );
+
+    } else {
+
+      openModal(
+        authModal
+      );
+    }
+  };
+
+
+/* =====================================================
+   GOOGLE
+===================================================== */
+
+googleAuth.onclick =
+  async () => {
+
+    if (!auth) {
+      return;
+    }
+
+    authStatus.textContent =
+      "Opening Google…";
+
+
+    try {
+
+      const provider =
+        new firebase.auth.GoogleAuthProvider();
+
+
+      await auth.signInWithPopup(
+        provider
+      );
+
+
+      closeModal(
+        authModal
+      );
+
+
+    } catch (error) {
+
+      authStatus.textContent =
+        error.message;
+    }
+  };
+
+
+/* =====================================================
+   EMAIL
+===================================================== */
+
+emailAuth.onclick =
+  async () => {
+
+    if (!auth) {
+      return;
+    }
+
+
+    const email =
+      authEmail.value.trim();
+
+    const password =
+      authPassword.value;
+
+
+    if (!email || !password) {
+
+      authStatus.textContent =
+        "Enter email and password.";
+
+      return;
+    }
+
+
+    try {
 
       if (
         authMode === "login"
       ) {
 
-        authMode = "signup";
-
-        authTitle.textContent =
-          "Create your account";
-
-        authSubtitle.textContent =
-          "Start using LOGIC-LEAF";
-
-        emailAuth.textContent =
-          "Create account";
-
-        switchAuth.textContent =
-          "Already have an account? Sign in";
+        await auth.signInWithEmailAndPassword(
+          email,
+          password
+        );
 
       } else {
 
-        authMode = "login";
-
-        authTitle.textContent =
-          "Welcome to LOGIC-LEAF";
-
-        authSubtitle.textContent =
-          "Sign in to continue";
-
-        emailAuth.textContent =
-          "Sign in";
-
-        switchAuth.textContent =
-          "Create an account";
-      }
-    };
-}
-
-
-// =====================================================
-// FIREBASE AUTH STATE
-// =====================================================
-
-auth.onAuthStateChanged(
-  async user => {
-
-    currentUser = user;
-
-    if (user) {
-
-      const name =
-        user.displayName ||
-        user.email?.split("@")[0] ||
-        "User";
-
-      if (accountName) {
-        accountName.textContent =
-          name;
+        await auth.createUserWithEmailAndPassword(
+          email,
+          password
+        );
       }
 
-      if (accountEmail) {
-        accountEmail.textContent =
-          user.email || "";
-      }
 
-      if (avatar) {
-        avatar.textContent =
-          name
-            .charAt(0)
-            .toUpperCase();
-      }
+      closeModal(
+        authModal
+      );
 
-      if (profileButton) {
-        profileButton.textContent =
-          name
-            .charAt(0)
-            .toUpperCase();
-      }
 
-      if (authButton) {
-        authButton.textContent =
-          "Account";
-      }
+    } catch (error) {
 
-      await loadHistory();
+      authStatus.textContent =
+        error.message;
+    }
+  };
+
+
+/* =====================================================
+   AUTH MODE
+===================================================== */
+
+switchAuth.onclick =
+  () => {
+
+    if (
+      authMode === "login"
+    ) {
+
+      authMode = "signup";
+
+      authTitle.textContent =
+        "Create your account";
+
+      authSubtitle.textContent =
+        "Start using LOGIC-LEAF";
+
+      emailAuth.textContent =
+        "Create account";
+
+      switchAuth.textContent =
+        "Already have an account? Sign in";
 
     } else {
 
-      if (accountName) {
+      authMode = "login";
+
+      authTitle.textContent =
+        "Welcome to LOGIC-LEAF";
+
+      authSubtitle.textContent =
+        "Sign in to continue";
+
+      emailAuth.textContent =
+        "Sign in";
+
+      switchAuth.textContent =
+        "Create an account";
+    }
+  };
+
+
+/* =====================================================
+   AUTH STATE
+===================================================== */
+
+if (auth) {
+
+  auth.onAuthStateChanged(
+    async user => {
+
+      currentUser =
+        user;
+
+
+      if (user) {
+
+        const name =
+          user.displayName ||
+          user.email
+            ?.split("@")[0] ||
+          "User";
+
+
+        accountName.textContent =
+          name;
+
+        accountEmail.textContent =
+          user.email || "";
+
+
+        avatar.textContent =
+          name
+            .charAt(0)
+            .toUpperCase();
+
+
+        profileButton.textContent =
+          name
+            .charAt(0)
+            .toUpperCase();
+
+
+        authButton.textContent =
+          "Account";
+
+
+        await loadHistory();
+
+
+      } else {
+
         accountName.textContent =
           "Guest";
-      }
 
-      if (accountEmail) {
         accountEmail.textContent =
           "Not signed in";
-      }
 
-      if (avatar) {
         avatar.textContent =
           "?";
-      }
 
-      if (profileButton) {
         profileButton.textContent =
           "?";
-      }
 
-      if (authButton) {
         authButton.textContent =
           "Sign in";
       }
+
     }
-  }
-);
+  );
+
+}
 
 
-// =====================================================
-// HISTORY
-// =====================================================
+/* =====================================================
+   HISTORY
+===================================================== */
 
 async function loadHistory() {
 
-  if (!currentUser) return;
+  if (!currentUser) {
+    return;
+  }
+
 
   try {
 
@@ -1775,16 +1584,22 @@ async function loadHistory() {
           },
 
           body: JSON.stringify({
+
             userId:
               currentUser.uid
+
           })
         }
       );
 
-    const data =
-      await safeJSON(response);
 
-    chatHistory.innerHTML = "";
+    const data =
+      await response.json();
+
+
+    chatHistory.innerHTML =
+      "";
+
 
     if (
       !data.ok ||
@@ -1793,48 +1608,45 @@ async function loadHistory() {
       return;
     }
 
+
     data.chats.forEach(
-      chatItem => {
+      chat => {
 
         const item =
-          document.createElement(
-            "div"
-          );
+          document.createElement("div");
+
 
         item.className =
           "history-item";
 
+
         item.textContent =
-          chatItem.title ||
+          chat.title ||
           "New conversation";
 
+
         item.onclick =
-          () => {
-
+          () =>
             loadConversation(
-              chatItem.conversation_id
+              chat.conversation_id
             );
-          };
 
-        chatHistory.appendChild(
-          item
-        );
+
+        chatHistory.appendChild(item);
       }
     );
 
+
   } catch (error) {
 
-    console.error(
-      "HISTORY ERROR",
-      error
-    );
+    console.error(error);
   }
 }
 
 
-// =====================================================
-// LOAD CONVERSATION
-// =====================================================
+/* =====================================================
+   LOAD CONVERSATION
+===================================================== */
 
 async function loadConversation(
   conversationId
@@ -1859,37 +1671,42 @@ async function loadConversation(
         }
       );
 
-    const data =
-      await safeJSON(response);
 
-    if (!data.ok) return;
+    const data =
+      await response.json();
+
+
+    if (!data.ok) {
+      return;
+    }
+
 
     currentConversation =
       conversationId;
 
-    messages.innerHTML = "";
 
-    welcome?.classList.add(
+    messages.innerHTML =
+      "";
+
+    welcome.classList.add(
       "hidden"
     );
 
-    if (
-      Array.isArray(data.messages)
-    ) {
 
-      data.messages.forEach(
-        message => {
+    data.messages.forEach(
+      message => {
 
-          addMessage(
-            message.role ===
-              "assistant"
-              ? "ai"
-              : "user",
-            message.content
-          );
-        }
-      );
-    }
+        addMessage(
+          message.role ===
+            "assistant"
+            ? "ai"
+            : "user",
+          message.content
+        );
+
+      }
+    );
+
 
     if (window.innerWidth < 700) {
 
@@ -1898,341 +1715,211 @@ async function loadConversation(
       );
     }
 
-  } catch (error) {
 
-    console.error(
-      "CONVERSATION ERROR",
-      error
+  } catch {}
+}
+
+
+/* =====================================================
+   CHAT SEARCH
+===================================================== */
+
+chatSearch.oninput =
+  () => {
+
+    const query =
+      chatSearch.value
+        .toLowerCase()
+        .trim();
+
+
+    document
+      .querySelectorAll(
+        ".history-item"
+      )
+      .forEach(
+        item => {
+
+          item.style.display =
+            item.textContent
+              .toLowerCase()
+              .includes(query)
+              ? ""
+              : "none";
+        }
+      );
+  };
+
+
+/* =====================================================
+   API KEY
+===================================================== */
+
+apiButton.onclick =
+  () => {
+
+    apiOutput.textContent =
+      "";
+
+    openModal(
+      apiModal
+    );
+  };
+
+
+createApiKey.onclick =
+  async () => {
+
+    if (!currentUser) {
+
+      apiOutput.textContent =
+        "Please sign in first.";
+
+      return;
+    }
+
+
+    try {
+
+      const token =
+        await currentUser.getIdToken();
+
+
+      const response =
+        await fetch(
+          API + "/v1/keys/create",
+          {
+            method: "POST",
+
+            headers: {
+              Authorization:
+                "Bearer " + token
+            }
+          }
+        );
+
+
+      const data =
+        await response.json();
+
+
+      if (!data.ok) {
+
+        apiOutput.textContent =
+          data.error;
+
+        return;
+      }
+
+
+      apiOutput.textContent =
+        data.apiKey;
+
+
+    } catch {
+
+      apiOutput.textContent =
+        "Could not create API key.";
+    }
+  };
+
+
+/* =====================================================
+   SETTINGS
+===================================================== */
+
+settingsButton.onclick =
+  () => {
+
+    openModal(
+      settingsModal
+    );
+  };
+
+
+logoutButton.onclick =
+  async () => {
+
+    if (auth) {
+      await auth.signOut();
+    }
+
+    closeModal(
+      settingsModal
+    );
+
+    newChat.click();
+  };
+
+
+/* =====================================================
+   MODALS
+===================================================== */
+
+document
+  .querySelectorAll("[data-close]")
+  .forEach(button => {
+
+    button.onclick =
+      () => {
+
+        const modal =
+          $(button.dataset.close);
+
+        closeModal(modal);
+      };
+  });
+
+
+function openModal(element) {
+
+  if (element) {
+    element.classList.remove(
+      "hidden"
     );
   }
 }
 
 
-// =====================================================
-// HISTORY SEARCH
-// =====================================================
+function closeModal(element) {
 
-if (chatSearch) {
-
-  chatSearch.oninput =
-    () => {
-
-      const query =
-        chatSearch.value
-          .toLowerCase()
-          .trim();
-
-      document
-        .querySelectorAll(
-          ".history-item"
-        )
-        .forEach(
-          item => {
-
-            item.style.display =
-              item.textContent
-                .toLowerCase()
-                .includes(query)
-                ? ""
-                : "none";
-          }
-        );
-    };
+  if (element) {
+    element.classList.add(
+      "hidden"
+    );
+  }
 }
 
 
-// =====================================================
-// API KEY
-// =====================================================
-
-if (apiButton) {
-
-  apiButton.onclick =
-    () => {
-
-      if (apiOutput) {
-        apiOutput.textContent = "";
-      }
-
-      openModal(
-        apiModal
-      );
-    };
-}
-
-
-if (createApiKey) {
-
-  createApiKey.onclick =
-    async () => {
-
-      if (!currentUser) {
-
-        apiOutput.textContent =
-          "Please sign in first.";
-
-        return;
-      }
-
-      apiOutput.textContent =
-        "Creating API key...";
-
-      try {
-
-        const token =
-          await currentUser.getIdToken();
-
-        const response =
-          await fetch(
-            API + "/v1/keys/create",
-            {
-              method: "POST",
-
-              headers: {
-                Authorization:
-                  "Bearer " + token
-              }
-            }
-          );
-
-        const data =
-          await safeJSON(response);
-
-        if (!data.ok) {
-
-          apiOutput.textContent =
-            data.error ||
-            "Could not create API key.";
-
-          return;
-        }
-
-        apiOutput.textContent =
-          data.apiKey;
-
-      } catch (error) {
-
-        console.error(error);
-
-        apiOutput.textContent =
-          "Could not create API key.";
-      }
-    };
-}
-
-
-// =====================================================
-// SETTINGS
-// =====================================================
-
-if (settingsButton) {
-
-  settingsButton.onclick =
-    () => {
-
-      openModal(
-        settingsModal
-      );
-    };
-}
-
-
-// =====================================================
-// LOGOUT
-// =====================================================
-
-if (logoutButton) {
-
-  logoutButton.onclick =
-    async () => {
-
-      try {
-
-        await auth.signOut();
-
-        closeModal(
-          settingsModal
-        );
-
-        newChat?.click();
-
-      } catch (error) {
-
-        console.error(error);
-      }
-    };
-}
-
-
-// =====================================================
-// MODALS
-// =====================================================
+/* =====================================================
+   MAIN CLICK MOBILE
+===================================================== */
 
 document
-  .querySelectorAll(
-    "[data-close]"
-  )
-  .forEach(
-    button => {
-
-      button.onclick =
-        () => {
-
-          const modal =
-            document.getElementById(
-              button.dataset.close
-            );
-
-          if (modal) {
-            closeModal(modal);
-          }
-        };
-    }
-  );
-
-
-function openModal(
-  element
-) {
-
-  if (!element) return;
-
-  element.classList.remove(
-    "hidden"
-  );
-}
-
-
-function closeModal(
-  element
-) {
-
-  if (!element) return;
-
-  element.classList.add(
-    "hidden"
-  );
-}
-
-
-// =====================================================
-// ESCAPE TO CLOSE MODAL
-// =====================================================
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.key !== "Escape"
-    ) {
-      return;
-    }
-
-    document
-      .querySelectorAll(
-        ".modal:not(.hidden)"
-      )
-      .forEach(
-        modal => {
-          closeModal(modal);
-        }
-      );
-  }
-);
-
-
-// =====================================================
-// CLOSE MOBILE SIDEBAR
-// =====================================================
-
-const main =
-  document.querySelector(".main");
-
-if (main) {
-
-  main.addEventListener(
+  .querySelector(".main")
+  .addEventListener(
     "click",
-    () => {
+    event => {
 
       if (
-        window.innerWidth < 700
+        window.innerWidth < 700 &&
+        !event.target.closest(".composer") &&
+        !event.target.closest(".topbar")
       ) {
 
-        sidebar?.classList.add(
+        sidebar.classList.add(
           "closed"
         );
       }
+
     }
   );
-}
 
 
-// =====================================================
-// FIREBASE ERROR MESSAGES
-// =====================================================
-
-function firebaseAuthError(
-  error
-) {
-
-  const code =
-    error?.code || "";
-
-  const messages = {
-
-    "auth/popup-closed-by-user":
-      "Google sign-in was cancelled.",
-
-    "auth/popup-blocked":
-      "Your browser blocked the Google sign-in window.",
-
-    "auth/unauthorized-domain":
-      "This website domain is not authorized in Firebase.",
-
-    "auth/invalid-credential":
-      "The login credentials are invalid.",
-
-    "auth/user-not-found":
-      "No account was found with this email.",
-
-    "auth/wrong-password":
-      "Incorrect password.",
-
-    "auth/email-already-in-use":
-      "An account already exists with this email.",
-
-    "auth/weak-password":
-      "Please use a stronger password.",
-
-    "auth/invalid-email":
-      "Please enter a valid email address."
-  };
-
-  return (
-    messages[code] ||
-    error?.message ||
-    "Authentication failed."
-  );
-}
-
-
-// =====================================================
-// INITIAL STATE
-// =====================================================
-
-if (
-  window.innerWidth < 700
-) {
-
-  sidebar?.classList.add(
-    "closed"
-  );
-}
+/* =====================================================
+   START
+===================================================== */
 
 resizeTextarea();
 
-console.log(
-  `%c${APP_NAME} frontend loaded`,
-  "font-weight:bold"
-);
+updateSendButton();
