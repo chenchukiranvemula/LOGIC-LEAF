@@ -1,6 +1,6 @@
 // ============================================================
 // LOGIC-LEAF WORKER
-// Chat + Vision + Image + PDF + Search + History + API Keys
+// Chat + Search + Vision/File + Image + PDF + History + API
 // ============================================================
 
 const APP_NAME = "LOGIC-LEAF";
@@ -17,10 +17,14 @@ const IMAGE_MODEL =
 const SEARCH_INSTANCE =
   "logic-leaf-search";
 
-const MAX_HISTORY = 30;
+
+// ============================================================
+// MAIN
+// ============================================================
 
 export default {
   async fetch(request, env) {
+
     const cors = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods":
@@ -40,6 +44,7 @@ export default {
     const url = new URL(request.url);
 
     try {
+
       // ======================================================
       // HEALTH
       // ======================================================
@@ -60,10 +65,10 @@ export default {
 
           endpoints: {
             chat: "/v1/chat",
-            vision: "/v1/vision",
+            search: "/v1/search",
             image: "/v1/image",
             pdf: "/v1/pdf",
-            search: "/v1/search",
+            vision: "/v1/vision",
             history: "/v1/history",
             conversation: "/v1/conversation",
             createKey: "/v1/keys/create",
@@ -73,6 +78,7 @@ export default {
         }, cors);
       }
 
+
       // ======================================================
       // SEARCH
       // ======================================================
@@ -81,7 +87,8 @@ export default {
         url.pathname === "/v1/search" &&
         request.method === "POST"
       ) {
-        const body = await request.json();
+
+        const body = await safeJSON(request);
 
         const query = String(
           body.query ||
@@ -99,60 +106,73 @@ export default {
         if (!env.AI_SEARCH) {
           return json({
             ok: false,
-            error: "AI Search binding is missing"
+            error: "AI Search binding is not configured"
           }, cors, 500);
         }
 
-        const instance =
-          env.AI_SEARCH.get(
-            SEARCH_INSTANCE
-          );
+        try {
 
-        const result =
-          await instance.search({
-            messages: [
-              {
-                role: "user",
-                content: query
-              }
-            ]
-          });
+          const instance =
+            env.AI_SEARCH.get(
+              SEARCH_INSTANCE
+            );
 
-        const chunks =
-          Array.isArray(result?.chunks)
-            ? result.chunks
-            : [];
+          const result =
+            await instance.search({
+              messages: [
+                {
+                  role: "user",
+                  content: query
+                }
+              ]
+            });
 
-        const sources =
-          chunks.map((chunk, index) => ({
-            id: index + 1,
+          const chunks =
+            Array.isArray(result?.chunks)
+              ? result.chunks
+              : [];
 
-            text:
-              chunk.text ||
-              chunk.content ||
-              "",
+          const sources =
+            chunks.map((chunk, index) => ({
+              id: index + 1,
 
-            source:
-              chunk.source ||
-              chunk.filename ||
-              chunk.file_name ||
-              chunk.title ||
-              "Indexed source",
+              text:
+                chunk.text ||
+                chunk.content ||
+                "",
 
-            score:
-              chunk.score ?? null,
+              score:
+                chunk.score ?? null,
 
-            url:
-              chunk.url || null
-          }));
+              source:
+                chunk.source ||
+                chunk.filename ||
+                chunk.file_name ||
+                chunk.title ||
+                "Indexed source",
 
-        return json({
-          ok: true,
-          query,
-          count: sources.length,
-          results: sources
-        }, cors);
+              url:
+                chunk.url || null
+            }));
+
+          return json({
+            ok: true,
+            query,
+            count: sources.length,
+            results: sources
+          }, cors);
+
+        } catch (error) {
+
+          return json({
+            ok: false,
+            error:
+              error?.message ||
+              "Search failed"
+          }, cors, 500);
+        }
       }
+
 
       // ======================================================
       // CHAT
@@ -162,13 +182,28 @@ export default {
         url.pathname === "/v1/chat" &&
         request.method === "POST"
       ) {
+
         const body =
-          await request.json();
+          await safeJSON(request);
 
         const message =
           String(
             body.message || ""
           ).trim();
+
+        if (!message) {
+          return json({
+            ok: false,
+            error: "Message required"
+          }, cors, 400);
+        }
+
+        if (!env.AI) {
+          return json({
+            ok: false,
+            error: "Cloudflare AI binding missing"
+          }, cors, 500);
+        }
 
         const userId =
           String(
@@ -186,30 +221,20 @@ export default {
           body.search === true ||
           body.useSearch === true;
 
-        const clientHistory =
-          Array.isArray(body.history)
-            ? body.history
-            : [];
-
-        if (!message) {
-          return json({
-            ok: false,
-            error: "Message required"
-          }, cors, 400);
-        }
+        let sources = [];
+        let searchContext = "";
 
         // ----------------------------------------------------
         // SEARCH
         // ----------------------------------------------------
 
-        let sources = [];
-        let searchContext = "";
-
         if (
           searchEnabled &&
           env.AI_SEARCH
         ) {
+
           try {
+
             const instance =
               env.AI_SEARCH.get(
                 SEARCH_INSTANCE
@@ -233,40 +258,38 @@ export default {
                 : [];
 
             sources =
-              chunks.map(
-                (chunk, index) => ({
-                  id: index + 1,
+              chunks.map((chunk, index) => ({
+                id: index + 1,
 
-                  text:
-                    chunk.text ||
-                    chunk.content ||
-                    "",
+                text:
+                  chunk.text ||
+                  chunk.content ||
+                  "",
 
-                  source:
-                    chunk.source ||
-                    chunk.filename ||
-                    chunk.file_name ||
-                    chunk.title ||
-                    "Indexed source",
+                score:
+                  chunk.score ?? null,
 
-                  score:
-                    chunk.score ?? null,
+                source:
+                  chunk.source ||
+                  chunk.filename ||
+                  chunk.file_name ||
+                  chunk.title ||
+                  "Indexed source",
 
-                  url:
-                    chunk.url || null
-                })
-              );
+                url:
+                  chunk.url || null
+              }));
 
             searchContext =
               sources
-                .map(
-                  source =>
-                    `[Source ${source.id}]
+                .map(source =>
+                  `[Source ${source.id}]
 ${source.text}`
                 )
                 .join("\n\n");
 
           } catch (error) {
+
             console.error(
               "SEARCH ERROR",
               error
@@ -274,134 +297,159 @@ ${source.text}`
           }
         }
 
+
         // ----------------------------------------------------
-        // SYSTEM PROMPT
-        // IMPORTANT: LET, NOT CONST
+        // IMPORTANT:
+        // LET, NOT CONST
         // ----------------------------------------------------
 
         let systemPrompt = `
-You are LOGIC-LEAF.
+You are LOGIC-LEAF, a capable general AI assistant.
 
-You are a general-purpose AI assistant.
-
-Developer:
-V.CHENCHUKIRAN
-CLOUD SECURITY
-
-Your job is to provide useful, accurate,
-clear and context-aware answers.
+Your job is to give useful, accurate and natural answers.
 
 You can help with:
 
 - General questions
-- Reasoning
 - Mathematics
-- Science
-- Education
+- Physics
+- Chemistry
+- JEE preparation
+- School and college study
 - Programming
 - Coding
 - Debugging
 - Web development
-- Project development
+- HTML
+- CSS
+- JavaScript
+- Python
+- Java
+- C
+- C++
+- Technical projects
 - Writing
-- Summaries
-- Study assistance
-- Technical explanations
-- Creative ideas
+- Reasoning
+- Problem solving
+- Explanations
+- Study planning
 
-CONVERSATION RULES:
+IMPORTANT CONTEXT RULES:
 
-1. Remember the conversation context supplied
-   in the messages.
+1. Continue the current conversation naturally.
+2. Use previous conversation context when it is provided.
+3. Do not randomly assume the user is asking about another country.
+4. If the user is in India or asks about Indian education, exams,
+   colleges, laws, prices or services, answer for India unless they
+   specifically request another country.
+5. Do not invent personal information about the user.
+6. If information is uncertain, say so.
+7. Do not claim to be ChatGPT, Gemini, Claude or another company's AI.
+8. You are LOGIC-LEAF.
 
-2. If the user continues a topic, continue that
-   topic instead of starting a completely new answer.
-
-3. Do not unnecessarily assume that the user is
-   asking about another country.
-
-4. When the user's location or country matters
-   and is not known, explain the assumption or
-   ask when necessary.
-
-5. Answer the actual question first.
-
-6. Do not claim to be ChatGPT, Gemini, Claude,
-   or another company's assistant.
-
-7. You are LOGIC-LEAF.
-
-CODING:
-
-When providing code:
+When writing code:
+- Give complete usable code.
 - Use Markdown code blocks.
-- Identify the language.
-- Give complete usable code when appropriate.
-- Do not intentionally leave required sections
-  unfinished.
-
-STYLE:
-
-Be natural, helpful and concise unless the user
-asks for detailed information.
+- Mention the language.
+- Avoid unnecessary incomplete snippets.
 `;
 
-        if (searchEnabled) {
+
+        // ----------------------------------------------------
+        // SEARCH PROMPT
+        // ----------------------------------------------------
+
+        if (
+          searchEnabled &&
+          searchContext
+        ) {
+
           systemPrompt += `
 
 SEARCH MODE:
 
-Search results are provided below.
+Search results have been provided below.
 
 Use them when they are relevant.
-Do not invent facts from them.
-If the sources do not contain enough information,
-say that clearly.
+Do not invent facts that are not supported by the results.
 
 SEARCH RESULTS:
-${searchContext || "No useful indexed results found."}
+${searchContext}
 `;
         }
 
+
         // ----------------------------------------------------
-        // CONVERSATION CONTEXT
+        // CONVERSATION MEMORY
         // ----------------------------------------------------
 
-        const cleanHistory =
-          clientHistory
-            .filter(
-              item =>
-                item &&
-                (item.role === "user" ||
-                 item.role === "assistant") &&
-                typeof item.content === "string"
-            )
-            .slice(-MAX_HISTORY);
+        let previousMessages = [];
+
+        if (
+          env.DB &&
+          userId !== "anonymous"
+        ) {
+
+          try {
+
+            await ensureDatabase(env);
+
+            const history =
+              await env.DB.prepare(`
+                SELECT role, content
+                FROM messages
+                WHERE conversation_id = ?
+                AND user_id = ?
+                ORDER BY id DESC
+                LIMIT 20
+              `)
+                .bind(
+                  conversationId,
+                  userId
+                )
+                .all();
+
+            previousMessages =
+              (history.results || [])
+                .reverse()
+                .map(item => ({
+                  role:
+                    item.role === "assistant"
+                      ? "assistant"
+                      : "user",
+
+                  content:
+                    String(item.content || "")
+                }));
+
+          } catch (error) {
+
+            console.error(
+              "HISTORY CONTEXT ERROR",
+              error
+            );
+          }
+        }
+
+
+        // ----------------------------------------------------
+        // AI REQUEST
+        // ----------------------------------------------------
 
         const messages = [
           {
             role: "system",
             content: systemPrompt
+          },
+
+          ...previousMessages,
+
+          {
+            role: "user",
+            content: message
           }
         ];
 
-        for (
-          const item of cleanHistory
-        ) {
-          messages.push({
-            role: item.role,
-            content: item.content
-          });
-        }
-
-        messages.push({
-          role: "user",
-          content: message
-        });
-
-        // ----------------------------------------------------
-        // AI
-        // ----------------------------------------------------
 
         const result =
           await env.AI.run(
@@ -409,27 +457,24 @@ ${searchContext || "No useful indexed results found."}
             {
               messages,
               max_tokens: 4096
-            },
-            {
-              gateway: {
-                id: "default",
-                skipCache: false,
-                collectLog: true
-              }
             }
           );
+
 
         const answer =
           result?.response ||
           result?.result?.response ||
           "I could not generate a response.";
 
+
         // ----------------------------------------------------
-        // D1 HISTORY
+        // SAVE
         // ----------------------------------------------------
 
         if (env.DB) {
+
           try {
+
             await ensureDatabase(env);
 
             const now =
@@ -476,6 +521,7 @@ ${searchContext || "No useful indexed results found."}
               .run();
 
           } catch (error) {
+
             console.error(
               "D1 SAVE ERROR",
               error
@@ -483,44 +529,41 @@ ${searchContext || "No useful indexed results found."}
           }
         }
 
+
         return json({
           ok: true,
-
           answer,
-
           conversationId,
-
           search_used:
             searchEnabled,
-
           sources,
-
-          model:
-            CHAT_MODEL
+          model: CHAT_MODEL
         }, cors);
       }
 
+
       // ======================================================
-      // VISION
+      // VISION / IMAGE / FILE ANALYSIS
       // ======================================================
 
       if (
         url.pathname === "/v1/vision" &&
         request.method === "POST"
       ) {
+
         const body =
-          await request.json();
+          await safeJSON(request);
 
         const prompt =
           String(
             body.prompt ||
-            "Describe and analyze this image."
-          ).trim();
+            "Analyze this image."
+          );
 
         const image =
-          String(
-            body.image || ""
-          ).trim();
+          body.image ||
+          body.imageData ||
+          body.dataURL;
 
         if (!image) {
           return json({
@@ -529,49 +572,78 @@ ${searchContext || "No useful indexed results found."}
           }, cors, 400);
         }
 
-        if (
-          !image.startsWith(
-            "data:image/"
-          )
-        ) {
+        if (!env.AI) {
+          return json({
+            ok: false,
+            error: "Cloudflare AI binding missing"
+          }, cors, 500);
+        }
+
+        try {
+
+          const imageBytes =
+            await dataURLToUint8Array(
+              image
+            );
+
+          const result =
+            await env.AI.run(
+              VISION_MODEL,
+              {
+                messages: [
+                  {
+                    role: "system",
+                    content:
+                      "You are LOGIC-LEAF vision assistant. Analyze images accurately and describe what is useful for the user's request."
+                  },
+
+                  {
+                    role: "user",
+                    content: [
+                      {
+                        type: "text",
+                        text: prompt
+                      },
+
+                      {
+                        type: "image_url",
+                        image_url: {
+                          url: image
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            );
+
+          const answer =
+            result?.response ||
+            result?.result?.response ||
+            "I could not analyze the image.";
+
+          return json({
+            ok: true,
+            answer,
+            model: VISION_MODEL
+          }, cors);
+
+        } catch (error) {
+
+          console.error(
+            "VISION ERROR",
+            error
+          );
+
           return json({
             ok: false,
             error:
-              "Image must be a data:image/... URL"
-          }, cors, 400);
+              error?.message ||
+              "Vision request failed"
+          }, cors, 500);
         }
-
-        const result =
-          await env.AI.run(
-            VISION_MODEL,
-            {
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are LOGIC-LEAF vision assistant. Analyze the supplied image accurately and answer the user's request."
-                },
-                {
-                  role: "user",
-                  content: prompt
-                }
-              ],
-              image
-            }
-          );
-
-        const answer =
-          result?.response ||
-          result?.result ||
-          result?.text ||
-          "I could not analyze the image.";
-
-        return json({
-          ok: true,
-          answer,
-          model: VISION_MODEL
-        }, cors);
       }
+
 
       // ======================================================
       // IMAGE GENERATION
@@ -581,8 +653,9 @@ ${searchContext || "No useful indexed results found."}
         url.pathname === "/v1/image" &&
         request.method === "POST"
       ) {
+
         const body =
-          await request.json();
+          await safeJSON(request);
 
         const prompt =
           String(
@@ -592,103 +665,122 @@ ${searchContext || "No useful indexed results found."}
         if (!prompt) {
           return json({
             ok: false,
-            error:
-              "Image prompt required"
+            error: "Image prompt required"
           }, cors, 400);
         }
 
-        const image =
-          await env.AI.run(
-            IMAGE_MODEL,
-            {
-              prompt
-            }
-          );
-
-        // Cloudflare can return a stream
-        // or image-related response depending
-        // on the model/runtime.
-
-        if (
-          image instanceof ReadableStream
-        ) {
-          return new Response(
-            image,
-            {
-              status: 200,
-              headers: {
-                ...cors,
-                "Content-Type":
-                  "image/png",
-                "Cache-Control":
-                  "no-store"
-              }
-            }
-          );
+        if (!env.AI) {
+          return json({
+            ok: false,
+            error: "Cloudflare AI binding missing"
+          }, cors, 500);
         }
 
-        if (
-          image instanceof ArrayBuffer
-        ) {
-          return new Response(
-            image,
-            {
-              status: 200,
-              headers: {
-                ...cors,
-                "Content-Type":
-                  "image/png",
-                "Cache-Control":
-                  "no-store"
+        try {
+
+          const result =
+            await env.AI.run(
+              IMAGE_MODEL,
+              {
+                prompt
               }
-            }
-          );
-        }
+            );
 
-        // Some runtime responses may contain
-        // image data inside an object.
-
-        if (
-          image &&
-          typeof image === "object"
-        ) {
-          if (
-            image.image &&
-            typeof image.image === "string"
-          ) {
-            return json({
-              ok: true,
-              image: image.image
-            }, cors);
-          }
+          // Cloudflare image response can be
+          // a stream or image-like response.
 
           if (
-            image.result &&
-            typeof image.result === "string"
+            result instanceof ReadableStream
           ) {
-            return json({
-              ok: true,
-              image: image.result
-            }, cors);
-          }
-        }
 
-        return json({
-          ok: true,
-          result: image
-        }, cors);
+            return new Response(
+              result,
+              {
+                status: 200,
+                headers: {
+                  ...cors,
+                  "Content-Type":
+                    "image/png",
+                  "Cache-Control":
+                    "no-store"
+                }
+              }
+            );
+          }
+
+
+          if (
+            result instanceof ArrayBuffer
+          ) {
+
+            return new Response(
+              result,
+              {
+                status: 200,
+                headers: {
+                  ...cors,
+                  "Content-Type":
+                    "image/png"
+                }
+              }
+            );
+          }
+
+
+          if (
+            result instanceof Uint8Array
+          ) {
+
+            return new Response(
+              result,
+              {
+                status: 200,
+                headers: {
+                  ...cors,
+                  "Content-Type":
+                    "image/png"
+                }
+              }
+            );
+          }
+
+
+          // Some model/runtime versions
+          // return an object.
+
+          return json({
+            ok: true,
+            image: result
+          }, cors);
+
+        } catch (error) {
+
+          console.error(
+            "IMAGE ERROR",
+            error
+          );
+
+          return json({
+            ok: false,
+            error:
+              error?.message ||
+              "Image generation failed"
+          }, cors, 500);
+        }
       }
 
+
       // ======================================================
-      // PDF / DOCUMENT GENERATION
+      // PDF GENERATION
       // ======================================================
 
       if (
         url.pathname === "/v1/pdf" &&
         request.method === "POST"
       ) {
+
         const body =
-          await request.json();
+          await safeJSON(request);
 
         const prompt =
           String(
@@ -699,88 +791,102 @@ ${searchContext || "No useful indexed results found."}
           String(
             body.title ||
             "LOGIC-LEAF Document"
-          ).trim();
+          );
 
         if (!prompt) {
           return json({
             ok: false,
-            error:
-              "PDF request required"
+            error: "PDF request required"
           }, cors, 400);
         }
 
-        const result =
-          await env.AI.run(
-            CHAT_MODEL,
-            {
-              messages: [
-                {
-                  role: "system",
-                  content: `
-You create professional printable documents.
+        if (!env.AI) {
+          return json({
+            ok: false,
+            error: "Cloudflare AI binding missing"
+          }, cors, 500);
+        }
 
-Return ONLY the document body HTML.
+        try {
 
-Do NOT return:
-- Markdown fences
-- JavaScript
-- <html>
-- <head>
-- <body>
+          const result =
+            await env.AI.run(
+              CHAT_MODEL,
+              {
+                messages: [
+                  {
+                    role: "system",
+                    content: `
+Create a professional printable HTML document.
 
-You may use:
-h1, h2, h3, p, ul, ol, li,
-table, thead, tbody, tr, th, td,
-strong and em.
+Return ONLY HTML.
 
-Make the document clean and readable.
+Do not use Markdown fences.
+Do not use JavaScript.
+
+Use:
+- headings
+- paragraphs
+- lists
+- tables
+- sections
+
+Make the document clean and suitable
+for printing on A4 paper.
 `
-                },
-                {
-                  role: "user",
-                  content:
-                    `Document title:
-${title}
+                  },
 
-User request:
+                  {
+                    role: "user",
+                    content:
+                      `Title: ${title}
+
+Request:
 ${prompt}`
-                }
-              ],
-              max_tokens: 6000
-            },
-            {
-              gateway: {
-                id: "default"
+                  }
+                ],
+
+                max_tokens: 4096
               }
-            }
-          );
+            );
 
-        let content =
-          result?.response || "";
 
-        content =
-          String(content)
-            .replace(
-              /^```html\s*/i,
-              ""
-            )
-            .replace(
-              /^```\s*/i,
-              ""
-            )
-            .replace(
-              /\s*```$/i,
-              ""
-            )
-            .trim();
+          let content =
+            result?.response ||
+            result?.result?.response ||
+            "";
 
-        const document = `
-<!doctype html>
+
+          content =
+            String(content)
+              .replace(
+                /^```html\s*/i,
+                ""
+              )
+              .replace(
+                /^```\s*/i,
+                ""
+              )
+              .replace(
+                /\s*```$/i,
+                ""
+              )
+              .trim();
+
+
+          const document =
+`
+<!DOCTYPE html>
+
 <html>
+
 <head>
+
 <meta charset="UTF-8">
 
-<title>${escapeHTML(title)}</title>
+<title>
+${escapeHTML(title)}
+</title>
 
 <style>
 
@@ -789,110 +895,71 @@ ${prompt}`
   margin: 18mm;
 }
 
-* {
-  box-sizing: border-box;
-}
-
 body {
   font-family:
     Arial,
     Helvetica,
     sans-serif;
 
-  color: #151515;
+  color: #15171c;
 
-  line-height: 1.65;
+  line-height: 1.6;
 
   font-size: 14px;
-
-  margin: 0;
-}
-
-.header {
-  border-bottom:
-    2px solid #151515;
-
-  padding-bottom:
-    12px;
-
-  margin-bottom:
-    28px;
-}
-
-.header strong {
-  font-size:
-    18px;
 }
 
 h1 {
-  font-size:
-    28px;
-
-  margin:
-    0 0 22px;
+  font-size: 28px;
+  margin-bottom: 20px;
 }
 
 h2 {
-  margin-top:
-    28px;
+  margin-top: 28px;
 }
 
 h3 {
-  margin-top:
-    22px;
+  margin-top: 20px;
 }
 
 table {
-  width:
-    100%;
-
-  border-collapse:
-    collapse;
-
-  margin:
-    18px 0;
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
 }
 
 th,
 td {
-  border:
-    1px solid #aaa;
+  border: 1px solid #aaa;
+  padding: 8px;
+  text-align: left;
+}
 
-  padding:
-    8px;
+th {
+  font-weight: bold;
+}
 
-  vertical-align:
-    top;
+.header {
+  border-bottom:
+    2px solid #111;
+
+  margin-bottom: 25px;
+
+  padding-bottom: 12px;
 }
 
 .footer {
   border-top:
     1px solid #aaa;
 
-  margin-top:
-    40px;
+  margin-top: 40px;
 
-  padding-top:
-    10px;
+  padding-top: 10px;
 
-  font-size:
-    10px;
-
-  color:
-    #666;
-}
-
-@media print {
-  .footer {
-    position:
-      fixed;
-
-    bottom:
-      0;
-  }
+  font-size: 10px;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -901,7 +968,9 @@ td {
 <strong>LOGIC-LEAF</strong>
 </div>
 
-<h1>${escapeHTML(title)}</h1>
+<h1>
+${escapeHTML(title)}
+</h1>
 
 ${content}
 
@@ -910,21 +979,44 @@ Created with LOGIC-LEAF
 </div>
 
 </body>
+
 </html>
 `;
 
-        return new Response(
-          document,
-          {
-            status: 200,
-            headers: {
-              ...cors,
-              "Content-Type":
-                "text/html; charset=UTF-8"
+
+          return new Response(
+            document,
+            {
+              status: 200,
+
+              headers: {
+                ...cors,
+
+                "Content-Type":
+                  "text/html; charset=UTF-8",
+
+                "Content-Disposition":
+                  `inline; filename="${safeFilename(title)}.html"`
+              }
             }
-          }
-        );
+          );
+
+        } catch (error) {
+
+          console.error(
+            "PDF ERROR",
+            error
+          );
+
+          return json({
+            ok: false,
+            error:
+              error?.message ||
+              "PDF generation failed"
+          }, cors, 500);
+        }
       }
+
 
       // ======================================================
       // HISTORY
@@ -934,6 +1026,7 @@ Created with LOGIC-LEAF
         url.pathname === "/v1/history" &&
         request.method === "POST"
       ) {
+
         if (!env.DB) {
           return json({
             ok: false,
@@ -942,7 +1035,7 @@ Created with LOGIC-LEAF
         }
 
         const body =
-          await request.json();
+          await safeJSON(request);
 
         const userId =
           String(
@@ -956,13 +1049,16 @@ Created with LOGIC-LEAF
           await env.DB.prepare(`
             SELECT
               conversation_id,
-              MIN(created_at) AS created_at,
               MAX(created_at) AS updated_at,
-              MAX(
-                CASE
-                  WHEN role = 'user'
-                  THEN content
-                END
+              SUBSTR(
+                MIN(
+                  CASE
+                    WHEN role = 'user'
+                    THEN content
+                  END
+                ),
+                1,
+                80
               ) AS title
             FROM messages
             WHERE user_id = ?
@@ -973,30 +1069,13 @@ Created with LOGIC-LEAF
             .bind(userId)
             .all();
 
-        const chats =
-          (result.results || [])
-            .map(chat => ({
-              conversation_id:
-                chat.conversation_id,
-
-              title:
-                String(
-                  chat.title ||
-                  "New conversation"
-                ).slice(0, 80),
-
-              created_at:
-                chat.created_at,
-
-              updated_at:
-                chat.updated_at
-            }));
-
         return json({
           ok: true,
-          chats
+          chats:
+            result.results || []
         }, cors);
       }
+
 
       // ======================================================
       // CONVERSATION
@@ -1006,6 +1085,7 @@ Created with LOGIC-LEAF
         url.pathname === "/v1/conversation" &&
         request.method === "POST"
       ) {
+
         if (!env.DB) {
           return json({
             ok: false,
@@ -1014,21 +1094,21 @@ Created with LOGIC-LEAF
         }
 
         const body =
-          await request.json();
+          await safeJSON(request);
 
-        const id =
+        const conversationId =
           String(
             body.conversationId ||
             ""
-          ).trim();
+          );
 
         const userId =
           String(
             body.userId ||
-            ""
-          ).trim();
+            "anonymous"
+          );
 
-        if (!id) {
+        if (!conversationId) {
           return json({
             ok: false,
             error:
@@ -1038,36 +1118,22 @@ Created with LOGIC-LEAF
 
         await ensureDatabase(env);
 
-        let result;
-
-        if (userId) {
-          result =
-            await env.DB.prepare(`
-              SELECT
-                role,
-                content,
-                created_at
-              FROM messages
-              WHERE conversation_id = ?
-              AND user_id = ?
-              ORDER BY id ASC
-            `)
-              .bind(id, userId)
-              .all();
-        } else {
-          result =
-            await env.DB.prepare(`
-              SELECT
-                role,
-                content,
-                created_at
-              FROM messages
-              WHERE conversation_id = ?
-              ORDER BY id ASC
-            `)
-              .bind(id)
-              .all();
-        }
+        const result =
+          await env.DB.prepare(`
+            SELECT
+              role,
+              content,
+              created_at
+            FROM messages
+            WHERE conversation_id = ?
+            AND user_id = ?
+            ORDER BY id ASC
+          `)
+            .bind(
+              conversationId,
+              userId
+            )
+            .all();
 
         return json({
           ok: true,
@@ -1075,6 +1141,7 @@ Created with LOGIC-LEAF
             result.results || []
         }, cors);
       }
+
 
       // ======================================================
       // CREATE API KEY
@@ -1084,6 +1151,7 @@ Created with LOGIC-LEAF
         url.pathname === "/v1/keys/create" &&
         request.method === "POST"
       ) {
+
         const auth =
           await authenticateFirebase(
             request,
@@ -1124,9 +1192,10 @@ Created with LOGIC-LEAF
           ok: true,
           apiKey: rawKey,
           warning:
-            "Copy this API key now. It will not be shown again."
+            "Copy this key now. It will not be shown again."
         }, cors);
       }
+
 
       // ======================================================
       // REVOKE API KEY
@@ -1136,6 +1205,7 @@ Created with LOGIC-LEAF
         url.pathname === "/v1/keys/revoke" &&
         request.method === "POST"
       ) {
+
         const auth =
           await authenticateFirebase(
             request,
@@ -1157,18 +1227,18 @@ Created with LOGIC-LEAF
         }
 
         const body =
-          await request.json();
+          await safeJSON(request);
 
         const key =
           String(
-            body.apiKey || ""
-          ).trim();
+            body.apiKey ||
+            ""
+          );
 
         if (!key) {
           return json({
             ok: false,
-            error:
-              "API key required"
+            error: "API key required"
           }, cors, 400);
         }
 
@@ -1187,8 +1257,7 @@ Created with LOGIC-LEAF
         ) {
           return json({
             ok: false,
-            error:
-              "API key not found"
+            error: "API key not found"
           }, cors, 404);
         }
 
@@ -1201,6 +1270,7 @@ Created with LOGIC-LEAF
         }, cors);
       }
 
+
       // ======================================================
       // PUBLIC API
       // ======================================================
@@ -1209,6 +1279,7 @@ Created with LOGIC-LEAF
         url.pathname === "/v1/api/chat" &&
         request.method === "POST"
       ) {
+
         const auth =
           await authenticateApiKey(
             request,
@@ -1223,18 +1294,18 @@ Created with LOGIC-LEAF
         }
 
         const body =
-          await request.json();
+          await safeJSON(request);
 
         const message =
           String(
-            body.message || ""
+            body.message ||
+            ""
           ).trim();
 
         if (!message) {
           return json({
             ok: false,
-            error:
-              "Message required"
+            error: "Message required"
           }, cors, 400);
         }
 
@@ -1248,17 +1319,14 @@ Created with LOGIC-LEAF
                   content:
                     "You are LOGIC-LEAF API."
                 },
+
                 {
                   role: "user",
                   content: message
                 }
               ],
+
               max_tokens: 4096
-            },
-            {
-              gateway: {
-                id: "default"
-              }
             }
           );
 
@@ -1271,17 +1339,19 @@ Created with LOGIC-LEAF
         }, cors);
       }
 
+
       // ======================================================
       // 404
       // ======================================================
 
       return json({
         ok: false,
-        error:
-          "Endpoint not found"
+        error: "Endpoint not found"
       }, cors, 404);
 
+
     } catch (error) {
+
       console.error(
         "WORKER ERROR",
         error
@@ -1303,6 +1373,7 @@ Created with LOGIC-LEAF
 // ============================================================
 
 async function ensureDatabase(env) {
+
   if (!env.DB) return;
 
   await env.DB.prepare(`
@@ -1338,7 +1409,9 @@ async function authenticateFirebase(
   request,
   env
 ) {
+
   try {
+
     const header =
       request.headers.get(
         "Authorization"
@@ -1347,8 +1420,7 @@ async function authenticateFirebase(
     if (!header) {
       return {
         ok: false,
-        error:
-          "Login required"
+        error: "Login required"
       };
     }
 
@@ -1372,7 +1444,7 @@ async function authenticateFirebase(
       return {
         ok: false,
         error:
-          "Firebase API key is not configured"
+          "Firebase API key missing"
       };
     }
 
@@ -1413,22 +1485,21 @@ async function authenticateFirebase(
     if (!user) {
       return {
         ok: false,
-        error:
-          "User not found"
+        error: "User not found"
       };
     }
 
     return {
       ok: true,
-      uid:
-        user.localId,
+      uid: user.localId,
       email:
         user.email || ""
     };
 
   } catch (error) {
+
     console.error(
-      "FIREBASE AUTH ERROR",
+      "FIREBASE ERROR",
       error
     );
 
@@ -1449,12 +1520,13 @@ async function authenticateApiKey(
   request,
   env
 ) {
+
   try {
+
     if (!env.QTM_KEYS) {
       return {
         ok: false,
-        error:
-          "KV unavailable"
+        error: "KV unavailable"
       };
     }
 
@@ -1510,15 +1582,10 @@ async function authenticateApiKey(
 
     return {
       ok: true,
-      uid:
-        record.uid
+      uid: record.uid
     };
 
-  } catch (error) {
-    console.error(
-      "API KEY ERROR",
-      error
-    );
+  } catch {
 
     return {
       ok: false,
@@ -1530,10 +1597,88 @@ async function authenticateApiKey(
 
 
 // ============================================================
-// SHA-256
+// DATA URL
 // ============================================================
 
-async function sha256(text) {
+async function dataURLToUint8Array(
+  dataURL
+) {
+
+  const value =
+    String(dataURL);
+
+  if (
+    !value.startsWith(
+      "data:"
+    )
+  ) {
+    throw new Error(
+      "Image must be a data URL"
+    );
+  }
+
+  const comma =
+    value.indexOf(",");
+
+  if (comma === -1) {
+    throw new Error(
+      "Invalid image data"
+    );
+  }
+
+  const header =
+    value.slice(
+      0,
+      comma
+    );
+
+  const data =
+    value.slice(
+      comma + 1
+    );
+
+  if (
+    header.includes(
+      ";base64"
+    )
+  ) {
+
+    const binary =
+      atob(data);
+
+    const bytes =
+      new Uint8Array(
+        binary.length
+      );
+
+    for (
+      let i = 0;
+      i < binary.length;
+      i++
+    ) {
+      bytes[i] =
+        binary.charCodeAt(i);
+    }
+
+    return bytes;
+  }
+
+  const decoded =
+    decodeURIComponent(data);
+
+  return new TextEncoder()
+    .encode(decoded);
+}
+
+
+// ============================================================
+// RANDOM / HASH
+// ============================================================
+
+async function sha256(
+  text
+) {
+
   const data =
     new TextEncoder()
       .encode(text);
@@ -1557,11 +1702,10 @@ async function sha256(text) {
 }
 
 
-// ============================================================
-// RANDOM TOKEN
-// ============================================================
+function randomToken(
+  length
+) {
 
-function randomToken(length) {
   const bytes =
     new Uint8Array(
       length
@@ -1583,10 +1727,25 @@ function randomToken(length) {
 
 
 // ============================================================
-// HTML ESCAPE
+// HELPERS
 // ============================================================
 
-function escapeHTML(value) {
+async function safeJSON(
+  request
+) {
+
+  try {
+    return await request.json();
+  } catch {
+    return {};
+  }
+}
+
+
+function escapeHTML(
+  value
+) {
+
   return String(value)
     .replace(
       /&/g,
@@ -1611,15 +1770,33 @@ function escapeHTML(value) {
 }
 
 
-// ============================================================
-// JSON RESPONSE
-// ============================================================
+function safeFilename(
+  value
+) {
+
+  return String(value)
+    .replace(
+      /[^a-z0-9-_ ]/gi,
+      ""
+    )
+    .trim()
+    .replace(
+      /\s+/g,
+      "-"
+    )
+    .slice(
+      0,
+      80
+    ) || "logic-leaf-document";
+}
+
 
 function json(
   data,
   cors,
   status = 200
 ) {
+
   return new Response(
     JSON.stringify(data),
     {
@@ -1633,4 +1810,4 @@ function json(
       }
     }
   );
-            }
+    }
