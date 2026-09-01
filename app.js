@@ -1,6 +1,6 @@
 // ============================================================
 // LOGIC-LEAF — APP.JS
-// Firebase Google Login + Worker + Chat + History + Settings
+// Google Login + AI Chat + History + API Keys + Files + Voice
 // ============================================================
 
 import { initializeApp } from
@@ -20,10 +20,11 @@ import {
 // CONFIG
 // ============================================================
 
-const API_URL = "https://logic-leaf.qtmkiller6.workers.dev";
+const API_URL =
+  "https://logic-leaf.qtmkiller6.workers.dev";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC_C_ACjRupgX9jEUON1FsS58igSA45aw",
+  apiKey: "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
   authDomain: "logic-leaf.firebaseapp.com",
   databaseURL: "https://logic-leaf-default-rtdb.firebaseio.com",
   projectId: "logic-leaf",
@@ -35,73 +36,142 @@ const firebaseConfig = {
 
 
 // ============================================================
-// FIREBASE
+// FIREBASE INITIALIZATION
 // ============================================================
 
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
-const provider = new GoogleAuthProvider();
+const firebaseApp =
+  initializeApp(firebaseConfig);
+
+const auth =
+  getAuth(firebaseApp);
+
+const provider =
+  new GoogleAuthProvider();
+
+provider.setCustomParameters({
+  prompt: "select_account"
+});
 
 
 // ============================================================
-// DOM
+// DOM HELPERS
 // ============================================================
 
-const $ = (id) => document.getElementById(id);
+const $ = id =>
+  document.getElementById(id);
 
-const loginScreen = $("loginScreen");
-const appScreen = $("appScreen");
 
-const googleLoginBtn = $("googleLoginBtn");
-const loginError = $("loginError");
+// ============================================================
+// ELEMENTS
+// ============================================================
 
-const sidebar = $("sidebar");
-const openSidebarBtn = $("openSidebarBtn");
-const closeSidebarBtn = $("closeSidebarBtn");
+const loginScreen =
+  $("loginScreen");
 
-const newChatBtn = $("newChatBtn");
-const chatHistory = $("chatHistory");
+const appScreen =
+  $("appScreen");
 
-const messages = $("messages");
-const welcomeView = $("welcomeView");
+const googleLoginBtn =
+  $("googleLoginBtn");
 
-const messageInput = $("messageInput");
-const sendBtn = $("sendBtn");
+const loginError =
+  $("loginError");
 
-const attachBtn = $("attachBtn");
-const fileInput = $("fileInput");
+const sidebar =
+  $("sidebar");
 
-const imageBtn = $("imageBtn");
-const imageInput = $("imageInput");
+const openSidebarBtn =
+  $("openSidebarBtn");
 
-const voiceBtn = $("voiceBtn");
+const closeSidebarBtn =
+  $("closeSidebarBtn");
 
-const settingsBtn = $("settingsBtn");
-const profileBtn = $("profileBtn");
+const newChatBtn =
+  $("newChatBtn");
 
-const settingsOverlay = $("settingsOverlay");
-const closeSettingsBtn = $("closeSettingsBtn");
+const chatHistory =
+  $("chatHistory");
 
-const apiKeysBtn = $("apiKeysBtn");
-const apiOverlay = $("apiOverlay");
-const closeApiBtn = $("closeApiBtn");
+const messages =
+  $("messages");
 
-const logoutBtn = $("logoutBtn");
+const welcomeView =
+  $("welcomeView");
 
-const createApiKeyBtn = $("createApiKeyBtn");
-const copyApiKeyBtn = $("copyApiKeyBtn");
+const messageInput =
+  $("messageInput");
 
-const newKeyBox = $("newKeyBox");
-const newApiKey = $("newApiKey");
+const sendBtn =
+  $("sendBtn");
 
-const apiKeyList = $("apiKeyList");
+const attachBtn =
+  $("attachBtn");
 
-const attachmentPreview = $("attachmentPreview");
+const fileInput =
+  $("fileInput");
 
-const imagePreviewOverlay = $("imagePreviewOverlay");
-const imagePreview = $("imagePreview");
-const closeImagePreviewBtn = $("closeImagePreviewBtn");
-const useImageBtn = $("useImageBtn");
+const imageBtn =
+  $("imageBtn");
+
+const imageInput =
+  $("imageInput");
+
+const voiceBtn =
+  $("voiceBtn");
+
+const settingsBtn =
+  $("settingsBtn");
+
+const profileBtn =
+  $("profileBtn");
+
+const settingsOverlay =
+  $("settingsOverlay");
+
+const closeSettingsBtn =
+  $("closeSettingsBtn");
+
+const apiKeysBtn =
+  $("apiKeysBtn");
+
+const apiOverlay =
+  $("apiOverlay");
+
+const closeApiBtn =
+  $("closeApiBtn");
+
+const logoutBtn =
+  $("logoutBtn");
+
+const createApiKeyBtn =
+  $("createApiKeyBtn");
+
+const copyApiKeyBtn =
+  $("copyApiKeyBtn");
+
+const newKeyBox =
+  $("newKeyBox");
+
+const newApiKey =
+  $("newApiKey");
+
+const apiKeyList =
+  $("apiKeyList");
+
+const attachmentPreview =
+  $("attachmentPreview");
+
+const imagePreviewOverlay =
+  $("imagePreviewOverlay");
+
+const imagePreview =
+  $("imagePreview");
+
+const closeImagePreviewBtn =
+  $("closeImagePreviewBtn");
+
+const useImageBtn =
+  $("useImageBtn");
 
 
 // ============================================================
@@ -109,29 +179,54 @@ const useImageBtn = $("useImageBtn");
 // ============================================================
 
 let currentUser = null;
+
 let currentChatId = null;
+
 let selectedFile = null;
+
 let selectedImage = null;
+
 let recognition = null;
 
-const STORAGE_KEY = "logic_leaf_chats";
+const STORAGE_KEY =
+  "logic_leaf_chats_v1";
 
 
 // ============================================================
-// CHAT STORAGE
+// LOCAL CHAT STORAGE
 // ============================================================
 
 function getChats() {
+
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    return JSON.parse(
+      localStorage.getItem(
+        STORAGE_KEY
+      )
+    ) || [];
+
   } catch {
+
     return [];
+
   }
 }
 
+
 function saveChats(chats) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(chats)
+  );
+
 }
+
+
+// ============================================================
+// CREATE CHAT
+// ============================================================
 
 function createChat() {
 
@@ -139,141 +234,202 @@ function createChat() {
     "chat_" +
     Date.now() +
     "_" +
-    Math.random().toString(36).slice(2, 8);
+    Math.random()
+      .toString(36)
+      .slice(2, 8);
 
   const chat = {
+
     id,
-    title: "New chat",
+
+    title:
+      "New chat",
+
     messages: [],
-    createdAt: Date.now()
+
+    createdAt:
+      Date.now()
+
   };
 
-  const chats = getChats();
+  const chats =
+    getChats();
 
   chats.unshift(chat);
 
   saveChats(chats);
 
-  currentChatId = id;
+  currentChatId =
+    id;
 
   renderHistory();
+
   renderCurrentChat();
 
   return chat;
 }
 
+
+// ============================================================
+// CURRENT CHAT
+// ============================================================
+
 function getCurrentChat() {
 
-  const chats = getChats();
+  const chats =
+    getChats();
 
   return chats.find(
-    chat => chat.id === currentChatId
+    chat =>
+      chat.id === currentChatId
   );
-}
-
-function saveCurrentChat() {
-
-  if (!currentChatId) return;
-
-  const chats = getChats();
-
-  const index = chats.findIndex(
-    chat => chat.id === currentChatId
-  );
-
-  if (index === -1) return;
-
-  saveChats(chats);
 }
 
 
 // ============================================================
-// HISTORY UI
+// HISTORY
 // ============================================================
 
 function renderHistory() {
 
-  if (!chatHistory) return;
-
-  const chats = getChats();
+  if (!chatHistory)
+    return;
 
   chatHistory.innerHTML = "";
 
+  const chats =
+    getChats();
+
   if (!chats.length) {
 
-    const empty = document.createElement("div");
+    const empty =
+      document.createElement(
+        "div"
+      );
 
-    empty.className = "empty-state";
-    empty.textContent = "No chats yet.";
+    empty.className =
+      "empty-state";
 
-    chatHistory.appendChild(empty);
+    empty.textContent =
+      "No chats yet.";
+
+    chatHistory.appendChild(
+      empty
+    );
 
     return;
   }
+
 
   chats.forEach(chat => {
 
-    const button = document.createElement("button");
+    const button =
+      document.createElement(
+        "button"
+      );
 
-    button.className = "history-item";
+    button.className =
+      "history-item";
 
-    if (chat.id === currentChatId) {
-      button.classList.add("active");
+    if (
+      chat.id ===
+      currentChatId
+    ) {
+
+      button.classList.add(
+        "active"
+      );
+
     }
 
     button.textContent =
-      chat.title || "New chat";
+      chat.title ||
+      "New chat";
 
-    button.addEventListener("click", () => {
 
-      currentChatId = chat.id;
+    button.addEventListener(
+      "click",
+      () => {
 
-      renderHistory();
-      renderCurrentChat();
+        currentChatId =
+          chat.id;
 
-      if (window.innerWidth <= 760) {
-        sidebar.classList.remove("open");
+        renderHistory();
+
+        renderCurrentChat();
+
+        if (
+          window.innerWidth <=
+          760
+        ) {
+
+          sidebar?.classList.remove(
+            "open"
+          );
+
+        }
+
       }
-    });
+    );
 
-    chatHistory.appendChild(button);
-
-  });
-}
-
-
-// ============================================================
-// CHAT RENDER
-// ============================================================
-
-function renderCurrentChat() {
-
-  if (!messages) return;
-
-  messages.innerHTML = "";
-
-  const chat = getCurrentChat();
-
-  if (!chat || !chat.messages.length) {
-
-    welcomeView?.classList.remove("hidden");
-
-    return;
-  }
-
-  welcomeView?.classList.add("hidden");
-
-  chat.messages.forEach(message => {
-
-    addMessageToDOM(
-      message.role,
-      message.content,
-      false
+    chatHistory.appendChild(
+      button
     );
 
   });
 
 }
+
+
+// ============================================================
+// RENDER CHAT
+// ============================================================
+
+function renderCurrentChat() {
+
+  if (!messages)
+    return;
+
+  messages.innerHTML = "";
+
+  const chat =
+    getCurrentChat();
+
+  if (
+    !chat ||
+    !chat.messages.length
+  ) {
+
+    welcomeView?.classList.remove(
+      "hidden"
+    );
+
+    return;
+  }
+
+  welcomeView?.classList.add(
+    "hidden"
+  );
+
+
+  chat.messages.forEach(
+    message => {
+
+      addMessageToDOM(
+        message.role,
+        message.content,
+        false
+      );
+
+    }
+  );
+
+}
+
+
+// ============================================================
+// ADD MESSAGE
+// ============================================================
 
 function addMessageToDOM(
   role,
@@ -281,84 +437,235 @@ function addMessageToDOM(
   scroll = true
 ) {
 
-  welcomeView?.classList.add("hidden");
+  welcomeView?.classList.add(
+    "hidden"
+  );
 
-  const wrapper = document.createElement("div");
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
 
   wrapper.className =
     "message " +
-    (role === "user" ? "user" : "ai");
+    (
+      role === "user"
+        ? "user"
+        : "ai"
+    );
 
-  const box = document.createElement("div");
 
-  box.className = "message-content";
+  const box =
+    document.createElement(
+      "div"
+    );
 
-  const roleLabel = document.createElement("div");
+  box.className =
+    "message-content";
 
-  roleLabel.className = "message-role";
+
+  const roleLabel =
+    document.createElement(
+      "div"
+    );
+
+  roleLabel.className =
+    "message-role";
 
   roleLabel.textContent =
     role === "user"
       ? "YOU"
       : "LOGIC-LEAF";
 
-  const text = document.createElement("div");
 
-  text.textContent = content;
+  const text =
+    document.createElement(
+      "div"
+    );
 
-  box.appendChild(roleLabel);
-  box.appendChild(text);
+  text.className =
+    "message-text";
 
-  wrapper.appendChild(box);
+  text.textContent =
+    content;
 
-  messages.appendChild(wrapper);
+
+  box.appendChild(
+    roleLabel
+  );
+
+  box.appendChild(
+    text
+  );
+
+  wrapper.appendChild(
+    box
+  );
+
+  messages.appendChild(
+    wrapper
+  );
+
 
   if (scroll) {
 
     setTimeout(() => {
 
-      const area = document.querySelector(".chat-area");
+      const area =
+        document.querySelector(
+          ".chat-area"
+        );
 
       if (area) {
-        area.scrollTop = area.scrollHeight;
+
+        area.scrollTop =
+          area.scrollHeight;
+
       }
 
     }, 20);
+
   }
+
 }
 
 
 // ============================================================
-// LOGIN
+// GOOGLE LOGIN
 // ============================================================
 
-googleLoginBtn?.addEventListener(
-  "click",
-  async () => {
+async function googleLogin() {
 
+  if (!googleLoginBtn)
+    return;
+
+  if (loginError)
     loginError.textContent = "";
 
-    googleLoginBtn.disabled = true;
+  googleLoginBtn.disabled =
+    true;
 
-    try {
 
+  try {
+
+    const result =
       await signInWithPopup(
         auth,
         provider
       );
 
-    } catch (error) {
 
-      console.error(error);
+    console.log(
+      "Google login successful:",
+      result.user.email
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Google login error:",
+      error
+    );
+
+
+    if (loginError) {
 
       loginError.textContent =
-        error?.message ||
-        "Google login failed.";
+        formatFirebaseError(
+          error
+        );
 
-      googleLoginBtn.disabled = false;
     }
+
+  } finally {
+
+    googleLoginBtn.disabled =
+      false;
+
   }
+
+}
+
+
+googleLoginBtn?.addEventListener(
+  "click",
+  googleLogin
 );
+
+
+// ============================================================
+// FIREBASE ERROR
+// ============================================================
+
+function formatFirebaseError(
+  error
+) {
+
+  const code =
+    error?.code || "";
+
+  if (
+    code ===
+    "auth/api-key-not-valid"
+  ) {
+
+    return (
+      "Firebase API key is not valid. " +
+      "Check the Firebase Web App configuration " +
+      "and Google Cloud API-key restrictions."
+    );
+
+  }
+
+
+  if (
+    code ===
+    "auth/unauthorized-domain"
+  ) {
+
+    return (
+      "This website is not authorized in Firebase. " +
+      "Add chenchukiranvemula.github.io " +
+      "to Firebase Authentication → Authorized domains."
+    );
+
+  }
+
+
+  if (
+    code ===
+    "auth/popup-blocked"
+  ) {
+
+    return (
+      "Google Login popup was blocked by the browser."
+    );
+
+  }
+
+
+  if (
+    code ===
+    "auth/popup-closed-by-user"
+  ) {
+
+    return (
+      "Google Login was cancelled."
+    );
+
+  }
+
+
+  return (
+    code +
+    (error?.message
+      ? " — " + error.message
+      : "")
+  );
+
+}
 
 
 // ============================================================
@@ -369,34 +676,60 @@ onAuthStateChanged(
   auth,
   user => {
 
-    currentUser = user;
+    currentUser =
+      user;
+
 
     if (user) {
 
-      loginScreen?.classList.add("hidden");
-      appScreen?.classList.remove("hidden");
+      loginScreen?.classList.add(
+        "hidden"
+      );
 
-      updateUserUI(user);
+      appScreen?.classList.remove(
+        "hidden"
+      );
 
-      const chats = getChats();
+
+      updateUserUI(
+        user
+      );
+
+
+      const chats =
+        getChats();
+
 
       if (!currentChatId) {
 
         if (chats.length) {
-          currentChatId = chats[0].id;
+
+          currentChatId =
+            chats[0].id;
+
         } else {
+
           createChat();
+
         }
 
       }
 
+
       renderHistory();
+
       renderCurrentChat();
+
 
     } else {
 
-      loginScreen?.classList.remove("hidden");
-      appScreen?.classList.add("hidden");
+      loginScreen?.classList.remove(
+        "hidden"
+      );
+
+      appScreen?.classList.add(
+        "hidden"
+      );
 
     }
 
@@ -422,11 +755,23 @@ function updateUserUI(user) {
     user.photoURL ||
     "";
 
-  $("userName").textContent = name;
-  $("userEmail").textContent = email;
 
-  $("settingsName").textContent = name;
-  $("settingsEmail").textContent = email;
+  if ($("userName"))
+    $("userName").textContent =
+      name;
+
+  if ($("userEmail"))
+    $("userEmail").textContent =
+      email;
+
+  if ($("settingsName"))
+    $("settingsName").textContent =
+      name;
+
+  if ($("settingsEmail"))
+    $("settingsEmail").textContent =
+      email;
+
 
   setAvatar(
     $("userAvatar"),
@@ -445,37 +790,58 @@ function updateUserUI(user) {
     photo,
     name
   );
+
 }
 
-function setAvatar(element, photo, name) {
 
-  if (!element) return;
+function setAvatar(
+  element,
+  photo,
+  name
+) {
+
+  if (!element)
+    return;
+
 
   element.innerHTML = "";
+
 
   if (photo) {
 
     const img =
-      document.createElement("img");
+      document.createElement(
+        "img"
+      );
 
-    img.src = photo;
-    img.alt = "";
+    img.src =
+      photo;
 
-    element.appendChild(img);
+    img.alt =
+      "";
+
+    element.appendChild(
+      img
+    );
 
   } else {
 
     element.textContent =
-      (name || "U")
-        .trim()
-        .charAt(0)
-        .toUpperCase();
+      (
+        name ||
+        "U"
+      )
+      .trim()
+      .charAt(0)
+      .toUpperCase();
+
   }
+
 }
 
 
 // ============================================================
-// SIGN OUT
+// LOGOUT
 // ============================================================
 
 logoutBtn?.addEventListener(
@@ -484,10 +850,15 @@ logoutBtn?.addEventListener(
 
     try {
 
-      await signOut(auth);
+      await signOut(
+        auth
+      );
 
-      currentUser = null;
-      currentChatId = null;
+      currentUser =
+        null;
+
+      currentChatId =
+        null;
 
     } catch (error) {
 
@@ -497,6 +868,7 @@ logoutBtn?.addEventListener(
       );
 
     }
+
   }
 );
 
@@ -508,14 +880,23 @@ logoutBtn?.addEventListener(
 openSidebarBtn?.addEventListener(
   "click",
   () => {
-    sidebar?.classList.add("open");
+
+    sidebar?.classList.add(
+      "open"
+    );
+
   }
 );
+
 
 closeSidebarBtn?.addEventListener(
   "click",
   () => {
-    sidebar?.classList.remove("open");
+
+    sidebar?.classList.remove(
+      "open"
+    );
+
   }
 );
 
@@ -530,11 +911,19 @@ newChatBtn?.addEventListener(
 
     createChat();
 
-    if (window.innerWidth <= 760) {
-      sidebar?.classList.remove("open");
+    if (
+      window.innerWidth <=
+      760
+    ) {
+
+      sidebar?.classList.remove(
+        "open"
+      );
+
     }
 
     messageInput?.focus();
+
   }
 );
 
@@ -547,58 +936,74 @@ settingsBtn?.addEventListener(
   "click",
   () => {
 
-    settingsOverlay?.classList.remove("hidden");
+    settingsOverlay?.classList.remove(
+      "hidden"
+    );
 
   }
 );
+
 
 profileBtn?.addEventListener(
   "click",
   () => {
 
-    settingsOverlay?.classList.remove("hidden");
+    settingsOverlay?.classList.remove(
+      "hidden"
+    );
 
   }
 );
+
 
 closeSettingsBtn?.addEventListener(
   "click",
   () => {
 
-    settingsOverlay?.classList.add("hidden");
+    settingsOverlay?.classList.add(
+      "hidden"
+    );
 
   }
 );
 
 
 // ============================================================
-// API PANEL
+// API KEYS
 // ============================================================
 
 apiKeysBtn?.addEventListener(
   "click",
   () => {
 
-    settingsOverlay?.classList.add("hidden");
-    apiOverlay?.classList.remove("hidden");
+    settingsOverlay?.classList.add(
+      "hidden"
+    );
+
+    apiOverlay?.classList.remove(
+      "hidden"
+    );
 
     loadApiKeys();
 
   }
 );
 
+
 closeApiBtn?.addEventListener(
   "click",
   () => {
 
-    apiOverlay?.classList.add("hidden");
+    apiOverlay?.classList.add(
+      "hidden"
+    );
 
   }
 );
 
 
 // ============================================================
-// API REQUEST HELPER
+// WORKER REQUEST
 // ============================================================
 
 async function workerRequest(
@@ -607,26 +1012,42 @@ async function workerRequest(
 ) {
 
   if (!currentUser) {
-    throw new Error("Please sign in first.");
+
+    throw new Error(
+      "Please sign in with Google first."
+    );
+
   }
 
+
   const token =
-    await currentUser.getIdToken();
+    await currentUser.getIdToken(
+      true
+    );
+
 
   const headers = {
+
     ...(options.headers || {}),
+
     Authorization:
       `Bearer ${token}`
+
   };
+
 
   if (
     options.body &&
     !(options.body instanceof FormData)
   ) {
 
-    headers["Content-Type"] =
+    headers[
+      "Content-Type"
+    ] =
       "application/json";
+
   }
+
 
   const response =
     await fetch(
@@ -637,18 +1058,27 @@ async function workerRequest(
       }
     );
 
+
   const text =
     await response.text();
 
+
   let data;
 
+
   try {
-    data = JSON.parse(text);
+
+    data =
+      JSON.parse(text);
+
   } catch {
+
     data = {
       error: text
     };
+
   }
+
 
   if (!response.ok) {
 
@@ -657,68 +1087,113 @@ async function workerRequest(
       data?.message ||
       `Request failed (${response.status})`
     );
+
   }
 
+
   return data;
+
 }
 
 
 // ============================================================
-// SEND CHAT
+// SEND MESSAGE
 // ============================================================
 
 async function sendMessage() {
 
+  if (!messageInput)
+    return;
+
+
   const text =
     messageInput.value.trim();
 
-  if (!text) return;
+
+  if (!text)
+    return;
+
 
   if (!currentUser) {
 
-    alert("Please sign in first.");
+    alert(
+      "Please sign in with Google first."
+    );
 
     return;
+
   }
+
 
   if (!currentChatId) {
+
     createChat();
+
   }
 
-  const chat = getCurrentChat();
 
-  if (!chat) return;
+  const chat =
+    getCurrentChat();
+
+
+  if (!chat)
+    return;
+
 
   chat.messages.push({
-    role: "user",
-    content: text
+
+    role:
+      "user",
+
+    content:
+      text
+
   });
 
+
   if (
-    chat.title === "New chat"
+    chat.title ===
+    "New chat"
   ) {
 
     chat.title =
       text.length > 45
         ? text.slice(0, 45) + "…"
         : text;
+
   }
 
-  saveChats(getChats());
+
+  saveChats(
+    getChats()
+  );
+
 
   addMessageToDOM(
     "user",
     text
   );
 
-  messageInput.value = "";
-  messageInput.style.height = "auto";
+
+  messageInput.value =
+    "";
+
+  messageInput.style.height =
+    "auto";
+
 
   renderHistory();
 
-  sendBtn.disabled = true;
 
-  const loading = document.createElement("div");
+  sendBtn.disabled =
+    true;
+
+
+  const loading =
+    document.createElement(
+      "div"
+    );
+
 
   loading.className =
     "message ai";
@@ -726,14 +1201,21 @@ async function sendMessage() {
   loading.id =
     "ai-loading";
 
+
   loading.innerHTML = `
     <div class="message-content">
       <div class="message-role">LOGIC-LEAF</div>
-      <div>Thinking…</div>
+      <div class="ai-thinking">
+        Thinking…
+      </div>
     </div>
   `;
 
-  messages.appendChild(loading);
+
+  messages.appendChild(
+    loading
+  );
+
 
   try {
 
@@ -741,82 +1223,131 @@ async function sendMessage() {
       await workerRequest(
         "/v1/chat",
         {
-          method: "POST",
-          body: JSON.stringify({
-            messages: chat.messages.map(
-              m => ({
-                role: m.role,
-                content: m.content
-              })
-            )
-          })
+
+          method:
+            "POST",
+
+          body:
+            JSON.stringify({
+
+              messages:
+                chat.messages.map(
+                  message => ({
+                    role:
+                      message.role,
+
+                    content:
+                      message.content
+                  })
+                )
+
+            })
+
         }
       );
 
+
     loading.remove();
 
+
     const answer =
-      extractAIResponse(result);
+      extractAIResponse(
+        result
+      );
+
 
     chat.messages.push({
-      role: "assistant",
-      content: answer
+
+      role:
+        "assistant",
+
+      content:
+        answer
+
     });
 
-    saveChats(getChats());
+
+    saveChats(
+      getChats()
+    );
+
 
     addMessageToDOM(
       "assistant",
       answer
     );
 
+
   } catch (error) {
 
     loading.remove();
+
+
+    console.error(
+      "LOGIC-LEAF Worker error:",
+      error
+    );
+
 
     const errorMessage =
       "Sorry, something went wrong.\n\n" +
       error.message;
 
+
     chat.messages.push({
-      role: "assistant",
-      content: errorMessage
+
+      role:
+        "assistant",
+
+      content:
+        errorMessage
+
     });
 
-    saveChats(getChats());
+
+    saveChats(
+      getChats()
+    );
+
 
     addMessageToDOM(
       "assistant",
       errorMessage
     );
 
-    console.error(
-      "Worker error:",
-      error
-    );
-
   } finally {
 
-    sendBtn.disabled = false;
+    sendBtn.disabled =
+      false;
 
     messageInput.focus();
+
   }
+
 }
 
 
 // ============================================================
-// RESPONSE PARSER
+// AI RESPONSE
 // ============================================================
 
-function extractAIResponse(data) {
+function extractAIResponse(
+  data
+) {
 
-  if (!data) {
+  if (!data)
     return "The AI returned an empty response.";
+
+
+  if (
+    typeof data ===
+    "string"
+  ) {
+
+    return data;
+
   }
 
-  if (typeof data === "string") {
-    return data;
-  }
 
   return (
     data.response ||
@@ -827,11 +1358,12 @@ function extractAIResponse(data) {
     data.result?.response ||
     "The AI returned no text."
   );
+
 }
 
 
 // ============================================================
-// SEND EVENTS
+// SEND BUTTON
 // ============================================================
 
 sendBtn?.addEventListener(
@@ -839,22 +1371,34 @@ sendBtn?.addEventListener(
   sendMessage
 );
 
+
+// ============================================================
+// ENTER KEY
+// ============================================================
+
 messageInput?.addEventListener(
   "keydown",
   event => {
 
     if (
-      event.key === "Enter" &&
+      event.key ===
+      "Enter" &&
       !event.shiftKey
     ) {
 
       event.preventDefault();
 
       sendMessage();
+
     }
 
   }
 );
+
+
+// ============================================================
+// AUTO RESIZE INPUT
+// ============================================================
 
 messageInput?.addEventListener(
   "input",
@@ -874,11 +1418,13 @@ messageInput?.addEventListener(
 
 
 // ============================================================
-// QUICK ACTIONS
+// QUICK PROMPTS
 // ============================================================
 
 document
-  .querySelectorAll(".quick-card")
+  .querySelectorAll(
+    ".quick-card"
+  )
   .forEach(button => {
 
     button.addEventListener(
@@ -886,12 +1432,17 @@ document
       () => {
 
         const prompt =
-          button.dataset.prompt || "";
+          button.dataset.prompt ||
+          button.textContent ||
+          "";
+
 
         messageInput.value =
-          prompt;
+          prompt.trim();
+
 
         messageInput.focus();
+
 
         messageInput.dispatchEvent(
           new Event("input")
@@ -904,15 +1455,18 @@ document
 
 
 // ============================================================
-// FILE CONTROL
+// FILE UPLOAD
 // ============================================================
 
 attachBtn?.addEventListener(
   "click",
   () => {
+
     fileInput?.click();
+
   }
 );
+
 
 fileInput?.addEventListener(
   "change",
@@ -921,9 +1475,14 @@ fileInput?.addEventListener(
     const file =
       fileInput.files?.[0];
 
-    if (!file) return;
 
-    selectedFile = file;
+    if (!file)
+      return;
+
+
+    selectedFile =
+      file;
+
 
     addAttachmentChip(
       file.name
@@ -934,15 +1493,18 @@ fileInput?.addEventListener(
 
 
 // ============================================================
-// IMAGE CONTROL
+// IMAGE PICKER
 // ============================================================
 
 imageBtn?.addEventListener(
   "click",
   () => {
+
     imageInput?.click();
+
   }
 );
+
 
 imageInput?.addEventListener(
   "change",
@@ -951,46 +1513,74 @@ imageInput?.addEventListener(
     const file =
       imageInput.files?.[0];
 
-    if (!file) return;
 
-    selectedImage = file;
+    if (!file)
+      return;
+
+
+    selectedImage =
+      file;
+
 
     const url =
-      URL.createObjectURL(file);
+      URL.createObjectURL(
+        file
+      );
 
-    imagePreview.src = url;
 
-    imagePreviewOverlay.classList.remove(
+    if (imagePreview) {
+
+      imagePreview.src =
+        url;
+
+    }
+
+
+    imagePreviewOverlay?.classList.remove(
       "hidden"
     );
 
   }
 );
+
+
+// ============================================================
+// IMAGE PREVIEW
+// ============================================================
 
 closeImagePreviewBtn?.addEventListener(
   "click",
   () => {
 
-    imagePreviewOverlay.classList.add(
+    imagePreviewOverlay?.classList.add(
       "hidden"
     );
 
-    imagePreview.src = "";
+    if (imagePreview) {
+
+      imagePreview.src =
+        "";
+
+    }
 
   }
 );
+
 
 useImageBtn?.addEventListener(
   "click",
   () => {
 
-    if (!selectedImage) return;
+    if (!selectedImage)
+      return;
+
 
     addAttachmentChip(
       selectedImage.name
     );
 
-    imagePreviewOverlay.classList.add(
+
+    imagePreviewOverlay?.classList.add(
       "hidden"
     );
 
@@ -999,25 +1589,39 @@ useImageBtn?.addEventListener(
 
 
 // ============================================================
-// ATTACHMENT UI
+// ATTACHMENT CHIP
 // ============================================================
 
-function addAttachmentChip(name) {
+function addAttachmentChip(
+  name
+) {
 
-  attachmentPreview.innerHTML = "";
+  if (!attachmentPreview)
+    return;
+
+
+  attachmentPreview.innerHTML =
+    "";
+
 
   const chip =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
+
 
   chip.className =
     "attachment-chip";
 
+
   chip.textContent =
     "Attached: " + name;
+
 
   attachmentPreview.appendChild(
     chip
   );
+
 }
 
 
@@ -1029,73 +1633,117 @@ const SpeechRecognition =
   window.SpeechRecognition ||
   window.webkitSpeechRecognition;
 
+
 if (SpeechRecognition) {
 
   recognition =
     new SpeechRecognition();
 
-  recognition.lang = "en-IN";
 
-  recognition.continuous = false;
+  recognition.lang =
+    "en-IN";
 
-  recognition.interimResults = false;
 
-  recognition.onstart = () => {
+  recognition.continuous =
+    false;
 
-    voiceBtn.textContent = "●";
 
-  };
+  recognition.interimResults =
+    false;
 
-  recognition.onend = () => {
 
-    voiceBtn.textContent = "◉";
+  recognition.onstart =
+    () => {
 
-  };
+      if (voiceBtn) {
 
-  recognition.onerror = error => {
+        voiceBtn.classList.add(
+          "recording"
+        );
 
-    console.error(
-      "Voice error:",
-      error
-    );
+      }
 
-    voiceBtn.textContent = "◉";
+    };
 
-  };
+
+  recognition.onend =
+    () => {
+
+      if (voiceBtn) {
+
+        voiceBtn.classList.remove(
+          "recording"
+        );
+
+      }
+
+    };
+
+
+  recognition.onerror =
+    error => {
+
+      console.error(
+        "Voice input error:",
+        error
+      );
+
+      voiceBtn?.classList.remove(
+        "recording"
+      );
+
+    };
+
 
   recognition.onresult =
     event => {
 
       const transcript =
-        event.results[0][0].transcript;
+        event.results[0][0]
+          .transcript;
 
-      messageInput.value +=
-        (
-          messageInput.value
-            ? " "
-            : ""
-        ) + transcript;
 
-      messageInput.dispatchEvent(
-        new Event("input")
-      );
+      if (messageInput) {
+
+        messageInput.value +=
+          (
+            messageInput.value
+              ? " "
+              : ""
+          ) +
+          transcript;
+
+
+        messageInput.dispatchEvent(
+          new Event("input")
+        );
+
+      }
 
     };
 
 } else {
 
-  voiceBtn.disabled = true;
+  if (voiceBtn) {
 
-  voiceBtn.title =
-    "Voice input is not supported by this browser.";
+    voiceBtn.disabled =
+      true;
+
+    voiceBtn.title =
+      "Voice input is not supported by this browser.";
+
+  }
 
 }
+
 
 voiceBtn?.addEventListener(
   "click",
   () => {
 
-    if (!recognition) return;
+    if (!recognition)
+      return;
+
 
     try {
 
@@ -1103,7 +1751,7 @@ voiceBtn?.addEventListener(
 
     } catch {
 
-      // Prevent duplicate start errors.
+      // Already running.
 
     }
 
@@ -1117,11 +1765,16 @@ voiceBtn?.addEventListener(
 
 async function loadApiKeys() {
 
+  if (!apiKeyList)
+    return;
+
+
   apiKeyList.innerHTML = `
     <div class="empty-state">
       Loading API keys…
     </div>
   `;
+
 
   try {
 
@@ -1129,28 +1782,45 @@ async function loadApiKeys() {
       await workerRequest(
         "/v1/keys",
         {
-          method: "GET"
+          method:
+            "GET"
         }
       );
 
+
     renderApiKeys(
-      data.keys || data.data || []
+      data.keys ||
+      data.data ||
+      []
     );
+
 
   } catch (error) {
 
     apiKeyList.innerHTML = `
       <div class="empty-state">
-        ${escapeHTML(error.message)}
+        ${escapeHTML(
+          error.message
+        )}
       </div>
     `;
 
   }
+
 }
 
-function renderApiKeys(keys) {
 
-  apiKeyList.innerHTML = "";
+// ============================================================
+// RENDER API KEYS
+// ============================================================
+
+function renderApiKeys(
+  keys
+) {
+
+  apiKeyList.innerHTML =
+    "";
+
 
   if (!keys.length) {
 
@@ -1161,71 +1831,127 @@ function renderApiKeys(keys) {
     `;
 
     return;
+
   }
 
-  keys.forEach(key => {
 
-    const item =
-      document.createElement("div");
+  keys.forEach(
+    key => {
 
-    item.className =
-      "api-key-item";
+      const item =
+        document.createElement(
+          "div"
+        );
 
-    const top =
-      document.createElement("div");
 
-    top.className =
-      "api-key-item-top";
+      item.className =
+        "api-key-item";
 
-    const info =
-      document.createElement("div");
 
-    const name =
-      document.createElement("div");
+      const top =
+        document.createElement(
+          "div"
+        );
 
-    name.className =
-      "api-key-name";
 
-    name.textContent =
-      key.name ||
-      "LOGIC-LEAF API key";
+      top.className =
+        "api-key-item-top";
 
-    const meta =
-      document.createElement("div");
 
-    meta.className =
-      "api-key-meta";
+      const info =
+        document.createElement(
+          "div"
+        );
 
-    meta.textContent =
-      key.prefix
-        ? `${key.prefix} • ${key.status || "active"}`
-        : key.status || "active";
 
-    info.appendChild(name);
-    info.appendChild(meta);
+      const name =
+        document.createElement(
+          "div"
+        );
 
-    const revoke =
-      document.createElement("button");
 
-    revoke.className =
-      "revoke-key-btn";
+      name.className =
+        "api-key-name";
 
-    revoke.textContent =
-      "Revoke";
 
-    revoke.addEventListener(
-      "click",
-      () => revokeApiKey(key)
-    );
+      name.textContent =
+        key.name ||
+        "LOGIC-LEAF API key";
 
-    top.appendChild(info);
-    top.appendChild(revoke);
 
-    item.appendChild(top);
+      const meta =
+        document.createElement(
+          "div"
+        );
 
-    apiKeyList.appendChild(item);
 
-  });
+      meta.className =
+        "api-key-meta";
+
+
+      meta.textContent =
+        key.prefix
+          ? `${key.prefix} • ${key.status || "active"}`
+          : key.status ||
+            "active";
+
+
+      info.appendChild(
+        name
+      );
+
+      info.appendChild(
+        meta
+      );
+
+
+      const revoke =
+        document.createElement(
+          "button"
+        );
+
+
+      revoke.className =
+        "revoke-key-btn";
+
+
+      revoke.textContent =
+        "Revoke";
+
+
+      revoke.addEventListener(
+        "click",
+        () => {
+
+          revokeApiKey(
+            key
+          );
+
+        }
+      );
+
+
+      top.appendChild(
+        info
+      );
+
+      top.appendChild(
+        revoke
+      );
+
+
+      item.appendChild(
+        top
+      );
+
+
+      apiKeyList.appendChild(
+        item
+      );
+
+    }
+  );
+
 }
 
 
@@ -1237,10 +1963,13 @@ createApiKeyBtn?.addEventListener(
   "click",
   async () => {
 
-    createApiKeyBtn.disabled = true;
+    createApiKeyBtn.disabled =
+      true;
+
 
     createApiKeyBtn.textContent =
       "Creating…";
+
 
     try {
 
@@ -1248,33 +1977,50 @@ createApiKeyBtn?.addEventListener(
         await workerRequest(
           "/v1/keys",
           {
-            method: "POST",
-            body: JSON.stringify({
-              name: "LOGIC-LEAF API Key"
-            })
+
+            method:
+              "POST",
+
+            body:
+              JSON.stringify({
+                name:
+                  "LOGIC-LEAF API Key"
+              })
+
           }
         );
+
 
       const key =
         data.key ||
         data.api_key ||
         data.apiKey;
 
+
       if (!key) {
 
         throw new Error(
-          "The Worker did not return an API key."
+          "Worker did not return an API key."
         );
+
       }
 
-      newApiKey.textContent =
-        key;
 
-      newKeyBox.classList.remove(
+      if (newApiKey) {
+
+        newApiKey.textContent =
+          key;
+
+      }
+
+
+      newKeyBox?.classList.remove(
         "hidden"
       );
 
+
       await loadApiKeys();
+
 
     } catch (error) {
 
@@ -1283,15 +2029,18 @@ createApiKeyBtn?.addEventListener(
         error.message
       );
 
+
     } finally {
 
       createApiKeyBtn.disabled =
         false;
 
+
       createApiKeyBtn.textContent =
         "+ Create API key";
 
     }
+
   }
 );
 
@@ -1305,11 +2054,18 @@ copyApiKeyBtn?.addEventListener(
   async () => {
 
     const value =
-      newApiKey.textContent.trim();
+      newApiKey?.textContent.trim();
 
-    if (!value || value === "—") {
+
+    if (
+      !value ||
+      value === "—"
+    ) {
+
       return;
+
     }
+
 
     try {
 
@@ -1317,23 +2073,30 @@ copyApiKeyBtn?.addEventListener(
         value
       );
 
+
       copyApiKeyBtn.textContent =
         "Copied";
 
-      setTimeout(() => {
 
-        copyApiKeyBtn.textContent =
-          "Copy";
+      setTimeout(
+        () => {
 
-      }, 1500);
+          copyApiKeyBtn.textContent =
+            "Copy";
+
+        },
+        1500
+      );
+
 
     } catch {
 
       alert(
-        "Copy failed. Please copy it manually."
+        "Copy failed. Please copy the API key manually."
       );
 
     }
+
   }
 );
 
@@ -1342,69 +2105,104 @@ copyApiKeyBtn?.addEventListener(
 // REVOKE API KEY
 // ============================================================
 
-async function revokeApiKey(key) {
+async function revokeApiKey(
+  key
+) {
 
   const id =
     key.id ||
     key.key_id ||
     key.keyId;
 
+
   if (!id) {
 
     alert(
-      "This API key has no revocation ID."
+      "This API key has no ID."
     );
 
     return;
+
   }
 
-  const confirmed =
-    confirm(
-      "Revoke this API key?"
-    );
 
-  if (!confirmed) return;
+  if (
+    !confirm(
+      "Revoke this API key?"
+    )
+  ) {
+
+    return;
+
+  }
+
 
   try {
 
     await workerRequest(
       `/v1/keys/${encodeURIComponent(id)}`,
       {
-        method: "DELETE"
+        method:
+          "DELETE"
       }
     );
 
+
     await loadApiKeys();
+
 
   } catch (error) {
 
     alert(
-      "Could not revoke key:\n\n" +
+      "Could not revoke API key:\n\n" +
       error.message
     );
 
   }
+
 }
 
 
 // ============================================================
-// SECURITY HELPERS
+// ESCAPE HTML
 // ============================================================
 
-function escapeHTML(value) {
+function escapeHTML(
+  value
+) {
 
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
 
 }
 
 
 // ============================================================
-// CLOSE OVERLAYS WHEN CLICKING BACKDROP
+// OVERLAY CLOSE
 // ============================================================
 
 settingsOverlay?.addEventListener(
@@ -1425,6 +2223,7 @@ settingsOverlay?.addEventListener(
   }
 );
 
+
 apiOverlay?.addEventListener(
   "click",
   event => {
@@ -1442,6 +2241,7 @@ apiOverlay?.addEventListener(
 
   }
 );
+
 
 imagePreviewOverlay?.addEventListener(
   "click",
@@ -1468,8 +2268,9 @@ imagePreviewOverlay?.addEventListener(
 
 renderHistory();
 
+
 console.log(
-  "LOGIC-LEAF frontend initialized."
+  "LOGIC-LEAF initialized."
 );
 
 console.log(
