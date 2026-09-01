@@ -1,55 +1,47 @@
 /*
 ============================================================
- LOGIC-LEAF — FULL MULTIMODAL AI WORKER
+ LOGIC-LEAF AI
+ Full Worker Backend
 ============================================================
 
-Required wrangler bindings:
+Required bindings:
 
 AI          = Workers AI
 DB          = D1 database
 QTM_KEYS    = KV namespace
 
-D1 tables:
+Core routes:
 
-users
-conversations
-messages
-api_keys
-usage
-files
-search_history
+GET  /
+GET  /api/health
+GET  /api/config
 
-Main endpoints:
+POST /v1/chat
+POST /api/chat
 
-GET     /
-GET     /api/health
-GET     /api/config
+GET  /api/chats
+POST /api/chats
 
-POST    /v1/chat
-POST    /api/chat
+GET    /api/chats/:id
+PUT    /api/chats/:id
+DELETE /api/chats/:id
 
-GET     /api/chats
-POST    /api/chats
-GET     /api/chats/:id
-PUT     /api/chats/:id
-DELETE  /api/chats/:id
+POST /api/vision
+POST /api/image
+POST /api/transcribe
+POST /api/speech
 
-POST    /api/vision
-POST    /api/image
-POST    /api/transcribe
-POST    /api/speech
+GET /api/user
 
-GET     /api/user
-
-POST    /api/keys
-GET     /api/keys
-DELETE  /api/keys/:id
-
-POST    /api/search
-POST    /api/files
+API:
+POST   /api/keys
+GET    /api/keys
+DELETE /api/keys/:id
 
 ============================================================
 */
+
+const APP_NAME = "LOGIC-LEAF";
 
 const MODELS = {
   CHAT: "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
@@ -59,30 +51,34 @@ const MODELS = {
   TTS: "@cf/deepgram/aura-1"
 };
 
-const APP_NAME = "LOGIC-LEAF";
-const VERSION = "5";
+const DAILY_API_LIMIT = 300000;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods":
     "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers":
-    "Content-Type, Authorization",
+    "Content-Type, Authorization, X-API-Key",
   "Access-Control-Max-Age": "86400"
 };
+
 
 /* =========================================================
    RESPONSE HELPERS
 ========================================================= */
 
 function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      ...CORS,
-      "Content-Type": "application/json; charset=utf-8"
+  return new Response(
+    JSON.stringify(data),
+    {
+      status,
+      headers: {
+        ...CORS,
+        "Content-Type":
+          "application/json; charset=utf-8"
+      }
     }
-  });
+  );
 }
 
 function error(message, status = 400, extra = {}) {
@@ -96,12 +92,12 @@ function error(message, status = 400, extra = {}) {
   );
 }
 
-function now() {
-  return Date.now();
+function uid(prefix) {
+  return `${prefix}_${crypto.randomUUID()}`;
 }
 
-function makeId(prefix) {
-  return `${prefix}_${crypto.randomUUID()}`;
+function now() {
+  return Date.now();
 }
 
 function clean(value, max = 20000) {
@@ -109,127 +105,40 @@ function clean(value, max = 20000) {
   return value.trim().slice(0, max);
 }
 
-/* =========================================================
-   HASHING / API KEYS
-========================================================= */
-
-function randomString(length = 32) {
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-
-  return Array.from(bytes)
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function createApiKey() {
-  return `ll_live_${randomString(32)}`;
-}
-
-async function sha256(value) {
-  const data = new TextEncoder().encode(value);
-
-  const hash = await crypto.subtle.digest(
-    "SHA-256",
-    data
-  );
-
-  return Array.from(new Uint8Array(hash))
-    .map(b =>
-      b.toString(16).padStart(2, "0")
-    )
-    .join("");
-}
 
 /* =========================================================
-   USER AUTH IDENTITY
+   USER ID
 ========================================================= */
 
-/*
-   The frontend may send:
-
-   Authorization: Bearer <Google/Firebase token>
-
-   IMPORTANT:
-   This Worker does not pretend to verify Google tokens.
-   For production Google authentication, the token must be
-   verified with your authentication provider.
-
-   API keys created by LOGIC-LEAF ARE verified securely by
-   hashing the supplied key and looking it up in D1.
-*/
-
-function bearerToken(request) {
+function getUserId(request) {
   const auth =
-    request.headers.get("Authorization") || "";
+    request.headers.get("Authorization");
 
-  if (!auth.startsWith("Bearer ")) {
-    return "";
+  if (
+    auth &&
+    auth.startsWith("Bearer ")
+  ) {
+    const token =
+      auth.slice(7).trim();
+
+    if (token) {
+      return token.slice(0, 300);
+    }
   }
 
-  return auth.slice(7).trim();
-}
-
-async function authenticateApiKey(request, env) {
-  const token = bearerToken(request);
-
-  if (!token.startsWith("ll_live_")) {
-    return null;
-  }
-
-  if (!env.DB) return null;
-
-  const hash = await sha256(token);
-
-  const key = await env.DB.prepare(`
-    SELECT *
-    FROM api_keys
-    WHERE key_hash = ?
-      AND revoked_at IS NULL
-  `)
-    .bind(hash)
-    .first();
-
-  if (!key) return null;
-
-  return key;
-}
-
-function getIdentity(request) {
-  const token = bearerToken(request);
-
-  if (!token) {
-    return "guest";
-  }
-
-  /*
-    API-key identities are handled separately.
-    For non-API bearer tokens we use a stable hash-like
-    identifier rather than storing the raw token in D1.
-  */
-
-  if (token.startsWith("ll_live_")) {
-    return null;
-  }
-
-  return `auth_${token.slice(0, 120)}`;
-}
-
-async function getUserId(request, env) {
-  const apiKey = await authenticateApiKey(
-    request,
-    env
-  );
+  const apiKey =
+    request.headers.get("X-API-Key");
 
   if (apiKey) {
-    return apiKey.user_id;
+    return `api_${apiKey.slice(0, 100)}`;
   }
 
-  return getIdentity(request) || "guest";
+  return "guest";
 }
 
+
 /* =========================================================
-   USER
+   DATABASE USER
 ========================================================= */
 
 async function ensureUser(env, userId) {
@@ -237,14 +146,7 @@ async function ensureUser(env, userId) {
 
   await env.DB.prepare(`
     INSERT OR IGNORE INTO users
-    (
-      id,
-      google_id,
-      name,
-      email,
-      avatar_url,
-      created_at
-    )
+    (id, google_id, name, email, avatar_url, created_at)
     VALUES (?, ?, ?, ?, ?, ?)
   `)
     .bind(
@@ -260,6 +162,7 @@ async function ensureUser(env, userId) {
     .run();
 }
 
+
 /* =========================================================
    CHAT DATABASE
 ========================================================= */
@@ -269,18 +172,12 @@ async function createChat(
   userId,
   title = "New chat"
 ) {
-  const chatId = makeId("chat");
+  const chatId = uid("chat");
   const timestamp = now();
 
   await env.DB.prepare(`
     INSERT INTO conversations
-    (
-      id,
-      user_id,
-      title,
-      created_at,
-      updated_at
-    )
+    (id, user_id, title, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?)
   `)
     .bind(
@@ -295,7 +192,8 @@ async function createChat(
   return chatId;
 }
 
-async function findChat(
+
+async function getChat(
   env,
   userId,
   chatId
@@ -304,13 +202,17 @@ async function findChat(
     SELECT *
     FROM conversations
     WHERE id = ?
-      AND user_id = ?
+    AND user_id = ?
   `)
     .bind(chatId, userId)
     .first();
 }
 
-async function getChats(env, userId) {
+
+async function listChats(
+  env,
+  userId
+) {
   const result =
     await env.DB.prepare(`
       SELECT
@@ -328,7 +230,8 @@ async function getChats(env, userId) {
   return result.results || [];
 }
 
-async function getMessages(
+
+async function listMessages(
   env,
   chatId
 ) {
@@ -351,6 +254,7 @@ async function getMessages(
   return result.results || [];
 }
 
+
 async function saveMessage(
   env,
   chatId,
@@ -359,8 +263,7 @@ async function saveMessage(
   attachmentUrl = null,
   attachmentType = null
 ) {
-  const messageId = makeId("msg");
-  const timestamp = now();
+  const messageId = uid("msg");
 
   await env.DB.prepare(`
     INSERT INTO messages
@@ -382,7 +285,7 @@ async function saveMessage(
       clean(content, 50000),
       attachmentUrl,
       attachmentType,
-      timestamp
+      now()
     )
     .run();
 
@@ -391,86 +294,37 @@ async function saveMessage(
     SET updated_at = ?
     WHERE id = ?
   `)
-    .bind(timestamp, chatId)
+    .bind(
+      now(),
+      chatId
+    )
     .run();
 
   return messageId;
 }
 
+
 /* =========================================================
-   AI TEXT
+   AI
 ========================================================= */
 
-function systemPrompt(mode = "general") {
-  const base = `
-You are LOGIC-LEAF, a powerful general-purpose AI assistant.
-
-You help users with:
-
-• General questions
-• Reasoning
-• Mathematics
-• Science
-• Programming
-• Debugging
-• Coding
-• Study assistance
-• Writing
-• Summarization
-• Planning
-• Analysis
-• Image understanding
-• Files and documents when supplied
-
-Behavior:
-
-1. Be accurate and useful.
-2. Never pretend to know something you don't know.
-3. Explain difficult concepts clearly.
-4. For coding tasks, provide complete useful code.
-5. Use Markdown when it improves readability.
-6. Keep answers focused on the user's request.
-7. Do not claim that an unavailable tool was used.
-8. Do not fabricate web sources.
-9. When the user supplies an image, reason about its visible content.
-`;
-
-  if (mode === "study") {
-    return base + `
-Act as a patient expert tutor.
-Teach step-by-step.
-Use examples and practice questions when useful.
-`;
-  }
-
-  if (mode === "code") {
-    return base + `
-Act as an experienced software engineer.
-Diagnose problems carefully.
-Return complete corrected code when appropriate.
-`;
-  }
-
-  if (mode === "reasoning") {
-    return base + `
-Solve problems carefully.
-Break complex problems into logical steps.
-Give the conclusion clearly.
-`;
-  }
-
-  return base;
-}
-
-function extractAIText(result) {
+function extractText(result) {
   if (result == null) return "";
 
   if (typeof result === "string") {
     return result;
   }
 
-  if (typeof result.response === "string") {
+  if (
+    typeof result.response === "string"
+  ) {
     return result.response;
+  }
+
+  if (
+    typeof result.result === "string"
+  ) {
+    return result.result;
   }
 
   if (
@@ -480,14 +334,75 @@ function extractAIText(result) {
     return result.result.response;
   }
 
-  if (typeof result.text === "string") {
-    return result.text;
-  }
-
   return JSON.stringify(result);
 }
 
-async function runAIChat(
+
+function getSystemPrompt(mode) {
+  const base = `
+You are LOGIC-LEAF, a powerful general-purpose AI assistant.
+
+Your job is to help the user accurately, clearly and efficiently.
+
+You can help with:
+
+- General knowledge
+- Mathematics
+- Science
+- Programming
+- Debugging
+- Coding architecture
+- Study
+- Writing
+- Summarization
+- Reasoning
+- Problem solving
+- Planning
+- Image understanding when an image is supplied
+
+Rules:
+
+1. Be accurate.
+2. Never intentionally invent facts.
+3. If you are uncertain, say so.
+4. Explain difficult concepts clearly.
+5. Use Markdown when useful.
+6. For code, provide complete usable code when appropriate.
+7. Do not claim to have accessed something that you cannot access.
+8. Do not pretend that web search occurred when no search service is connected.
+9. Keep answers relevant to the user's request.
+`;
+
+  if (mode === "study") {
+    return base + `
+Act as an expert study assistant.
+Teach step-by-step.
+Use examples and simple explanations.
+`;
+  }
+
+  if (mode === "code") {
+    return base + `
+Act as an expert programming assistant.
+Analyze bugs carefully.
+Prefer maintainable, secure and complete solutions.
+`;
+  }
+
+  if (mode === "reasoning") {
+    return base + `
+Focus strongly on logical reasoning.
+Break complicated problems into clear steps.
+Do not expose private chain-of-thought.
+Give concise reasoning summaries and conclusions.
+`;
+  }
+
+  return base;
+}
+
+
+async function runChat(
   env,
   messages,
   options = {}
@@ -496,10 +411,11 @@ async function runAIChat(
     MODELS.CHAT,
     {
       messages,
-      max_tokens: Math.min(
-        Number(options.max_tokens) || 4096,
-        8192
-      ),
+      max_tokens:
+        Math.min(
+          Number(options.max_tokens) || 4096,
+          8192
+        ),
       temperature:
         typeof options.temperature === "number"
           ? options.temperature
@@ -508,106 +424,6 @@ async function runAIChat(
   );
 }
 
-/* =========================================================
-   API USAGE LIMIT
-========================================================= */
-
-function dateKey() {
-  return new Date()
-    .toISOString()
-    .slice(0, 10);
-}
-
-async function checkApiLimit(
-  env,
-  apiKey
-) {
-  if (!apiKey) {
-    return {
-      allowed: true
-    };
-  }
-
-  const today = dateKey();
-
-  const row =
-    await env.DB.prepare(`
-      SELECT *
-      FROM usage
-      WHERE user_id = ?
-        AND api_key_id = ?
-        AND usage_date = ?
-    `)
-      .bind(
-        apiKey.user_id,
-        apiKey.id,
-        today
-      )
-      .first();
-
-  const used =
-    Number(row?.requests || 0);
-
-  const limit =
-    Number(apiKey.daily_limit || 300000);
-
-  if (used >= limit) {
-    return {
-      allowed: false,
-      used,
-      limit
-    };
-  }
-
-  return {
-    allowed: true,
-    used,
-    limit
-  };
-}
-
-async function recordApiUsage(
-  env,
-  apiKey
-) {
-  if (!apiKey || !env.DB) return;
-
-  const today = dateKey();
-  const usageId = makeId("usage");
-
-  await env.DB.prepare(`
-    INSERT INTO usage
-    (
-      id,
-      user_id,
-      api_key_id,
-      usage_date,
-      requests
-    )
-    VALUES (?, ?, ?, ?, 1)
-
-    ON CONFLICT(user_id, api_key_id, usage_date)
-    DO UPDATE SET requests = requests + 1
-  `)
-    .bind(
-      usageId,
-      apiKey.user_id,
-      apiKey.id,
-      today
-    )
-    .run();
-
-  await env.DB.prepare(`
-    UPDATE api_keys
-    SET last_used_at = ?
-    WHERE id = ?
-  `)
-    .bind(
-      now(),
-      apiKey.id
-    )
-    .run();
-}
 
 /* =========================================================
    MAIN CHAT
@@ -634,44 +450,17 @@ async function handleChat(
   let body;
 
   try {
-    body = await request.json();
+    body =
+      await request.json();
   } catch {
     return error(
-      "Invalid JSON.",
+      "Invalid JSON request.",
       400
     );
   }
 
-  const apiKey =
-    await authenticateApiKey(
-      request,
-      env
-    );
-
-  if (apiKey) {
-    const usage =
-      await checkApiLimit(
-        env,
-        apiKey
-      );
-
-    if (!usage.allowed) {
-      return error(
-        "Daily API-key usage limit reached.",
-        429,
-        {
-          used: usage.used,
-          limit: usage.limit
-        }
-      );
-    }
-  }
-
   const userId =
-    await getUserId(
-      request,
-      env
-    );
+    getUserId(request);
 
   await ensureUser(
     env,
@@ -708,7 +497,7 @@ async function handleChat(
   }
 
   const chat =
-    await findChat(
+    await getChat(
       env,
       userId,
       chatId
@@ -729,16 +518,16 @@ async function handleChat(
   );
 
   const history =
-    await getMessages(
+    await listMessages(
       env,
       chatId
     );
 
-  const aiMessages = [
+  const messages = [
     {
       role: "system",
       content:
-        systemPrompt(
+        getSystemPrompt(
           body.mode || "general"
         )
     }
@@ -751,7 +540,7 @@ async function handleChat(
       item.role === "user" ||
       item.role === "assistant"
     ) {
-      aiMessages.push({
+      messages.push({
         role: item.role,
         content:
           item.content || ""
@@ -761,29 +550,21 @@ async function handleChat(
 
   try {
     const result =
-      await runAIChat(
+      await runChat(
         env,
-        aiMessages,
+        messages,
         {
           max_tokens:
             body.max_tokens,
           temperature:
-            typeof body.temperature ===
-            "number"
+            typeof body.temperature === "number"
               ? body.temperature
               : 0.5
         }
       );
 
     const answer =
-      extractAIText(result);
-
-    if (!answer) {
-      return error(
-        "AI returned an empty response.",
-        500
-      );
-    }
+      extractText(result);
 
     await saveMessage(
       env,
@@ -792,26 +573,17 @@ async function handleChat(
       answer
     );
 
-    await recordApiUsage(
-      env,
-      apiKey
-    );
-
     return json({
       ok: true,
+      name: APP_NAME,
       conversationId: chatId,
       message: answer,
-      model: MODELS.CHAT,
-      usage: apiKey
-        ? {
-            dailyLimit:
-              apiKey.daily_limit
-          }
-        : null
+      model: MODELS.CHAT
     });
+
   } catch (e) {
     console.error(
-      "CHAT ERROR",
+      "AI CHAT ERROR",
       e
     );
 
@@ -822,6 +594,7 @@ async function handleChat(
     );
   }
 }
+
 
 /* =========================================================
    VISION
@@ -866,7 +639,7 @@ async function handleVision(
       body.prompt,
       10000
     ) ||
-    "Analyze this image carefully and explain what you see.";
+    "Analyze this image carefully.";
 
   try {
     const result =
@@ -880,17 +653,14 @@ async function handleVision(
 
     return json({
       ok: true,
+      name: APP_NAME,
       message:
-        extractAIText(result),
+        extractText(result),
       model:
         MODELS.VISION
     });
-  } catch (e) {
-    console.error(
-      "VISION ERROR",
-      e
-    );
 
+  } catch (e) {
     return error(
       e?.message ||
         "Vision request failed.",
@@ -898,6 +668,7 @@ async function handleVision(
     );
   }
 }
+
 
 /* =========================================================
    IMAGE GENERATION
@@ -951,7 +722,16 @@ async function handleImage(
               1
             ),
             8
-          )
+          ),
+          seed:
+            Number.isFinite(
+              Number(body.seed)
+            )
+              ? Number(body.seed)
+              : Math.floor(
+                  Math.random() *
+                  2147483647
+                )
         }
       );
 
@@ -964,18 +744,15 @@ async function handleImage(
 
     return json({
       ok: true,
+      name: APP_NAME,
       type: "image",
       image:
         `data:image/jpeg;base64,${result.image}`,
       model:
         MODELS.IMAGE
     });
-  } catch (e) {
-    console.error(
-      "IMAGE ERROR",
-      e
-    );
 
+  } catch (e) {
     return error(
       e?.message ||
         "Image generation failed.",
@@ -983,6 +760,7 @@ async function handleImage(
     );
   }
 }
+
 
 /* =========================================================
    SPEECH TO TEXT
@@ -999,14 +777,14 @@ async function handleTranscribe(
     );
   }
 
+  const contentType =
+    request.headers.get(
+      "content-type"
+    ) || "";
+
+  let audio;
+
   try {
-    const contentType =
-      request.headers.get(
-        "content-type"
-      ) || "";
-
-    let audio;
-
     if (
       contentType.includes(
         "application/json"
@@ -1018,6 +796,7 @@ async function handleTranscribe(
       audio =
         body.audio ||
         body.audioBase64;
+
     } else {
       const buffer =
         await request.arrayBuffer();
@@ -1027,14 +806,21 @@ async function handleTranscribe(
           new Uint8Array(buffer)
         );
     }
+  } catch {
+    return error(
+      "Invalid audio request.",
+      400
+    );
+  }
 
-    if (!audio) {
-      return error(
-        "Audio is required.",
-        400
-      );
-    }
+  if (!audio) {
+    return error(
+      "Audio is required.",
+      400
+    );
+  }
 
+  try {
     const result =
       await env.AI.run(
         MODELS.STT,
@@ -1048,10 +834,11 @@ async function handleTranscribe(
       transcript:
         result?.text ||
         result?.transcript ||
-        extractAIText(result),
+        extractText(result),
       model:
         MODELS.STT
     });
+
   } catch (e) {
     return error(
       e?.message ||
@@ -1060,6 +847,7 @@ async function handleTranscribe(
     );
   }
 }
+
 
 /* =========================================================
    TEXT TO SPEECH
@@ -1115,7 +903,8 @@ async function handleSpeech(
             "mp3"
         },
         {
-          returnRawResponse: true
+          returnRawResponse:
+            true
         }
       );
 
@@ -1132,6 +921,7 @@ async function handleSpeech(
         }
       }
     );
+
   } catch (e) {
     return error(
       e?.message ||
@@ -1141,8 +931,9 @@ async function handleSpeech(
   }
 }
 
+
 /* =========================================================
-   CHAT LIST
+   CHAT ROUTES
 ========================================================= */
 
 async function handleChats(
@@ -1157,28 +948,29 @@ async function handleChats(
   }
 
   const userId =
-    await getUserId(
-      request,
-      env
-    );
+    getUserId(request);
 
   await ensureUser(
     env,
     userId
   );
 
-  if (request.method === "GET") {
+  if (
+    request.method === "GET"
+  ) {
     return json({
       ok: true,
       chats:
-        await getChats(
+        await listChats(
           env,
           userId
         )
     });
   }
 
-  if (request.method === "POST") {
+  if (
+    request.method === "POST"
+  ) {
     let body = {};
 
     try {
@@ -1214,9 +1006,6 @@ async function handleChats(
   );
 }
 
-/* =========================================================
-   SINGLE CHAT
-========================================================= */
 
 async function handleSingleChat(
   request,
@@ -1231,13 +1020,10 @@ async function handleSingleChat(
   }
 
   const userId =
-    await getUserId(
-      request,
-      env
-    );
+    getUserId(request);
 
   const chat =
-    await findChat(
+    await getChat(
       env,
       userId,
       chatId
@@ -1250,19 +1036,23 @@ async function handleSingleChat(
     );
   }
 
-  if (request.method === "GET") {
+  if (
+    request.method === "GET"
+  ) {
     return json({
       ok: true,
       chat,
       messages:
-        await getMessages(
+        await listMessages(
           env,
           chatId
         )
     });
   }
 
-  if (request.method === "PUT") {
+  if (
+    request.method === "PUT"
+  ) {
     let body;
 
     try {
@@ -1292,7 +1082,7 @@ async function handleSingleChat(
       UPDATE conversations
       SET title = ?, updated_at = ?
       WHERE id = ?
-        AND user_id = ?
+      AND user_id = ?
     `)
       .bind(
         title,
@@ -1309,11 +1099,13 @@ async function handleSingleChat(
     });
   }
 
-  if (request.method === "DELETE") {
+  if (
+    request.method === "DELETE"
+  ) {
     await env.DB.prepare(`
       DELETE FROM conversations
       WHERE id = ?
-        AND user_id = ?
+      AND user_id = ?
     `)
       .bind(
         chatId,
@@ -1333,8 +1125,408 @@ async function handleSingleChat(
   );
 }
 
+
 /* =========================================================
-   USER PROFILE
+   API KEY HELPERS
+========================================================= */
+
+function randomKey() {
+  const bytes =
+    new Uint8Array(32);
+
+  crypto.getRandomValues(bytes);
+
+  let binary = "";
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
+}
+
+
+async function hashKey(key) {
+  const data =
+    new TextEncoder().encode(key);
+
+  const hash =
+    await crypto.subtle.digest(
+      "SHA-256",
+      data
+    );
+
+  return Array.from(
+    new Uint8Array(hash)
+  )
+    .map(
+      x =>
+        x.toString(16)
+          .padStart(2, "0")
+    )
+    .join("");
+}
+
+
+function todayKey() {
+  const d = new Date();
+
+  return d
+    .toISOString()
+    .slice(0, 10);
+}
+
+
+/* =========================================================
+   API KEY AUTH
+========================================================= */
+
+async function authenticateApiKey(
+  request,
+  env
+) {
+  if (!env.QTM_KEYS) {
+    return {
+      ok: false,
+      error:
+        "API key storage is not configured."
+    };
+  }
+
+  const supplied =
+    request.headers.get(
+      "X-API-Key"
+    ) ||
+    (
+      request.headers
+        .get("Authorization")
+        ?.startsWith("Bearer ")
+        ? request.headers
+            .get("Authorization")
+            .slice(7)
+        : ""
+    );
+
+  if (!supplied) {
+    return {
+      ok: false,
+      error: "API key required."
+    };
+  }
+
+  const hash =
+    await hashKey(
+      supplied.trim()
+    );
+
+  const record =
+    await env.QTM_KEYS.get(
+      `key:${hash}`,
+      "json"
+    );
+
+  if (!record) {
+    return {
+      ok: false,
+      error: "Invalid API key."
+    };
+  }
+
+  if (record.revoked) {
+    return {
+      ok: false,
+      error: "API key has been revoked."
+    };
+  }
+
+  const date =
+    todayKey();
+
+  if (record.date !== date) {
+    record.date = date;
+    record.usage = 0;
+  }
+
+  if (
+    Number(record.usage || 0) >=
+    DAILY_API_LIMIT
+  ) {
+    return {
+      ok: false,
+      error:
+        "Daily API usage limit reached."
+    };
+  }
+
+  record.usage =
+    Number(record.usage || 0) + 1;
+
+  await env.QTM_KEYS.put(
+    `key:${hash}`,
+    JSON.stringify(record)
+  );
+
+  return {
+    ok: true,
+    record
+  };
+}
+
+
+/* =========================================================
+   API KEY CREATE
+========================================================= */
+
+async function createApiKey(
+  request,
+  env
+) {
+  if (!env.QTM_KEYS) {
+    return error(
+      "KV binding QTM_KEYS is missing.",
+      500
+    );
+  }
+
+  const userId =
+    getUserId(request);
+
+  let body = {};
+
+  try {
+    body =
+      await request.json();
+  } catch {}
+
+  const name =
+    clean(
+      body.name,
+      80
+    ) ||
+    "LOGIC-LEAF API Key";
+
+  const plainKey =
+    `llk_${randomKey()}`;
+
+  const hash =
+    await hashKey(
+      plainKey
+    );
+
+  const keyId =
+    uid("key");
+
+  const record = {
+    id: keyId,
+    userId,
+    name,
+    hash,
+    prefix:
+      plainKey.slice(0, 12),
+    createdAt: now(),
+    revoked: false,
+    usage: 0,
+    date: todayKey(),
+    dailyLimit:
+      DAILY_API_LIMIT
+  };
+
+  await env.QTM_KEYS.put(
+    `key:${hash}`,
+    JSON.stringify(record)
+  );
+
+  await env.QTM_KEYS.put(
+    `userkey:${userId}:${keyId}`,
+    hash
+  );
+
+  /*
+   The full key is returned ONLY now.
+   It is not stored in plaintext.
+  */
+
+  return json({
+    ok: true,
+    key: plainKey,
+    keyId,
+    name,
+    dailyLimit:
+      DAILY_API_LIMIT,
+    warning:
+      "Save this API key now. It will not be shown again."
+  });
+}
+
+
+/* =========================================================
+   API KEY LIST
+========================================================= */
+
+async function listApiKeys(
+  request,
+  env
+) {
+  if (!env.QTM_KEYS) {
+    return error(
+      "KV binding QTM_KEYS is missing.",
+      500
+    );
+  }
+
+  const userId =
+    getUserId(request);
+
+  const list =
+    await env.QTM_KEYS.list({
+      prefix:
+        `userkey:${userId}:`
+    });
+
+  const keys = [];
+
+  for (
+    const item of list.keys
+  ) {
+    const hash =
+      await env.QTM_KEYS.get(
+        item.name
+      );
+
+    if (!hash) continue;
+
+    const record =
+      await env.QTM_KEYS.get(
+        `key:${hash}`,
+        "json"
+      );
+
+    if (!record) continue;
+
+    keys.push({
+      id: record.id,
+      name: record.name,
+      prefix: record.prefix,
+      createdAt:
+        record.createdAt,
+      revoked:
+        !!record.revoked,
+      usage:
+        record.usage || 0,
+      dailyLimit:
+        DAILY_API_LIMIT
+    });
+  }
+
+  return json({
+    ok: true,
+    keys
+  });
+}
+
+
+/* =========================================================
+   API KEY REVOKE
+========================================================= */
+
+async function revokeApiKey(
+  request,
+  env,
+  keyId
+) {
+  if (!env.QTM_KEYS) {
+    return error(
+      "KV binding QTM_KEYS is missing.",
+      500
+    );
+  }
+
+  const userId =
+    getUserId(request);
+
+  const pointer =
+    `userkey:${userId}:${keyId}`;
+
+  const hash =
+    await env.QTM_KEYS.get(
+      pointer
+    );
+
+  if (!hash) {
+    return error(
+      "API key not found.",
+      404
+    );
+  }
+
+  const record =
+    await env.QTM_KEYS.get(
+      `key:${hash}`,
+      "json"
+    );
+
+  if (!record) {
+    return error(
+      "API key not found.",
+      404
+    );
+  }
+
+  record.revoked = true;
+  record.revokedAt = now();
+
+  await env.QTM_KEYS.put(
+    `key:${hash}`,
+    JSON.stringify(record)
+  );
+
+  return json({
+    ok: true,
+    revoked: keyId
+  });
+}
+
+
+/* =========================================================
+   API KEY PROTECTED TEST ENDPOINT
+========================================================= */
+
+async function handleApiStatus(
+  request,
+  env
+) {
+  const auth =
+    await authenticateApiKey(
+      request,
+      env
+    );
+
+  if (!auth.ok) {
+    return error(
+      auth.error,
+      401
+    );
+  }
+
+  return json({
+    ok: true,
+    name: APP_NAME,
+    authenticated: true,
+    keyId:
+      auth.record.id,
+    usage:
+      auth.record.usage,
+    dailyLimit:
+      DAILY_API_LIMIT
+  });
+}
+
+
+/* =========================================================
+   USER
 ========================================================= */
 
 async function handleUser(
@@ -1349,10 +1541,7 @@ async function handleUser(
   }
 
   const userId =
-    await getUserId(
-      request,
-      env
-    );
+    getUserId(request);
 
   await ensureUser(
     env,
@@ -1379,519 +1568,61 @@ async function handleUser(
   });
 }
 
-/* =========================================================
-   API KEY CREATION
-========================================================= */
-
-async function handleCreateKey(
-  request,
-  env
-) {
-  if (!env.DB) {
-    return error(
-      "D1 database binding is missing.",
-      500
-    );
-  }
-
-  const userId =
-    await getUserId(
-      request,
-      env
-    );
-
-  await ensureUser(
-    env,
-    userId
-  );
-
-  let body = {};
-
-  try {
-    body =
-      await request.json();
-  } catch {}
-
-  const name =
-    clean(
-      body.name,
-      100
-    ) ||
-    "API Key";
-
-  const key =
-    createApiKey();
-
-  const hash =
-    await sha256(key);
-
-  const prefix =
-    key.slice(
-      0,
-      16
-    );
-
-  const keyId =
-    makeId("key");
-
-  const limit =
-    Math.min(
-      Math.max(
-        Number(
-          body.daily_limit
-        ) || 300000,
-        1
-      ),
-      300000
-    );
-
-  await env.DB.prepare(`
-    INSERT INTO api_keys
-    (
-      id,
-      user_id,
-      name,
-      key_hash,
-      key_prefix,
-      created_at,
-      daily_limit
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `)
-    .bind(
-      keyId,
-      userId,
-      name,
-      hash,
-      prefix,
-      now(),
-      limit
-    )
-    .run();
-
-  /*
-    The complete key is returned ONLY during creation.
-    It is never stored in plain text.
-  */
-
-  return json({
-    ok: true,
-    apiKey: {
-      id: keyId,
-      name,
-      key,
-      prefix,
-      daily_limit: limit,
-      created_at: now()
-    },
-    warning:
-      "Save this API key now. The complete key will not be shown again."
-  });
-}
-
-/* =========================================================
-   API KEY LIST
-========================================================= */
-
-async function handleListKeys(
-  request,
-  env
-) {
-  if (!env.DB) {
-    return error(
-      "D1 database binding is missing.",
-      500
-    );
-  }
-
-  const userId =
-    await getUserId(
-      request,
-      env
-    );
-
-  await ensureUser(
-    env,
-    userId
-  );
-
-  const result =
-    await env.DB.prepare(`
-      SELECT
-        id,
-        name,
-        key_prefix,
-        created_at,
-        last_used_at,
-        revoked_at,
-        daily_limit
-      FROM api_keys
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-    `)
-      .bind(userId)
-      .all();
-
-  return json({
-    ok: true,
-    keys:
-      result.results || []
-  });
-}
-
-/* =========================================================
-   API KEY REVOKE
-========================================================= */
-
-async function handleRevokeKey(
-  request,
-  env,
-  keyId
-) {
-  if (!env.DB) {
-    return error(
-      "D1 database binding is missing.",
-      500
-    );
-  }
-
-  const userId =
-    await getUserId(
-      request,
-      env
-    );
-
-  const result =
-    await env.DB.prepare(`
-      UPDATE api_keys
-      SET revoked_at = ?
-      WHERE id = ?
-        AND user_id = ?
-        AND revoked_at IS NULL
-    `)
-      .bind(
-        now(),
-        keyId,
-        userId
-      )
-      .run();
-
-  if (
-    !result.success ||
-    result.meta.changes === 0
-  ) {
-    return error(
-      "API key not found.",
-      404
-    );
-  }
-
-  return json({
-    ok: true,
-    revoked: keyId
-  });
-}
-
-/* =========================================================
-   FILE METADATA
-========================================================= */
-
-async function handleFile(
-  request,
-  env
-) {
-  if (!env.DB) {
-    return error(
-      "D1 database binding is missing.",
-      500
-    );
-  }
-
-  let body;
-
-  try {
-    body =
-      await request.json();
-  } catch {
-    return error(
-      "Invalid JSON.",
-      400
-    );
-  }
-
-  const userId =
-    await getUserId(
-      request,
-      env
-    );
-
-  await ensureUser(
-    env,
-    userId
-  );
-
-  const filename =
-    clean(
-      body.filename,
-      255
-    );
-
-  if (!filename) {
-    return error(
-      "Filename is required.",
-      400
-    );
-  }
-
-  const fileId =
-    makeId("file");
-
-  await env.DB.prepare(`
-    INSERT INTO files
-    (
-      id,
-      user_id,
-      conversation_id,
-      filename,
-      content_type,
-      size,
-      storage_key,
-      created_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `)
-    .bind(
-      fileId,
-      userId,
-      clean(
-        body.conversationId,
-        200
-      ) || null,
-      filename,
-      clean(
-        body.content_type,
-        200
-      ) || null,
-      Number(body.size) || 0,
-      clean(
-        body.storage_key,
-        500
-      ) || null,
-      now()
-    )
-    .run();
-
-  return json({
-    ok: true,
-    file: {
-      id: fileId,
-      filename
-    }
-  });
-}
-
-/* =========================================================
-   PDF / DOCUMENT TEXT ASSISTANCE
-========================================================= */
-
-/*
-   D1 is NOT a binary PDF storage engine.
-
-   The frontend can extract text from a PDF and send that
-   text here. This endpoint then asks LOGIC-LEAF to analyze it.
-
-   This keeps the Worker lightweight and avoids pretending
-   that raw PDF bytes are automatically understood.
-*/
-
-async function handleDocumentQuestion(
-  request,
-  env
-) {
-  if (!env.AI) {
-    return error(
-      "Workers AI binding is missing.",
-      500
-    );
-  }
-
-  let body;
-
-  try {
-    body =
-      await request.json();
-  } catch {
-    return error(
-      "Invalid JSON.",
-      400
-    );
-  }
-
-  const text =
-    clean(
-      body.text,
-      60000
-    );
-
-  const question =
-    clean(
-      body.question,
-      10000
-    );
-
-  if (!text) {
-    return error(
-      "Document text is required.",
-      400
-    );
-  }
-
-  if (!question) {
-    return error(
-      "Question is required.",
-      400
-    );
-  }
-
-  const messages = [
-    {
-      role: "system",
-      content: `
-You are LOGIC-LEAF document assistant.
-
-Answer the user's question using the supplied document.
-Do not invent information that is not supported by the document.
-If the answer cannot be found, say that clearly.
-`
-    },
-    {
-      role: "user",
-      content:
-        `DOCUMENT:\n${text}\n\nQUESTION:\n${question}`
-    }
-  ];
-
-  try {
-    const result =
-      await runAIChat(
-        env,
-        messages
-      );
-
-    return json({
-      ok: true,
-      answer:
-        extractAIText(result),
-      model:
-        MODELS.CHAT
-    });
-  } catch (e) {
-    return error(
-      e?.message ||
-        "Document analysis failed.",
-      500
-    );
-  }
-}
-
-/* =========================================================
-   SEARCH
-========================================================= */
-
-/*
-   No search provider is configured in your current
-   wrangler.toml.
-
-   Therefore this endpoint deliberately reports that
-   live web search is not configured rather than fabricating
-   search results.
-
-   Later a real search provider can be connected here.
-*/
-
-async function handleSearch(
-  request,
-  env
-) {
-  return error(
-    "Live web search is not configured yet. Add a real search provider before enabling this endpoint.",
-    501
-  );
-}
 
 /* =========================================================
    CONFIG
 ========================================================= */
 
-function config(env) {
+function handleConfig() {
   return json({
     ok: true,
     name: APP_NAME,
-    version: VERSION,
-
+    version: "5",
     capabilities: {
       text: true,
       reasoning: true,
       coding: true,
       study: true,
-
-      vision: !!env.AI,
-      imageGeneration: !!env.AI,
-
-      speechToText: !!env.AI,
-      textToSpeech: !!env.AI,
-
-      chatHistory: !!env.DB,
-      users: !!env.DB,
-
-      apiKeys: !!env.DB,
-      apiKeyAuthentication: !!env.DB,
-
-      fileMetadata: !!env.DB,
-      documentQuestions: !!env.AI,
-
-      pdfTextAnalysis: !!env.AI,
-
-      liveWebSearch: false,
-
-      googleLogin:
-        "frontend-provider-required"
+      vision: true,
+      imageGeneration: true,
+      speechToText: true,
+      textToSpeech: true,
+      chatHistory: true,
+      fileUpload: true,
+      pdfReady: true,
+      googleLoginFrontend: true,
+      apiKeys: true,
+      dailyApiLimit:
+        DAILY_API_LIMIT,
+      webSearch:
+        false
     },
 
     endpoints: {
-      chat: "/v1/chat",
-
-      chats: "/api/chats",
-
-      vision: "/api/vision",
-
-      image: "/api/image",
-
+      chat:
+        "/v1/chat",
+      legacyChat:
+        "/api/chat",
+      chats:
+        "/api/chats",
+      vision:
+        "/api/vision",
+      image:
+        "/api/image",
       transcribe:
         "/api/transcribe",
-
       speech:
         "/api/speech",
-
-      user: "/api/user",
-
-      keys: "/api/keys",
-
-      files: "/api/files",
-
-      document:
-        "/api/document",
-
-      search:
-        "/api/search"
-    },
-
-    limits: {
-      apiKeyDailyMaximum:
-        300000
+      user:
+        "/api/user",
+      apiKeys:
+        "/api/keys",
+      apiStatus:
+        "/api/api-status"
     }
   });
 }
+
 
 /* =========================================================
    HEALTH
@@ -1902,31 +1633,28 @@ function health(env) {
     ok: true,
     name: APP_NAME,
     status: "online",
-    version: VERSION,
-
     ai: !!env.AI,
-    database: !!env.DB,
-    kv: !!env.QTM_KEYS,
-
-    capabilities: {
-      chat: !!env.AI,
-      history: !!env.DB,
-      vision: !!env.AI,
-      imageGeneration: !!env.AI,
-      speech: !!env.AI,
-      apiKeys: !!env.DB,
-      files: !!env.DB
-    }
+    database:
+      !!env.DB,
+    kv:
+      !!env.QTM_KEYS,
+    endpoint:
+      "/v1/chat"
   });
 }
+
 
 /* =========================================================
    ROUTER
 ========================================================= */
 
 export default {
-  async fetch(request, env) {
+  async fetch(
+    request,
+    env
+  ) {
     try {
+
       /* CORS */
 
       if (
@@ -1950,44 +1678,50 @@ export default {
       const path =
         url.pathname;
 
-      /* ROOT */
-
-      if (
-        path === "/" &&
-        request.method === "GET"
-      ) {
-        return health(env);
-      }
 
       /* HEALTH */
 
       if (
-        path === "/api/health" &&
-        request.method === "GET"
+        path === "/" &&
+        request.method ===
+          "GET"
       ) {
         return health(env);
       }
+
+      if (
+        path === "/api/health" &&
+        request.method ===
+          "GET"
+      ) {
+        return health(env);
+      }
+
 
       /* CONFIG */
 
       if (
         path === "/api/config" &&
-        request.method === "GET"
+        request.method ===
+          "GET"
       ) {
-        return config(env);
+        return handleConfig();
       }
+
 
       /* USER */
 
       if (
         path === "/api/user" &&
-        request.method === "GET"
+        request.method ===
+          "GET"
       ) {
         return handleUser(
           request,
           env
         );
       }
+
 
       /* CHATS */
 
@@ -1999,6 +1733,7 @@ export default {
           env
         );
       }
+
 
       /* SINGLE CHAT */
 
@@ -2015,6 +1750,7 @@ export default {
         );
       }
 
+
       /* MAIN CHAT */
 
       if (
@@ -2023,7 +1759,8 @@ export default {
           path === "/api/chat" ||
           path === "/chat"
         ) &&
-        request.method === "POST"
+        request.method ===
+          "POST"
       ) {
         return handleChat(
           request,
@@ -2031,11 +1768,13 @@ export default {
         );
       }
 
+
       /* VISION */
 
       if (
         path === "/api/vision" &&
-        request.method === "POST"
+        request.method ===
+          "POST"
       ) {
         return handleVision(
           request,
@@ -2043,11 +1782,13 @@ export default {
         );
       }
 
+
       /* IMAGE */
 
       if (
         path === "/api/image" &&
-        request.method === "POST"
+        request.method ===
+          "POST"
       ) {
         return handleImage(
           request,
@@ -2055,11 +1796,13 @@ export default {
         );
       }
 
+
       /* TRANSCRIPTION */
 
       if (
         path === "/api/transcribe" &&
-        request.method === "POST"
+        request.method ===
+          "POST"
       ) {
         return handleTranscribe(
           request,
@@ -2067,11 +1810,13 @@ export default {
         );
       }
 
+
       /* SPEECH */
 
       if (
         path === "/api/speech" &&
-        request.method === "POST"
+        request.method ===
+          "POST"
       ) {
         return handleSpeech(
           request,
@@ -2079,29 +1824,34 @@ export default {
         );
       }
 
+
       /* CREATE API KEY */
 
       if (
         path === "/api/keys" &&
-        request.method === "POST"
+        request.method ===
+          "POST"
       ) {
-        return handleCreateKey(
+        return createApiKey(
           request,
           env
         );
       }
+
 
       /* LIST API KEYS */
 
       if (
         path === "/api/keys" &&
-        request.method === "GET"
+        request.method ===
+          "GET"
       ) {
-        return handleListKeys(
+        return listApiKeys(
           request,
           env
         );
       }
+
 
       /* REVOKE API KEY */
 
@@ -2112,96 +1862,79 @@ export default {
 
       if (
         keyMatch &&
-        request.method === "DELETE"
+        request.method ===
+          "DELETE"
       ) {
-        return handleRevokeKey(
+        return revokeApiKey(
           request,
           env,
           keyMatch[1]
         );
       }
 
-      /* FILE */
+
+      /* API KEY STATUS */
 
       if (
-        path === "/api/files" &&
-        request.method === "POST"
+        path ===
+          "/api/api-status" &&
+        request.method ===
+          "GET"
       ) {
-        return handleFile(
+        return handleApiStatus(
           request,
           env
         );
       }
 
-      /* DOCUMENT */
-
-      if (
-        path === "/api/document" &&
-        request.method === "POST"
-      ) {
-        return handleDocumentQuestion(
-          request,
-          env
-        );
-      }
-
-      /* SEARCH */
-
-      if (
-        path === "/api/search" &&
-        request.method === "POST"
-      ) {
-        return handleSearch(
-          request,
-          env
-        );
-      }
 
       /* GOOGLE AUTH STATUS */
 
       if (
-        path === "/api/auth/google"
+        path ===
+          "/api/auth/google" &&
+        request.method ===
+          "GET"
       ) {
-        return json(
-          {
-            ok: false,
-            configured: false,
-            message:
-              "Configure Google/Firebase authentication in the frontend and token verification before enabling production Google authentication."
-          },
-          501
-        );
+        return json({
+          ok: true,
+          configured:
+            false,
+          message:
+            "Google authentication is handled by the frontend Firebase configuration. The Worker does not pretend to verify Google tokens until server-side token verification is configured."
+        });
       }
 
-      /* UNKNOWN */
+
+      /* NOT FOUND */
 
       return error(
         "LOGIC-LEAF endpoint not found.",
         404,
         {
           path,
-          available: [
+          endpoints: [
             "/",
             "/api/health",
             "/api/config",
-            "/api/user",
-            "/api/chats",
             "/v1/chat",
+            "/api/chat",
+            "/api/chats",
             "/api/vision",
             "/api/image",
             "/api/transcribe",
             "/api/speech",
+            "/api/user",
             "/api/keys",
-            "/api/files",
-            "/api/document",
-            "/api/search"
+            "/api/api-status"
           ]
         }
       );
 
     } catch (e) {
+
       console.error(
-        "LOGIC-LEAF ERROR",
+        "LOGIC-LEAF ERROR:",
         e
       );
 
