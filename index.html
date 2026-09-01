@@ -2,115 +2,251 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#08090c"
   >
 
   <title>LOGIC-LEAF</title>
 
-  <meta
-    name="description"
-    content="LOGIC-LEAF — AI assistant"
+  <link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
   >
 
-  <link rel="stylesheet" href="style.css">
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+  >
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
 </head>
 
 <body>
 
 <div id="app">
 
-  <!-- =========================================
-       SIDEBAR
-  ========================================== -->
 
-  <aside id="sidebar" class="sidebar closed">
+  <!-- =================================================
+       SIDEBAR
+  ================================================== -->
+
+  <aside
+    id="sidebar"
+    class="sidebar closed"
+  >
 
     <div class="sidebar-top">
 
       <div class="brand">
-        <div class="brand-mark">L</div>
+
+        <div class="brand-mark">
+          LL
+        </div>
 
         <div>
           <strong>LOGIC-LEAF</strong>
           <span>AI ASSISTANT</span>
         </div>
+
       </div>
 
       <button
         id="closeSidebar"
         class="icon-btn"
+        type="button"
         aria-label="Close sidebar"
-      >×</button>
+      >
+        ×
+      </button>
 
     </div>
 
 
-    <button id="newChat" class="new-chat">
-      <span class="svg-icon">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
-      </span>
+    <!-- New Chat -->
+
+    <button
+      id="newChat"
+      class="new-chat"
+      type="button"
+    >
+
+      <svg
+        width="19"
+        height="19"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M12 5V19"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+
+        <path
+          d="M5 12H19"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+      </svg>
 
       <span>New chat</span>
+
     </button>
 
 
-    <label class="sidebar-search">
+    <!-- Search history -->
 
-      <svg viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="6"/>
-        <path d="m16 16 5 5"/>
+    <div class="sidebar-search">
+
+      <svg
+        width="17"
+        height="17"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <circle
+          cx="11"
+          cy="11"
+          r="6.5"
+          stroke="currentColor"
+          stroke-width="1.7"
+        />
+
+        <path
+          d="M16 16L21 21"
+          stroke="currentColor"
+          stroke-width="1.7"
+          stroke-linecap="round"
+        />
       </svg>
 
       <input
         id="chatSearch"
         type="text"
         placeholder="Search chats"
+        autocomplete="off"
       >
 
-    </label>
+    </div>
 
 
     <div class="history-label">
-      Conversations
+      Recent chats
     </div>
 
-    <div id="chatHistory" class="chat-history"></div>
 
+    <div
+      id="chatHistory"
+      class="chat-history"
+    >
+    </div>
+
+
+    <!-- Sidebar bottom -->
 
     <div class="sidebar-bottom">
 
-      <button id="apiButton" class="side-action">
+      <button
+        id="settingsButton"
+        class="side-action"
+        type="button"
+      >
+
         <span>
-          <svg viewBox="0 0 24 24">
-            <path d="M8 7h8M8 12h8M8 17h5"/>
-            <rect x="4" y="3" width="16" height="18" rx="2"/>
+
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="3"
+              stroke="currentColor"
+              stroke-width="1.6"
+            />
+
+            <path
+              d="M19 12a7 7 0 0 0-.12-1.28l2-1.55-2-3.46-2.36.94a7.3 7.3 0 0 0-2.2-1.28L14 3h-4l-.32 2.37a7.3 7.3 0 0 0-2.2 1.28l-2.36-.94-2 3.46 2 1.55A7 7 0 0 0 5 12c0 .44.04.87.12 1.28l-2 1.55 2 3.46 2.36-.94a7.3 7.3 0 0 0 2.2 1.28L10 21h4l.32-2.37a7.3 7.3 0 0 0 2.2-1.28l2.36.94 2-3.46-2-1.55c.08-.41.12-.84.12-1.28Z"
+              stroke="currentColor"
+              stroke-width="1.2"
+              stroke-linejoin="round"
+            />
           </svg>
+
         </span>
-        API
+
+        Settings
+
       </button>
 
-      <button id="settingsButton" class="side-action">
+
+      <button
+        id="apiButton"
+        class="side-action"
+        type="button"
+      >
+
         <span>
-          <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14.3 3h-4.6l-.4 2.6a7 7 0 0 0-2 1.2L5 5.9l-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9a7 7 0 0 0 2 1.2l.4 2.6h4.6l.4-2.6a7 7 0 0 0 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/>
+
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+
+            <path
+              d="M8 12h8"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+
+            <path
+              d="M7 7h10a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3Z"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+
           </svg>
+
         </span>
-        Settings
+
+        API
+
       </button>
 
 
       <div class="account">
 
-        <div id="avatar" class="avatar">?</div>
+        <div
+          id="avatar"
+          class="avatar"
+        >
+          ?
+        </div>
 
         <div class="account-info">
 
@@ -125,10 +261,11 @@
         </div>
 
         <button
-          id="authButton"
+          id="profileButton"
           class="account-menu"
+          type="button"
         >
-          Sign in
+          ?
         </button>
 
       </div>
@@ -138,22 +275,29 @@
   </aside>
 
 
-  <!-- =========================================
+
+  <!-- =================================================
        MAIN
-  ========================================== -->
+  ================================================== -->
 
   <main class="main">
+
+
+    <!-- TOP BAR -->
 
     <header class="topbar">
 
       <button
         id="openSidebar"
         class="menu-btn"
+        type="button"
         aria-label="Open sidebar"
       >
+
         <span></span>
         <span></span>
         <span></span>
+
       </button>
 
 
@@ -165,95 +309,146 @@
       <div class="top-actions">
 
         <button
-          id="searchToggle"
-          class="top-pill"
+          id="authButton"
+          class="top-pill active"
+          type="button"
         >
-          <svg viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="6"/>
-            <path d="m16 16 5 5"/>
-          </svg>
-
-          Search
+          Sign in
         </button>
-
-        <button
-          id="profileButton"
-          class="profile-mini"
-        >?</button>
 
       </div>
 
     </header>
 
 
-    <!-- ======================================
-         CHAT
-    ======================================= -->
 
-    <section id="chat" class="chat">
+    <!-- =================================================
+         CHAT AREA
+    ================================================== -->
 
-      <div id="welcome" class="welcome">
+    <section
+      id="chat"
+      class="chat"
+    >
+
+
+      <!-- WELCOME -->
+
+      <div
+        id="welcome"
+        class="welcome"
+      >
 
         <div class="welcome-glow"></div>
 
+
         <div class="logo-large">
-          L
+          LL
         </div>
 
+
         <h1>
-          What can I help you with?
+          What can I help with?
         </h1>
 
+
         <p>
-          Ask, learn, create, code or explore.
+          Ask LOGIC-LEAF anything.
         </p>
 
 
         <div class="quick-grid">
 
-          <button
-            data-prompt="Explain this topic clearly with examples"
-          >
-            <strong>Explain something</strong>
-            <span>Learn a topic step by step</span>
-          </button>
 
           <button
-            data-prompt="Help me solve this problem step by step"
+            type="button"
+            data-prompt="Explain this topic clearly and step by step."
           >
-            <strong>Solve a problem</strong>
-            <span>Reason through difficult questions</span>
+
+            <strong>
+              Explain something
+            </strong>
+
+            <span>
+              Learn a topic step by step
+            </span>
+
           </button>
 
-          <button
-            data-prompt="Help me write and debug code"
-          >
-            <strong>Code with me</strong>
-            <span>Build or debug a project</span>
-          </button>
 
           <button
-            data-prompt="Create a detailed study plan for me"
+            type="button"
+            data-prompt="Help me solve this problem and explain the reasoning."
           >
-            <strong>Study assistant</strong>
-            <span>Plan your learning</span>
+
+            <strong>
+              Solve a problem
+            </strong>
+
+            <span>
+              Get reasoning and solutions
+            </span>
+
           </button>
+
+
+          <button
+            type="button"
+            data-prompt="Write complete production-ready code for this project."
+          >
+
+            <strong>
+              Write code
+            </strong>
+
+            <span>
+              Build and debug projects
+            </span>
+
+          </button>
+
+
+          <button
+            type="button"
+            data-prompt="Create a detailed study plan for me."
+          >
+
+            <strong>
+              Study assistant
+            </strong>
+
+            <span>
+              Plans, notes and revision
+            </span>
+
+          </button>
+
 
         </div>
 
       </div>
 
 
-      <div id="messages" class="messages"></div>
+
+      <!-- MESSAGES -->
+
+      <div
+        id="messages"
+        class="messages"
+      >
+      </div>
+
 
     </section>
 
 
-    <!-- ======================================
+
+    <!-- =================================================
          COMPOSER
-    ======================================= -->
+    ================================================== -->
 
     <div class="composer-area">
+
 
       <div
         id="searchIndicator"
@@ -266,123 +461,298 @@
       <div
         id="filePreview"
         class="file-preview hidden"
-      ></div>
+      >
+      </div>
 
 
       <div class="composer">
 
-        <!-- File -->
+
+        <!-- ATTACH -->
+
         <button
           id="attachButton"
           class="composer-btn"
+          type="button"
           title="Attach file"
           aria-label="Attach file"
         >
-          <svg viewBox="0 0 24 24">
-            <path d="M21.4 11.6 12 21a6 6 0 0 1-8.5-8.5l9.9-9.9a4 4 0 0 1 5.7 5.7L9.2 18.2a2 2 0 0 1-2.8-2.8l9-9"/>
+
+          <svg
+            width="21"
+            height="21"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+
+            <path
+              d="M8.5 12.5L14.9 6.1a4 4 0 0 1 5.7 5.7l-8.1 8.1a5.5 5.5 0 0 1-7.8-7.8l8.2-8.2a3.2 3.2 0 0 1 4.5 4.5l-7.5 7.5a1.8 1.8 0 0 1-2.6-2.6l6.8-6.8"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
           </svg>
+
         </button>
 
 
-        <!-- Camera -->
-        <button
-          id="cameraButton"
-          class="composer-btn"
-          title="Camera"
-          aria-label="Camera"
-        >
-          <svg viewBox="0 0 24 24">
-            <path d="M4 7h4l1.5-2h5L16 7h4a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/>
-            <circle cx="12" cy="13" r="3.5"/>
-          </svg>
-        </button>
+        <!-- FILE INPUT -->
 
-
-        <!-- Hidden file input -->
         <input
           id="fileInput"
           type="file"
           hidden
           accept="
-            image/*,
-            application/pdf,
-            text/plain,
-            text/markdown,
-            text/csv,
-            text/html,
-            text/css,
-            application/json,
-            text/javascript,
-            application/javascript,
+            .pdf,
+            .txt,
+            .md,
+            .json,
+            .csv,
+            .html,
+            .css,
+            .js,
             .py,
             .java,
             .cpp,
             .c,
-            .h
+            .xml,
+            image/*,
+            application/pdf,
+            text/*
           "
         >
 
 
-        <!-- Hidden camera input fallback -->
+
+        <!-- CAMERA -->
+
+        <button
+          id="cameraButton"
+          class="composer-btn"
+          type="button"
+          title="Camera"
+          aria-label="Camera"
+        >
+
+          <svg
+            width="21"
+            height="21"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+
+            <path
+              d="M8.5 6.5L9.6 4.8C9.85 4.4 10.28 4.15 10.75 4.15h2.5c.47 0 .9.25 1.15.65l1.1 1.7H19a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2h3.5Z"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+
+            <circle
+              cx="12"
+              cy="12.5"
+              r="3.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+
+          </svg>
+
+        </button>
+
+
+        <!-- CAMERA INPUT -->
+
         <input
           id="cameraInput"
           type="file"
-          hidden
           accept="image/*"
           capture="environment"
+          hidden
         >
 
+
+
+        <!-- TEXT -->
 
         <textarea
           id="messageInput"
           rows="1"
           placeholder="Message LOGIC-LEAF..."
           autocomplete="off"
+          spellcheck="true"
         ></textarea>
 
 
-        <!-- Generate image -->
+
+        <!-- SEARCH -->
+
+        <button
+          id="searchToggle"
+          class="composer-btn"
+          type="button"
+          title="Search"
+          aria-label="Search"
+        >
+
+          <svg
+            width="21"
+            height="21"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+
+            <circle
+              cx="10.8"
+              cy="10.8"
+              r="6.5"
+              stroke="currentColor"
+              stroke-width="1.7"
+            />
+
+            <path
+              d="M16 16l5 5"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+            />
+
+          </svg>
+
+        </button>
+
+
+
+        <!-- IMAGE GENERATION -->
+
         <button
           id="imageButton"
-          class="composer-btn image-action"
+          class="composer-btn"
+          type="button"
           title="Generate image"
           aria-label="Generate image"
         >
-          <svg viewBox="0 0 24 24">
-            <rect x="3" y="4" width="18" height="16" rx="2"/>
-            <circle cx="8.5" cy="9" r="1.5"/>
-            <path d="m4 18 5-5 3 3 2-2 6 5"/>
+
+          <svg
+            width="21"
+            height="21"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+
+            <rect
+              x="3"
+              y="4"
+              width="18"
+              height="16"
+              rx="2"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+
+            <circle
+              cx="8"
+              cy="9"
+              r="1.5"
+              stroke="currentColor"
+              stroke-width="1.4"
+            />
+
+            <path
+              d="M4.5 17l4.5-4.5 3.2 3.2 2.3-2.3 5 4.6"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
           </svg>
+
         </button>
+
 
 
         <!-- PDF -->
+
         <button
           id="pdfButton"
           class="composer-btn"
+          type="button"
           title="Create PDF"
           aria-label="Create PDF"
         >
-          <svg viewBox="0 0 24 24">
-            <path d="M6 2h9l4 4v16H6z"/>
-            <path d="M14 2v5h5"/>
-            <path d="M9 14h6M9 17h5"/>
+
+          <svg
+            width="21"
+            height="21"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+
+            <path
+              d="M6 3.5h8l4 4V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linejoin="round"
+            />
+
+            <path
+              d="M14 3.5V8h4"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+
+            <path
+              d="M8 14h8M8 17h6"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+            />
+
           </svg>
+
         </button>
 
 
-        <!-- Send -->
+
+        <!-- SEND -->
+
         <button
           id="sendButton"
           class="send-btn"
+          type="button"
+          aria-label="Send message"
           disabled
-          aria-label="Send"
         >
-          <svg viewBox="0 0 24 24">
-            <path d="M5 12h13"/>
-            <path d="m13 6 6 6-6 6"/>
+
+          <svg
+            width="19"
+            height="19"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+
+            <path
+              d="M12 19V5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+
+            <path
+              d="M6 11l6-6 6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
           </svg>
+
         </button>
+
 
       </div>
 
@@ -398,9 +768,10 @@
 </div>
 
 
-<!-- =========================================
+
+<!-- =====================================================
      AUTH MODAL
-========================================= -->
+====================================================== -->
 
 <div
   id="authModal"
@@ -411,14 +782,22 @@
 
     <button
       class="modal-close"
+      type="button"
       data-close="authModal"
-    >×</button>
+    >
+      ×
+    </button>
 
-    <div class="modal-logo">L</div>
+
+    <div class="modal-logo">
+      LL
+    </div>
+
 
     <h2 id="authTitle">
       Welcome to LOGIC-LEAF
     </h2>
+
 
     <p id="authSubtitle">
       Sign in to continue
@@ -430,19 +809,23 @@
       class="modal-input"
       type="email"
       placeholder="Email"
+      autocomplete="email"
     >
+
 
     <input
       id="authPassword"
       class="modal-input"
       type="password"
       placeholder="Password"
+      autocomplete="current-password"
     >
 
 
     <button
       id="emailAuth"
       class="primary-btn"
+      type="button"
     >
       Sign in
     </button>
@@ -451,14 +834,47 @@
     <button
       id="googleAuth"
       class="google-btn"
+      type="button"
     >
+
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+
+        <path
+          fill="#4285F4"
+          d="M21.35 12.27c0-.72-.06-1.42-.18-2.09H12v3.95h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.69 2.91-4.18 2.91-7.25Z"
+        />
+
+        <path
+          fill="#34A853"
+          d="M12 21.75c2.63 0 4.84-.87 6.45-2.35l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.53A9.75 9.75 0 0 0 12 21.75Z"
+        />
+
+        <path
+          fill="#FBBC05"
+          d="M6.54 13.84A5.86 5.86 0 0 1 6.23 12c0-.64.11-1.27.31-1.84V7.63H3.3A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.05 4.37l3.24-2.53Z"
+        />
+
+        <path
+          fill="#EA4335"
+          d="M12 6.13c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.22 14.63 2.25 12 2.25A9.75 9.75 0 0 0 3.3 7.63l3.24 2.53C7.31 7.85 9.46 6.13 12 6.13Z"
+        />
+
+      </svg>
+
       Continue with Google
+
     </button>
 
 
     <button
       id="switchAuth"
       class="text-btn"
+      type="button"
     >
       Create an account
     </button>
@@ -474,55 +890,10 @@
 </div>
 
 
-<!-- =========================================
-     SETTINGS
-========================================= -->
 
-<div
-  id="settingsModal"
-  class="modal hidden"
->
-
-  <div class="modal-card">
-
-    <button
-      class="modal-close"
-      data-close="settingsModal"
-    >×</button>
-
-    <div class="modal-logo">L</div>
-
-    <h2>Settings</h2>
-
-    <div class="settings-row">
-      <strong>Account</strong>
-      <span id="settingsAccount">
-        LOGIC-LEAF account
-      </span>
-    </div>
-
-    <div class="settings-row">
-      <strong>Developer</strong>
-      <span>
-        V.CHENCHUKIRAN · CLOUD SECURITY
-      </span>
-    </div>
-
-    <button
-      id="logoutButton"
-      class="danger-btn"
-    >
-      Sign out
-    </button>
-
-  </div>
-
-</div>
-
-
-<!-- =========================================
+<!-- =====================================================
      API MODAL
-========================================= -->
+====================================================== -->
 
 <div
   id="apiModal"
@@ -533,31 +904,45 @@
 
     <button
       class="modal-close"
+      type="button"
       data-close="apiModal"
-    >×</button>
+    >
+      ×
+    </button>
 
-    <div class="modal-logo">L</div>
 
-    <h2>API access</h2>
+    <div class="modal-logo">
+      LL
+    </div>
+
+
+    <h2>
+      LOGIC-LEAF API
+    </h2>
+
 
     <p>
-      Create a private LOGIC-LEAF API key.
+      Create an API key for applications using LOGIC-LEAF.
     </p>
+
 
     <button
       id="createApiKey"
       class="primary-btn"
+      type="button"
     >
       Create API key
     </button>
+
 
     <div
       id="apiOutput"
       class="api-output"
     ></div>
 
+
     <p class="small-note">
-      Keep your API key private.
+      Keep your API key private. It will not be displayed again.
     </p>
 
   </div>
@@ -565,7 +950,129 @@
 </div>
 
 
-<script src="app.js"></script>
+
+<!-- =====================================================
+     SETTINGS MODAL
+====================================================== -->
+
+<div
+  id="settingsModal"
+  class="modal hidden"
+>
+
+  <div class="modal-card">
+
+    <button
+      class="modal-close"
+      type="button"
+      data-close="settingsModal"
+    >
+      ×
+    </button>
+
+
+    <div class="modal-logo">
+      LL
+    </div>
+
+
+    <h2>
+      Settings
+    </h2>
+
+
+    <p>
+      LOGIC-LEAF account and application settings.
+    </p>
+
+
+    <div class="settings-row">
+
+      <strong>
+        Account
+      </strong>
+
+      <span id="settingsAccount">
+        Your LOGIC-LEAF account
+      </span>
+
+    </div>
+
+
+    <div class="settings-row">
+
+      <strong>
+        AI model
+      </strong>
+
+      <span>
+        Cloudflare Workers AI
+      </span>
+
+    </div>
+
+
+    <div class="settings-row">
+
+      <strong>
+        Developer
+      </strong>
+
+      <span>
+        V.CHENCHUKIRAN
+      </span>
+
+    </div>
+
+
+    <div class="settings-row">
+
+      <strong>
+        Cloud Security
+      </strong>
+
+      <span>
+        LOGIC-LEAF AI platform
+      </span>
+
+    </div>
+
+
+    <button
+      id="logoutButton"
+      class="danger-btn"
+      type="button"
+    >
+      Sign out
+    </button>
+
+  </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     FIREBASE
+====================================================== -->
+
+<script
+  src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"
+></script>
+
+<script
+  src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"
+></script>
+
+
+
+<!-- =====================================================
+     APP
+====================================================== -->
+
+<script
+  src="app.js"
+></script>
 
 </body>
-            </html>
+  </html>
