@@ -30,24 +30,9 @@ id = "8c76e2538038405c941c6a9cdb2dfc02"
 
 
 # =========================================================
-# OPTIONAL AI SEARCH
-#
-# This enables Cloudflare AI Search.
-# Create an AI Search instance first and then set
-# SEARCH_INSTANCE to its name.
-# =========================================================
-
-[[ai_search_namespaces]]
-binding = "AI_SEARCH"
-namespace = "default"
-
-
-# =========================================================
 # VARIABLES
 # =========================================================
 
 [vars]
 
 APP_URL = "https://chenchukiranvemula.github.io/LOGIC-LEAF/"
-
-SEARCH_INSTANCE = "logic-leaf"
