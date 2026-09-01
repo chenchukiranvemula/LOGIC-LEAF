@@ -1,1 +1,53 @@
+name = "logic-leaf"
+main = "worker.js"
+compatibility_date = "2026-08-31"
 
+# =========================================================
+# WORKERS AI
+# =========================================================
+
+[ai]
+binding = "AI"
+
+
+# =========================================================
+# D1 DATABASE
+# =========================================================
+
+[[d1_databases]]
+binding = "DB"
+database_name = "qtm-ai-db"
+database_id = "06fb0a2b-0531-4633-a3e5-4ff0754b7528"
+
+
+# =========================================================
+# KV
+# =========================================================
+
+[[kv_namespaces]]
+binding = "QTM_KEYS"
+id = "8c76e2538038405c941c6a9cdb2dfc02"
+
+
+# =========================================================
+# OPTIONAL AI SEARCH
+#
+# This enables Cloudflare AI Search.
+# Create an AI Search instance first and then set
+# SEARCH_INSTANCE to its name.
+# =========================================================
+
+[[ai_search_namespaces]]
+binding = "AI_SEARCH"
+namespace = "default"
+
+
+# =========================================================
+# VARIABLES
+# =========================================================
+
+[vars]
+
+APP_URL = "https://chenchukiranvemula.github.io/LOGIC-LEAF/"
+
+SEARCH_INSTANCE = "logic-leaf"
