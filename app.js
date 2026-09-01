@@ -1,12 +1,10 @@
 // ============================================================
-// LOGIC-LEAF APP
-// Firebase: logic-leaf-64d0d
-// Worker: logic-leaf.qtmkiller6.workers.dev
+// LOGIC-LEAF
+// Firebase + Cloudflare Worker
 // ============================================================
 
-
-import { initializeApp } from
-"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
   getAuth,
@@ -14,41 +12,40 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged
-} from
-"https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+}
+from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 
 // ============================================================
-// CONFIG
+// CONFIGURATION
 // ============================================================
 
 const API_URL =
-"https://logic-leaf.qtmkiller6.workers.dev";
+  "https://logic-leaf.qtmkiller6.workers.dev";
 
 
 const firebaseConfig = {
 
   apiKey:
-  "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw",
+    "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw",
 
   authDomain:
-  "logic-leaf-64d0d.firebaseapp.com",
+    "logic-leaf-64d0d.firebaseapp.com",
 
   projectId:
-  "logic-leaf-64d0d",
+    "logic-leaf-64d0d",
 
   storageBucket:
-  "logic-leaf-64d0d.firebasestorage.app",
+    "logic-leaf-64d0d.firebasestorage.app",
 
   messagingSenderId:
-  "346443954182",
+    "346443954182",
 
   appId:
-  "1:346443954182:web:2ab5bb71b5e52206e62b87",
+    "1:346443954182:web:2ab5bb71b5e52206e62b87",
 
   measurementId:
-  "G-ZVVBH04E9M"
-
+    "G-ZVVBH04E9M"
 };
 
 
@@ -57,13 +54,13 @@ const firebaseConfig = {
 // ============================================================
 
 const firebaseApp =
-initializeApp(firebaseConfig);
+  initializeApp(firebaseConfig);
 
 const auth =
-getAuth(firebaseApp);
+  getAuth(firebaseApp);
 
 const googleProvider =
-new GoogleAuthProvider();
+  new GoogleAuthProvider();
 
 googleProvider.setCustomParameters({
   prompt: "select_account"
@@ -71,42 +68,11 @@ googleProvider.setCustomParameters({
 
 
 // ============================================================
-// DOM
+// ELEMENT HELPER
 // ============================================================
 
 const $ = id =>
-document.getElementById(id);
-
-
-const loginScreen =
-$("loginScreen");
-
-const appScreen =
-$("appScreen");
-
-const googleLoginBtn =
-$("googleLoginBtn");
-
-const loginError =
-$("loginError");
-
-const messages =
-$("messages");
-
-const welcomeView =
-$("welcomeView");
-
-const messageInput =
-$("messageInput");
-
-const sendBtn =
-$("sendBtn");
-
-const sidebar =
-$("sidebar");
-
-const chatHistory =
-$("chatHistory");
+  document.getElementById(id);
 
 
 // ============================================================
@@ -117,15 +83,15 @@ let currentUser = null;
 
 let currentChatId = null;
 
-let recognition = null;
+let selectedFile = null;
 
 let selectedImage = null;
 
-let selectedFile = null;
+let recognition = null;
 
 
 const STORAGE_KEY =
-"logic_leaf_chats_v2";
+  "logic_leaf_chats_v3";
 
 
 // ============================================================
@@ -137,9 +103,7 @@ function getChats() {
   try {
 
     return JSON.parse(
-      localStorage.getItem(
-        STORAGE_KEY
-      )
+      localStorage.getItem(STORAGE_KEY)
     ) || [];
 
   } catch {
@@ -147,7 +111,6 @@ function getChats() {
     return [];
 
   }
-
 }
 
 
@@ -170,42 +133,35 @@ function createChat() {
   const chat = {
 
     id:
-    "chat_" +
-    Date.now(),
+      "chat_" + Date.now(),
 
     title:
-    "New chat",
+      "New chat",
 
     messages:
-    [],
+      [],
 
     createdAt:
-    Date.now()
+      Date.now()
 
   };
 
 
   const chats =
-  getChats();
-
+    getChats();
 
   chats.unshift(chat);
 
-
   saveChats(chats);
 
-
   currentChatId =
-  chat.id;
-
+    chat.id;
 
   renderHistory();
 
-  renderCurrentChat();
-
+  renderChat();
 
   return chat;
-
 }
 
 
@@ -213,11 +169,11 @@ function createChat() {
 // CURRENT CHAT
 // ============================================================
 
-function currentChat() {
+function getCurrentChat() {
 
   return getChats().find(
     chat =>
-    chat.id === currentChatId
+      chat.id === currentChatId
   );
 
 }
@@ -229,24 +185,26 @@ function currentChat() {
 
 function renderHistory() {
 
-  if (!chatHistory)
+  const history =
+    $("chatHistory");
+
+  if (!history)
     return;
 
 
-  chatHistory.innerHTML =
-  "";
+  history.innerHTML = "";
 
 
   const chats =
-  getChats();
+    getChats();
 
 
   if (!chats.length) {
 
-    chatHistory.innerHTML =
-    `<div class="empty-state">
-      No chats yet.
-    </div>`;
+    history.innerHTML =
+      `<div class="empty-state">
+        No chats yet.
+      </div>`;
 
     return;
 
@@ -256,49 +214,48 @@ function renderHistory() {
   chats.forEach(chat => {
 
     const button =
-    document.createElement("button");
-
+      document.createElement("button");
 
     button.className =
-    "history-item";
+      "history-item";
 
 
     if (
-      chat.id ===
-      currentChatId
+      chat.id === currentChatId
     ) {
 
-      button.classList.add(
-        "active"
-      );
+      button.classList.add("active");
 
     }
 
 
     button.textContent =
-    chat.title ||
-    "New chat";
+      chat.title || "New chat";
 
 
-    button.onclick = () => {
-
-      currentChatId =
-      chat.id;
-
-      renderHistory();
-
-      renderCurrentChat();
-
-      sidebar?.classList.remove(
-        "open"
-      );
-
-    };
+    button.title =
+      chat.title || "New chat";
 
 
-    chatHistory.appendChild(
-      button
+    button.addEventListener(
+      "click",
+      () => {
+
+        currentChatId =
+          chat.id;
+
+        renderHistory();
+
+        renderChat();
+
+        $("sidebar")
+          ?.classList.remove("open");
+
+      }
     );
+
+
+    history.appendChild(button);
 
   });
 
@@ -309,18 +266,21 @@ function renderHistory() {
 // RENDER CHAT
 // ============================================================
 
-function renderCurrentChat() {
+function renderChat() {
 
-  if (!messages)
+  const messageBox =
+    $("messages");
+
+  if (!messageBox)
     return;
 
 
-  messages.innerHTML =
-  "";
+  messageBox.innerHTML =
+    "";
 
 
   const chat =
-  currentChat();
+    getCurrentChat();
 
 
   if (
@@ -328,18 +288,16 @@ function renderCurrentChat() {
     !chat.messages.length
   ) {
 
-    welcomeView?.classList.remove(
-      "hidden"
-    );
+    $("welcomeView")
+      ?.classList.remove("hidden");
 
     return;
 
   }
 
 
-  welcomeView?.classList.add(
-    "hidden"
-  );
+  $("welcomeView")
+    ?.classList.add("hidden");
 
 
   chat.messages.forEach(
@@ -354,6 +312,9 @@ function renderCurrentChat() {
     }
   );
 
+
+  scrollMessages();
+
 }
 
 
@@ -367,76 +328,91 @@ function addMessage(
   scroll = true
 ) {
 
-  welcomeView?.classList.add(
-    "hidden"
-  );
+  $("welcomeView")
+    ?.classList.add("hidden");
 
 
   const wrapper =
-  document.createElement(
-    "div"
-  );
-
+    document.createElement("div");
 
   wrapper.className =
-  `message ${role === "user" ? "user" : "ai"}`;
+    role === "user"
+      ? "message user"
+      : "message ai";
 
 
-  const box =
-  document.createElement(
-    "div"
-  );
+  const contentBox =
+    document.createElement("div");
+
+  contentBox.className =
+    "message-content";
 
 
-  box.className =
-  "message-content";
+  const roleLabel =
+    document.createElement("div");
 
+  roleLabel.className =
+    "message-role";
 
-  const label =
-  document.createElement(
-    "div"
-  );
-
-
-  label.className =
-  "message-role";
-
-
-  label.textContent =
-  role === "user"
-  ? "YOU"
-  : "LOGIC-LEAF";
+  roleLabel.textContent =
+    role === "user"
+      ? "YOU"
+      : "LOGIC-LEAF";
 
 
   const text =
-  document.createElement(
-    "div"
-  );
-
+    document.createElement("div");
 
   text.className =
-  "message-text";
-
+    "message-text";
 
   text.textContent =
-  content;
+    content;
 
 
-  box.appendChild(label);
+  contentBox.appendChild(
+    roleLabel
+  );
 
-  box.appendChild(text);
+  contentBox.appendChild(
+    text
+  );
 
-  wrapper.appendChild(box);
+  wrapper.appendChild(
+    contentBox
+  );
 
-  messages.appendChild(wrapper);
+  $("messages")
+    ?.appendChild(wrapper);
 
 
-  if (scroll) {
+  if (scroll)
+    scrollMessages();
 
-    messages.scrollTop =
-    messages.scrollHeight;
+}
 
-  }
+
+// ============================================================
+// SCROLL
+// ============================================================
+
+function scrollMessages() {
+
+  const area =
+    $("chatArea");
+
+  if (!area)
+    return;
+
+
+  requestAnimationFrame(
+    () => {
+
+      area.scrollTop =
+        area.scrollHeight;
+
+    }
+  );
 
 }
 
@@ -445,119 +421,90 @@ function addMessage(
 // GOOGLE LOGIN
 // ============================================================
 
-googleLoginBtn?.addEventListener(
-  "click",
-  async () => {
+$("googleLoginBtn")
+  ?.addEventListener(
+    "click",
+    async () => {
 
-    loginError.textContent =
-    "";
+      const button =
+        $("googleLoginBtn");
 
-    googleLoginBtn.disabled =
-    true;
-
-
-    try {
-
-      const result =
-      await signInWithPopup(
-        auth,
-        googleProvider
-      );
+      const error =
+        $("loginError");
 
 
-      console.log(
-        "Google login:",
-        result.user.email
-      );
+      error.textContent =
+        "";
+
+      button.disabled =
+        true;
 
 
-    } catch (error) {
+      try {
 
-      console.error(
-        error
-      );
+        await signInWithPopup(
+          auth,
+          googleProvider
+        );
 
+      } catch (err) {
 
-      loginError.textContent =
-      firebaseError(error);
+        console.error(err);
 
+        error.textContent =
+          firebaseErrorMessage(err);
 
-    } finally {
+      } finally {
 
-      googleLoginBtn.disabled =
-      false;
+        button.disabled =
+          false;
+
+      }
 
     }
-
-  }
-);
+  );
 
 
 // ============================================================
-// FIREBASE ERRORS
+// FIREBASE ERROR
 // ============================================================
 
-function firebaseError(error) {
+function firebaseErrorMessage(error) {
 
   const code =
-  error?.code || "";
+    error?.code || "";
 
 
-  if (
-    code ===
-    "auth/api-key-not-valid"
-  ) {
+  switch (code) {
 
-    return (
-      "Firebase API key is not valid. " +
-      "Check the API key in Firebase Project Settings."
-    );
+    case "auth/api-key-not-valid":
 
-  }
+      return "Firebase API key is invalid. Check Firebase Project Settings.";
 
+    case "auth/unauthorized-domain":
 
-  if (
-    code ===
-    "auth/unauthorized-domain"
-  ) {
+      return "Add chenchukiranvemula.github.io to Firebase Authorized domains.";
 
-    return (
-      "Unauthorized domain. Add " +
-      "chenchukiranvemula.github.io " +
-      "to Firebase Authentication → Authorized domains."
-    );
+    case "auth/popup-blocked":
 
-  }
+      return "Google popup was blocked by the browser.";
 
+    case "auth/popup-closed-by-user":
 
-  if (
-    code ===
-    "auth/popup-blocked"
-  ) {
+      return "Google sign-in was cancelled.";
 
-    return "Google Login popup was blocked.";
+    case "auth/network-request-failed":
+
+      return "Network error. Check your internet connection.";
+
+    default:
+
+      return (
+        error?.message ||
+        "Google sign-in failed."
+      );
 
   }
-
-
-  if (
-    code ===
-    "auth/popup-closed-by-user"
-  ) {
-
-    return "Google Login was cancelled.";
-
-  }
-
-
-  return (
-    code +
-    (
-      error?.message
-      ? " — " + error.message
-      : ""
-    )
-  );
 
 }
 
@@ -571,27 +518,23 @@ onAuthStateChanged(
   user => {
 
     currentUser =
-    user;
+      user;
 
 
     if (user) {
 
-      loginScreen?.classList.add(
-        "hidden"
-      );
+      $("loginScreen")
+        ?.classList.add("hidden");
 
-      appScreen?.classList.remove(
-        "hidden"
-      );
+      $("appScreen")
+        ?.classList.remove("hidden");
 
 
-      updateUser(
-        user
-      );
+      updateUserUI(user);
 
 
       const chats =
-      getChats();
+        getChats();
 
 
       if (!currentChatId) {
@@ -599,7 +542,7 @@ onAuthStateChanged(
         if (chats.length) {
 
           currentChatId =
-          chats[0].id;
+            chats[0].id;
 
         } else {
 
@@ -612,17 +555,15 @@ onAuthStateChanged(
 
       renderHistory();
 
-      renderCurrentChat();
+      renderChat();
 
     } else {
 
-      loginScreen?.classList.remove(
-        "hidden"
-      );
+      $("loginScreen")
+        ?.classList.remove("hidden");
 
-      appScreen?.classList.add(
-        "hidden"
-      );
+      $("appScreen")
+        ?.classList.add("hidden");
 
     }
 
@@ -634,38 +575,31 @@ onAuthStateChanged(
 // USER UI
 // ============================================================
 
-function updateUser(user) {
+function updateUserUI(user) {
 
   const name =
-  user.displayName ||
-  "User";
+    user.displayName ||
+    "User";
 
   const email =
-  user.email ||
-  "";
+    user.email ||
+    "";
 
   const photo =
-  user.photoURL ||
-  "";
+    user.photoURL ||
+    "";
 
 
-  if ($("userName"))
-    $("userName").textContent =
+  $("userName").textContent =
     name;
 
-
-  if ($("userEmail"))
-    $("userEmail").textContent =
+  $("userEmail").textContent =
     email;
 
-
-  if ($("settingsName"))
-    $("settingsName").textContent =
+  $("settingsName").textContent =
     name;
 
-
-  if ($("settingsEmail"))
-    $("settingsEmail").textContent =
+  $("settingsEmail").textContent =
     email;
 
 
@@ -675,13 +609,11 @@ function updateUser(user) {
     name
   );
 
-
   setAvatar(
     $("headerAvatar"),
     photo,
     name
   );
-
 
   setAvatar(
     $("settingsAvatar"),
@@ -703,32 +635,26 @@ function setAvatar(
 
 
   element.innerHTML =
-  "";
+    "";
 
 
   if (photo) {
 
-    const image =
-    document.createElement(
-      "img"
-    );
+    const img =
+      document.createElement("img");
 
-    image.src =
-    photo;
+    img.src =
+      photo;
 
-    image.alt =
-    "";
+    img.alt =
+      "";
 
-    element.appendChild(
-      image
-    );
+    element.appendChild(img);
 
   } else {
 
     element.textContent =
-    name
-    .charAt(0)
-    .toUpperCase();
+      name.charAt(0).toUpperCase();
 
   }
 
@@ -739,133 +665,139 @@ function setAvatar(
 // LOGOUT
 // ============================================================
 
-$("logoutBtn")?.addEventListener(
-  "click",
-  async () => {
+$("logoutBtn")
+  ?.addEventListener(
+    "click",
+    async () => {
 
-    await signOut(auth);
+      try {
 
-  }
-);
+        await signOut(auth);
+
+      } catch (error) {
+
+        console.error(error);
+
+      }
+
+    }
+  );
 
 
 // ============================================================
 // SIDEBAR
 // ============================================================
 
-$("openSidebarBtn")?.addEventListener(
-  "click",
-  () => {
+$("openSidebarBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-    sidebar?.classList.add(
-      "open"
-    );
+      $("sidebar")
+        ?.classList.add("open");
 
-  }
-);
+    }
+  );
 
 
-$("closeSidebarBtn")?.addEventListener(
-  "click",
-  () => {
+$("closeSidebarBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-    sidebar?.classList.remove(
-      "open"
-    );
+      $("sidebar")
+        ?.classList.remove("open");
 
-  }
-);
+    }
+  );
 
 
 // ============================================================
 // NEW CHAT
 // ============================================================
 
-$("newChatBtn")?.addEventListener(
-  "click",
-  () => {
+$("newChatBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-    createChat();
+      createChat();
 
-    messageInput?.focus();
+      $("messageInput")
+        ?.focus();
 
-  }
-);
+    }
+  );
 
 
 // ============================================================
 // SETTINGS
 // ============================================================
 
-$("settingsBtn")?.addEventListener(
-  "click",
-  () => {
+$("settingsBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-    $("settingsOverlay")
-    ?.classList.remove(
-      "hidden"
-    );
+      $("settingsOverlay")
+        ?.classList.remove("hidden");
 
-  }
-);
-
-
-$("profileBtn")?.addEventListener(
-  "click",
-  () => {
-
-    $("settingsOverlay")
-    ?.classList.remove(
-      "hidden"
-    );
-
-  }
-);
+    }
+  );
 
 
-$("closeSettingsBtn")?.addEventListener(
-  "click",
-  () => {
+$("profileBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-    $("settingsOverlay")
-    ?.classList.add(
-      "hidden"
-    );
+      $("settingsOverlay")
+        ?.classList.remove("hidden");
 
-  }
-);
+    }
+  );
+
+
+$("closeSettingsBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      $("settingsOverlay")
+        ?.classList.add("hidden");
+
+    }
+  );
 
 
 // ============================================================
-// API KEYS
+// API MODAL
 // ============================================================
 
-$("apiKeysBtn")?.addEventListener(
-  "click",
-  () => {
+$("apiKeysBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-    $("apiOverlay")
-    ?.classList.remove(
-      "hidden"
-    );
+      $("apiOverlay")
+        ?.classList.remove("hidden");
 
-    loadApiKeys();
+      loadApiKeys();
 
-  }
-);
+    }
+  );
 
 
-$("closeApiBtn")?.addEventListener(
-  "click",
-  () => {
+$("closeApiBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-    $("apiOverlay")
-    ?.classList.add(
-      "hidden"
-    );
+      $("apiOverlay")
+        ?.classList.add("hidden");
 
-  }
-);
+    }
+  );
 
 
 // ============================================================
@@ -873,32 +805,28 @@ $("closeApiBtn")?.addEventListener(
 // ============================================================
 
 async function workerRequest(
-  path,
+  endpoint,
   options = {}
 ) {
 
   if (!currentUser) {
 
     throw new Error(
-      "Please sign in with Google first."
+      "Please sign in with Google."
     );
 
   }
 
 
   const token =
-  await currentUser.getIdToken(
-    true
-  );
+    await currentUser.getIdToken(true);
 
 
   const headers = {
-
     ...(options.headers || {}),
 
     Authorization:
-    `Bearer ${token}`
-
+      `Bearer ${token}`
   };
 
 
@@ -908,23 +836,23 @@ async function workerRequest(
   ) {
 
     headers["Content-Type"] =
-    "application/json";
+      "application/json";
 
   }
 
 
   const response =
-  await fetch(
-    API_URL + path,
-    {
-      ...options,
-      headers
-    }
-  );
+    await fetch(
+      API_URL + endpoint,
+      {
+        ...options,
+        headers
+      }
+    );
 
 
-  const text =
-  await response.text();
+  const raw =
+    await response.text();
 
 
   let data;
@@ -933,12 +861,12 @@ async function workerRequest(
   try {
 
     data =
-    JSON.parse(text);
+      JSON.parse(raw);
 
   } catch {
 
     data = {
-      error: text
+      raw
     };
 
   }
@@ -949,7 +877,8 @@ async function workerRequest(
     throw new Error(
       data?.error ||
       data?.message ||
-      `Request failed: ${response.status}`
+      data?.raw ||
+      `HTTP ${response.status}`
     );
 
   }
@@ -966,8 +895,11 @@ async function workerRequest(
 
 async function sendMessage() {
 
+  const input =
+    $("messageInput");
+
   const text =
-  messageInput?.value.trim();
+    input.value.trim();
 
 
   if (!text)
@@ -977,7 +909,7 @@ async function sendMessage() {
   if (!currentUser) {
 
     alert(
-      "Please sign in with Google."
+      "Please sign in with Google first."
     );
 
     return;
@@ -993,7 +925,7 @@ async function sendMessage() {
 
 
   const chat =
-  currentChat();
+    getCurrentChat();
 
 
   if (!chat)
@@ -1003,10 +935,10 @@ async function sendMessage() {
   chat.messages.push({
 
     role:
-    "user",
+      "user",
 
     content:
-    text
+      text
 
   });
 
@@ -1017,9 +949,9 @@ async function sendMessage() {
   ) {
 
     chat.title =
-    text.length > 45
-    ? text.slice(0, 45) + "…"
-    : text;
+      text.length > 42
+        ? text.substring(0, 42) + "..."
+        : text;
 
   }
 
@@ -1029,103 +961,97 @@ async function sendMessage() {
   );
 
 
+  renderHistory();
+
+
   addMessage(
     "user",
     text
   );
 
 
-  messageInput.value =
-  "";
+  input.value =
+    "";
+
+  input.style.height =
+    "auto";
 
 
-  sendBtn.disabled =
-  true;
+  const sendButton =
+    $("sendBtn");
+
+  sendButton.disabled =
+    true;
 
 
   const loading =
-  document.createElement(
-    "div"
-  );
-
+    document.createElement("div");
 
   loading.className =
-  "message ai";
+    "message ai";
 
 
   loading.innerHTML = `
     <div class="message-content">
-      <div class="message-role">
-        LOGIC-LEAF
-      </div>
-      <div class="message-text">
-        Thinking…
-      </div>
+      <div class="message-role">LOGIC-LEAF</div>
+      <div class="message-text">Thinking…</div>
     </div>
   `;
 
 
-  messages.appendChild(
-    loading
-  );
+  $("messages")
+    .appendChild(loading);
 
 
-  messages.scrollTop =
-  messages.scrollHeight;
+  scrollMessages();
 
 
   try {
 
     const data =
-    await workerRequest(
-      "/v1/chat",
-      {
+      await workerRequest(
+        "/v1/chat",
+        {
 
-        method:
-        "POST",
+          method:
+            "POST",
 
-        body:
-        JSON.stringify({
+          body:
+            JSON.stringify({
 
-          messages:
-          chat.messages.map(
-            item => ({
+              messages:
+                chat.messages.map(
+                  item => ({
 
-              role:
-              item.role,
+                    role:
+                      item.role,
 
-              content:
-              item.content
+                    content:
+                      item.content
+
+                  })
+                )
 
             })
-          )
 
-        })
-
-      }
-    );
+        }
+      );
 
 
     loading.remove();
 
 
     const answer =
-    data.response ||
-    data.text ||
-    data.output ||
-    data.content ||
-    data.message?.content ||
-    data.result?.response ||
-    "The AI returned no response.";
+      extractAnswer(data);
 
 
     chat.messages.push({
 
       role:
-      "assistant",
+        "assistant",
 
       content:
-      answer
+        answer
 
     });
 
@@ -1139,9 +1065,6 @@ async function sendMessage() {
       "assistant",
       answer
     );
-
-
-    renderHistory();
 
 
   } catch (error) {
@@ -1149,18 +1072,18 @@ async function sendMessage() {
     loading.remove();
 
 
-    const answer =
-    "Sorry, something went wrong.\n\n" +
-    error.message;
+    const errorText =
+      "Sorry, something went wrong.\n\n" +
+      error.message;
 
 
     chat.messages.push({
 
       role:
-      "assistant",
+        "assistant",
 
       content:
-      answer
+        errorText
 
     });
 
@@ -1172,17 +1095,46 @@ async function sendMessage() {
 
     addMessage(
       "assistant",
-      answer
+      errorText
     );
 
   } finally {
 
-    sendBtn.disabled =
-    false;
+    sendButton.disabled =
+      false;
 
-    messageInput?.focus();
+    input.focus();
 
   }
+
+}
+
+
+// ============================================================
+// EXTRACT AI RESPONSE
+// ============================================================
+
+function extractAnswer(data) {
+
+  if (!data)
+    return "The AI returned an empty response.";
+
+
+  if (typeof data === "string")
+    return data;
+
+
+  return (
+    data.response ||
+    data.text ||
+    data.output ||
+    data.content ||
+    data.result?.response ||
+    data.result?.text ||
+    data.message?.content ||
+    data.choices?.[0]?.message?.content ||
+    "The AI returned no response."
+  );
 
 }
 
@@ -1191,200 +1143,255 @@ async function sendMessage() {
 // SEND EVENTS
 // ============================================================
 
-sendBtn?.addEventListener(
-  "click",
-  sendMessage
-);
-
-
-messageInput?.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
-
-      event.preventDefault();
-
-      sendMessage();
-
-    }
-
-  }
-);
-
-
-// ============================================================
-// INPUT RESIZE
-// ============================================================
-
-messageInput?.addEventListener(
-  "input",
-  () => {
-
-    messageInput.style.height =
-    "auto";
-
-    messageInput.style.height =
-    Math.min(
-      messageInput.scrollHeight,
-      160
-    ) + "px";
-
-  }
-);
-
-
-// ============================================================
-// QUICK PROMPTS
-// ============================================================
-
-document
-.querySelectorAll(".quick-card")
-.forEach(card => {
-
-  card.addEventListener(
+$("sendBtn")
+  ?.addEventListener(
     "click",
-    () => {
+    sendMessage
+  );
 
-      messageInput.value =
-      card.dataset.prompt ||
-      "";
 
-      messageInput.focus();
+$("messageInput")
+  ?.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        sendMessage();
+
+      }
 
     }
   );
 
-});
+
+// ============================================================
+// TEXTAREA AUTO SIZE
+// ============================================================
+
+$("messageInput")
+  ?.addEventListener(
+    "input",
+    event => {
+
+      const input =
+        event.target;
+
+      input.style.height =
+        "auto";
+
+      input.style.height =
+        Math.min(
+          input.scrollHeight,
+          150
+        ) + "px";
+
+    }
+  );
 
 
 // ============================================================
-// FILE
+// QUICK CARDS
 // ============================================================
 
-$("attachBtn")?.addEventListener(
-  "click",
-  () => {
+document
+  .querySelectorAll(".quick-card")
+  .forEach(card => {
 
-    $("fileInput")?.click();
+    card.addEventListener(
+      "click",
+      () => {
 
-  }
-);
+        const input =
+          $("messageInput");
 
+        input.value =
+          card.dataset.prompt || "";
 
-$("fileInput")?.addEventListener(
-  "change",
-  event => {
+        input.focus();
 
-    selectedFile =
-    event.target.files?.[0];
-
-
-    if (!selectedFile)
-      return;
-
-
-    showAttachment(
-      selectedFile.name
+      }
     );
 
-  }
-);
+  });
 
 
 // ============================================================
-// IMAGE
+// FILE PICKER
 // ============================================================
 
-$("imageBtn")?.addEventListener(
-  "click",
-  () => {
+$("attachBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-    $("imageInput")?.click();
+      $("fileInput")
+        ?.click();
 
-  }
-);
-
-
-$("imageInput")?.addEventListener(
-  "change",
-  event => {
-
-    selectedImage =
-    event.target.files?.[0];
+    }
+  );
 
 
-    if (!selectedImage)
-      return;
+$("fileInput")
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const file =
+        event.target.files?.[0];
 
 
-    const url =
-    URL.createObjectURL(
-      selectedImage
-    );
+      if (!file)
+        return;
 
 
-    $("imagePreview").src =
-    url;
+      selectedFile =
+        file;
+
+      selectedImage =
+        null;
 
 
-    $("imagePreviewOverlay")
-    ?.classList.remove(
-      "hidden"
-    );
+      showAttachment(
+        file.name
+      );
 
-  }
-);
+    }
+  );
 
 
-$("closeImagePreviewBtn")
-?.addEventListener(
-  "click",
-  () => {
+// ============================================================
+// IMAGE PICKER
+// ============================================================
 
-    $("imagePreviewOverlay")
-    ?.classList.add(
-      "hidden"
-    );
+$("imageBtn")
+  ?.addEventListener(
+    "click",
+    () => {
 
-  }
-);
+      $("imageInput")
+        ?.click();
+
+    }
+  );
+
+
+$("imageInput")
+  ?.addEventListener(
+    "change",
+    event => {
+
+      const file =
+        event.target.files?.[0];
+
+
+      if (!file)
+        return;
+
+
+      selectedImage =
+        file;
+
+      selectedFile =
+        null;
+
+
+      const url =
+        URL.createObjectURL(file);
+
+
+      $("imagePreview").src =
+        url;
+
+
+      $("imageOverlay")
+        ?.classList.remove("hidden");
+
+    }
+  );
+
+
+// ============================================================
+// IMAGE PREVIEW
+// ============================================================
+
+$("closeImageBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      $("imageOverlay")
+        ?.classList.add("hidden");
+
+    }
+  );
 
 
 $("useImageBtn")
-?.addEventListener(
-  "click",
-  () => {
+  ?.addEventListener(
+    "click",
+    () => {
 
-    if (!selectedImage)
-      return;
-
-
-    showAttachment(
-      selectedImage.name
-    );
+      if (!selectedImage)
+        return;
 
 
-    $("imagePreviewOverlay")
-    ?.classList.add(
-      "hidden"
-    );
+      showAttachment(
+        selectedImage.name
+      );
 
-  }
-);
 
+      $("imageOverlay")
+        ?.classList.add("hidden");
+
+    }
+  );
+
+
+// ============================================================
+// ATTACHMENT
+// ============================================================
 
 function showAttachment(name) {
 
-  $("attachmentPreview").innerHTML =
-  `<div class="attachment-chip">
-    Attached: ${escapeHTML(name)}
-  </div>`;
+  $("attachmentInfo").textContent =
+    "Attached: " + name;
+
+  $("attachmentBar")
+    ?.classList.remove("hidden");
 
 }
+
+
+$("removeAttachmentBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      selectedFile =
+        null;
+
+      selectedImage =
+        null;
+
+
+      $("fileInput").value =
+        "";
+
+      $("imageInput").value =
+        "";
+
+
+      $("attachmentBar")
+        ?.classList.add("hidden");
+
+    }
+  );
 
 
 // ============================================================
@@ -1392,92 +1399,111 @@ function showAttachment(name) {
 // ============================================================
 
 const SpeechRecognition =
-window.SpeechRecognition ||
-window.webkitSpeechRecognition;
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
 
 
 if (SpeechRecognition) {
 
   recognition =
-  new SpeechRecognition();
+    new SpeechRecognition();
 
 
   recognition.lang =
-  "en-IN";
+    "en-IN";
 
 
   recognition.continuous =
-  false;
+    false;
 
 
   recognition.interimResults =
-  false;
+    false;
 
 
   recognition.onstart =
-  () => {
+    () => {
 
-    $("voiceBtn")
-    ?.classList.add(
-      "recording"
-    );
+      $("voiceBtn")
+        ?.classList.add("recording");
 
-  };
+    };
 
 
   recognition.onend =
-  () => {
+    () => {
 
-    $("voiceBtn")
-    ?.classList.remove(
-      "recording"
-    );
+      $("voiceBtn")
+        ?.classList.remove("recording");
 
-  };
+    };
 
 
   recognition.onresult =
-  event => {
+    event => {
 
-    const text =
-    event.results[0][0]
-    .transcript;
+      const text =
+        event.results[0][0]
+          .transcript;
 
 
-    messageInput.value +=
-    (
-      messageInput.value
-      ? " "
-      : ""
-    ) + text;
+      const input =
+        $("messageInput");
 
-  };
+
+      input.value +=
+        (
+          input.value
+            ? " "
+            : ""
+        ) + text;
+
+
+      input.dispatchEvent(
+        new Event("input")
+      );
+
+    };
 
 
   recognition.onerror =
-  error => {
+    error => {
 
-    console.error(
-      "Voice error:",
-      error
-    );
+      console.error(
+        "Speech recognition:",
+        error
+      );
 
-  };
+    };
 
 
   $("voiceBtn")
-  ?.addEventListener(
-    "click",
-    () => {
+    ?.addEventListener(
+      "click",
+      () => {
 
-      try {
+        try {
 
-        recognition.start();
+          recognition.start();
 
-      } catch {}
+        } catch {}
 
-    }
-  );
+      }
+    );
+
+} else {
+
+  $("voiceBtn")
+    ?.addEventListener(
+      "click",
+      () => {
+
+        alert(
+          "Voice input is not supported by this browser."
+        );
+
+      }
+    );
 
 }
 
@@ -1489,29 +1515,25 @@ if (SpeechRecognition) {
 async function loadApiKeys() {
 
   const list =
-  $("apiKeyList");
-
-
-  if (!list)
-    return;
+    $("apiKeyList");
 
 
   list.innerHTML =
-  `<div class="empty-state">
-    Loading API keys…
-  </div>`;
+    `<div class="empty-state">
+      Loading...
+    </div>`;
 
 
   try {
 
     const data =
-    await workerRequest(
-      "/v1/keys",
-      {
-        method:
-        "GET"
-      }
-    );
+      await workerRequest(
+        "/v1/keys",
+        {
+          method:
+            "GET"
+        }
+      );
 
 
     renderApiKeys(
@@ -1524,9 +1546,9 @@ async function loadApiKeys() {
   } catch (error) {
 
     list.innerHTML =
-    `<div class="empty-state">
-      ${escapeHTML(error.message)}
-    </div>`;
+      `<div class="empty-state">
+        ${escapeHTML(error.message)}
+      </div>`;
 
   }
 
@@ -1536,19 +1558,19 @@ async function loadApiKeys() {
 function renderApiKeys(keys) {
 
   const list =
-  $("apiKeyList");
+    $("apiKeyList");
 
 
   list.innerHTML =
-  "";
+    "";
 
 
   if (!keys.length) {
 
     list.innerHTML =
-    `<div class="empty-state">
-      No API keys created yet.
-    </div>`;
+      `<div class="empty-state">
+        No API keys yet.
+      </div>`;
 
     return;
 
@@ -1558,38 +1580,41 @@ function renderApiKeys(keys) {
   keys.forEach(key => {
 
     const item =
-    document.createElement(
-      "div"
-    );
+      document.createElement("div");
 
 
     item.className =
-    "api-key-item";
+      "api-key-item";
 
 
-    item.innerHTML = `
-      <div>
-        <strong>
-          ${escapeHTML(
-            key.name ||
-            "LOGIC-LEAF API Key"
-          )}
-        </strong>
-
-        <small>
-          ${escapeHTML(
-            key.prefix ||
-            key.status ||
-            "active"
-          )}
-        </small>
-      </div>
-    `;
+    const left =
+      document.createElement("div");
 
 
-    list.appendChild(
-      item
-    );
+    const name =
+      document.createElement("strong");
+
+    name.textContent =
+      key.name ||
+      "LOGIC-LEAF API Key";
+
+
+    const status =
+      document.createElement("small");
+
+    status.textContent =
+      key.prefix ||
+      key.status ||
+      "active";
+
+
+    left.appendChild(name);
+
+    left.appendChild(status);
+
+    item.appendChild(left);
+
+    list.appendChild(item);
 
   });
 
@@ -1601,90 +1626,87 @@ function renderApiKeys(keys) {
 // ============================================================
 
 $("createApiKeyBtn")
-?.addEventListener(
-  "click",
-  async () => {
+  ?.addEventListener(
+    "click",
+    async () => {
 
-    const button =
-    $("createApiKeyBtn");
-
-
-    button.disabled =
-    true;
+      const button =
+        $("createApiKeyBtn");
 
 
-    button.textContent =
-    "Creating…";
+      button.disabled =
+        true;
+
+      button.textContent =
+        "Creating...";
 
 
-    try {
+      try {
 
-      const data =
-      await workerRequest(
-        "/v1/keys",
-        {
+        const data =
+          await workerRequest(
+            "/v1/keys",
+            {
 
-          method:
-          "POST",
+              method:
+                "POST",
 
-          body:
-          JSON.stringify({
+              body:
+                JSON.stringify({
 
-            name:
-            "LOGIC-LEAF API Key"
+                  name:
+                    "LOGIC-LEAF API Key"
 
-          })
+                })
+
+            }
+          );
+
+
+        const key =
+          data.key ||
+          data.apiKey ||
+          data.api_key;
+
+
+        if (!key) {
+
+          throw new Error(
+            "Worker did not return an API key."
+          );
 
         }
-      );
 
 
-      const key =
-      data.key ||
-      data.api_key ||
-      data.apiKey;
+        $("newApiKey").textContent =
+          key;
 
 
-      if (!key) {
+        $("newKeyBox")
+          ?.classList.remove("hidden");
 
-        throw new Error(
-          "Worker did not return an API key."
+
+        loadApiKeys();
+
+
+      } catch (error) {
+
+        alert(
+          error.message
         );
+
+      } finally {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "+ Create API key";
 
       }
 
-
-      $("newApiKey").textContent =
-      key;
-
-
-      $("newKeyBox")
-      ?.classList.remove(
-        "hidden"
-      );
-
-
-      loadApiKeys();
-
-
-    } catch (error) {
-
-      alert(
-        error.message
-      );
-
-    } finally {
-
-      button.disabled =
-      false;
-
-      button.textContent =
-      "+ Create API key";
-
     }
-
-  }
-);
+  );
 
 
 // ============================================================
@@ -1692,96 +1714,91 @@ $("createApiKeyBtn")
 // ============================================================
 
 $("copyApiKeyBtn")
-?.addEventListener(
-  "click",
-  async () => {
+  ?.addEventListener(
+    "click",
+    async () => {
 
-    const key =
-    $("newApiKey")
-    ?.textContent;
-
-
-    if (!key || key === "—")
-      return;
+      const key =
+        $("newApiKey")
+          ?.textContent;
 
 
-    try {
-
-      await navigator.clipboard.writeText(
-        key
-      );
-
-
-      $("copyApiKeyBtn").textContent =
-      "Copied";
+      if (
+        !key ||
+        key === "—"
+      )
+        return;
 
 
-      setTimeout(
-        () => {
+      try {
 
-          $("copyApiKeyBtn").textContent =
-          "Copy";
+        await navigator.clipboard
+          .writeText(key);
 
-        },
-        1500
-      );
 
-    } catch {
+        const button =
+          $("copyApiKeyBtn");
 
-      alert(
-        "Copy failed."
-      );
+
+        button.textContent =
+          "Copied";
+
+
+        setTimeout(
+          () => {
+
+            button.textContent =
+              "Copy";
+
+          },
+          1500
+        );
+
+
+      } catch {
+
+        alert(
+          "Could not copy the API key."
+        );
+
+      }
 
     }
-
-  }
-);
+  );
 
 
 // ============================================================
-// HTML ESCAPE
+// ESCAPE HTML
 // ============================================================
 
 function escapeHTML(value) {
 
   return String(value)
 
-  .replaceAll(
-    "&",
-    "&amp;"
-  )
+    .replaceAll("&", "&amp;")
 
-  .replaceAll(
-    "<",
-    "&lt;"
-  )
+    .replaceAll("<", "&lt;")
 
-  .replaceAll(
-    ">",
-    "&gt;"
-  )
+    .replaceAll(">", "&gt;")
 
-  .replaceAll(
-    '"',
-    "&quot;"
-  )
+    .replaceAll('"', "&quot;")
 
-  .replaceAll(
-    "'",
-    "&#039;"
-  );
+    .replaceAll("'", "&#039;");
 
 }
 
 
 // ============================================================
-// START
+// STARTUP
 // ============================================================
 
-renderHistory();
+console.log(
+  "LOGIC-LEAF frontend loaded."
+);
 
 console.log(
-  "LOGIC-LEAF loaded"
+  "Firebase project:",
+  firebaseConfig.projectId
 );
 
 console.log(
@@ -1789,7 +1806,4 @@ console.log(
   API_URL
 );
 
-console.log(
-  "Firebase project:",
-  firebaseConfig.projectId
-);
+renderHistory();
