@@ -1,10 +1,12 @@
 // ============================================================
-// LOGIC-LEAF — APP.JS
-// Google Login + AI Chat + History + API Keys + Files + Voice
+// LOGIC-LEAF APP
+// Firebase: logic-leaf-64d0d
+// Worker: logic-leaf.qtmkiller6.workers.dev
 // ============================================================
 
+
 import { initializeApp } from
-  "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
   getAuth,
@@ -13,7 +15,7 @@ import {
   signOut,
   onAuthStateChanged
 } from
-  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+"https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 
 // ============================================================
@@ -21,157 +23,90 @@ import {
 // ============================================================
 
 const API_URL =
-  "https://logic-leaf.qtmkiller6.workers.dev";
+"https://logic-leaf.qtmkiller6.workers.dev";
+
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC_C_ACJcRupgX9jEUON1FsS58igSA45aw",
-  authDomain: "logic-leaf.firebaseapp.com",
-  databaseURL: "https://logic-leaf-default-rtdb.firebaseio.com",
-  projectId: "logic-leaf",
-  storageBucket: "logic-leaf.firebasestorage.app",
-  messagingSenderId: "288673697563",
-  appId: "1:288673697563:web:c14d08452b01568d1c8dbe",
-  measurementId: "G-Z30K3K85LX"
+
+  apiKey:
+  "AIzaSyB5bg4U8aMJlAhbWgU0sL37BN4JTTRpmMw",
+
+  authDomain:
+  "logic-leaf-64d0d.firebaseapp.com",
+
+  projectId:
+  "logic-leaf-64d0d",
+
+  storageBucket:
+  "logic-leaf-64d0d.firebasestorage.app",
+
+  messagingSenderId:
+  "346443954182",
+
+  appId:
+  "1:346443954182:web:2ab5bb71b5e52206e62b87",
+
+  measurementId:
+  "G-ZVVBH04E9M"
+
 };
 
 
 // ============================================================
-// FIREBASE INITIALIZATION
+// FIREBASE
 // ============================================================
 
 const firebaseApp =
-  initializeApp(firebaseConfig);
+initializeApp(firebaseConfig);
 
 const auth =
-  getAuth(firebaseApp);
+getAuth(firebaseApp);
 
-const provider =
-  new GoogleAuthProvider();
+const googleProvider =
+new GoogleAuthProvider();
 
-provider.setCustomParameters({
+googleProvider.setCustomParameters({
   prompt: "select_account"
 });
 
 
 // ============================================================
-// DOM HELPERS
+// DOM
 // ============================================================
 
 const $ = id =>
-  document.getElementById(id);
+document.getElementById(id);
 
-
-// ============================================================
-// ELEMENTS
-// ============================================================
 
 const loginScreen =
-  $("loginScreen");
+$("loginScreen");
 
 const appScreen =
-  $("appScreen");
+$("appScreen");
 
 const googleLoginBtn =
-  $("googleLoginBtn");
+$("googleLoginBtn");
 
 const loginError =
-  $("loginError");
-
-const sidebar =
-  $("sidebar");
-
-const openSidebarBtn =
-  $("openSidebarBtn");
-
-const closeSidebarBtn =
-  $("closeSidebarBtn");
-
-const newChatBtn =
-  $("newChatBtn");
-
-const chatHistory =
-  $("chatHistory");
+$("loginError");
 
 const messages =
-  $("messages");
+$("messages");
 
 const welcomeView =
-  $("welcomeView");
+$("welcomeView");
 
 const messageInput =
-  $("messageInput");
+$("messageInput");
 
 const sendBtn =
-  $("sendBtn");
+$("sendBtn");
 
-const attachBtn =
-  $("attachBtn");
+const sidebar =
+$("sidebar");
 
-const fileInput =
-  $("fileInput");
-
-const imageBtn =
-  $("imageBtn");
-
-const imageInput =
-  $("imageInput");
-
-const voiceBtn =
-  $("voiceBtn");
-
-const settingsBtn =
-  $("settingsBtn");
-
-const profileBtn =
-  $("profileBtn");
-
-const settingsOverlay =
-  $("settingsOverlay");
-
-const closeSettingsBtn =
-  $("closeSettingsBtn");
-
-const apiKeysBtn =
-  $("apiKeysBtn");
-
-const apiOverlay =
-  $("apiOverlay");
-
-const closeApiBtn =
-  $("closeApiBtn");
-
-const logoutBtn =
-  $("logoutBtn");
-
-const createApiKeyBtn =
-  $("createApiKeyBtn");
-
-const copyApiKeyBtn =
-  $("copyApiKeyBtn");
-
-const newKeyBox =
-  $("newKeyBox");
-
-const newApiKey =
-  $("newApiKey");
-
-const apiKeyList =
-  $("apiKeyList");
-
-const attachmentPreview =
-  $("attachmentPreview");
-
-const imagePreviewOverlay =
-  $("imagePreviewOverlay");
-
-const imagePreview =
-  $("imagePreview");
-
-const closeImagePreviewBtn =
-  $("closeImagePreviewBtn");
-
-const useImageBtn =
-  $("useImageBtn");
+const chatHistory =
+$("chatHistory");
 
 
 // ============================================================
@@ -182,18 +117,19 @@ let currentUser = null;
 
 let currentChatId = null;
 
-let selectedFile = null;
+let recognition = null;
 
 let selectedImage = null;
 
-let recognition = null;
+let selectedFile = null;
+
 
 const STORAGE_KEY =
-  "logic_leaf_chats_v1";
+"logic_leaf_chats_v2";
 
 
 // ============================================================
-// LOCAL CHAT STORAGE
+// CHAT STORAGE
 // ============================================================
 
 function getChats() {
@@ -211,6 +147,7 @@ function getChats() {
     return [];
 
   }
+
 }
 
 
@@ -230,43 +167,45 @@ function saveChats(chats) {
 
 function createChat() {
 
-  const id =
-    "chat_" +
-    Date.now() +
-    "_" +
-    Math.random()
-      .toString(36)
-      .slice(2, 8);
-
   const chat = {
 
-    id,
+    id:
+    "chat_" +
+    Date.now(),
 
     title:
-      "New chat",
+    "New chat",
 
-    messages: [],
+    messages:
+    [],
 
     createdAt:
-      Date.now()
+    Date.now()
 
   };
 
+
   const chats =
-    getChats();
+  getChats();
+
 
   chats.unshift(chat);
 
+
   saveChats(chats);
 
+
   currentChatId =
-    id;
+  chat.id;
+
 
   renderHistory();
 
   renderCurrentChat();
 
+
   return chat;
+
 }
 
 
@@ -274,15 +213,13 @@ function createChat() {
 // CURRENT CHAT
 // ============================================================
 
-function getCurrentChat() {
+function currentChat() {
 
-  const chats =
-    getChats();
-
-  return chats.find(
+  return getChats().find(
     chat =>
-      chat.id === currentChatId
+    chat.id === currentChatId
   );
+
 }
 
 
@@ -295,41 +232,36 @@ function renderHistory() {
   if (!chatHistory)
     return;
 
-  chatHistory.innerHTML = "";
+
+  chatHistory.innerHTML =
+  "";
+
 
   const chats =
-    getChats();
+  getChats();
+
 
   if (!chats.length) {
 
-    const empty =
-      document.createElement(
-        "div"
-      );
-
-    empty.className =
-      "empty-state";
-
-    empty.textContent =
-      "No chats yet.";
-
-    chatHistory.appendChild(
-      empty
-    );
+    chatHistory.innerHTML =
+    `<div class="empty-state">
+      No chats yet.
+    </div>`;
 
     return;
+
   }
 
 
   chats.forEach(chat => {
 
     const button =
-      document.createElement(
-        "button"
-      );
+    document.createElement("button");
+
 
     button.className =
-      "history-item";
+    "history-item";
+
 
     if (
       chat.id ===
@@ -342,35 +274,27 @@ function renderHistory() {
 
     }
 
+
     button.textContent =
-      chat.title ||
-      "New chat";
+    chat.title ||
+    "New chat";
 
 
-    button.addEventListener(
-      "click",
-      () => {
+    button.onclick = () => {
 
-        currentChatId =
-          chat.id;
+      currentChatId =
+      chat.id;
 
-        renderHistory();
+      renderHistory();
 
-        renderCurrentChat();
+      renderCurrentChat();
 
-        if (
-          window.innerWidth <=
-          760
-        ) {
+      sidebar?.classList.remove(
+        "open"
+      );
 
-          sidebar?.classList.remove(
-            "open"
-          );
+    };
 
-        }
-
-      }
-    );
 
     chatHistory.appendChild(
       button
@@ -390,10 +314,14 @@ function renderCurrentChat() {
   if (!messages)
     return;
 
-  messages.innerHTML = "";
+
+  messages.innerHTML =
+  "";
+
 
   const chat =
-    getCurrentChat();
+  currentChat();
+
 
   if (
     !chat ||
@@ -405,7 +333,9 @@ function renderCurrentChat() {
     );
 
     return;
+
   }
+
 
   welcomeView?.classList.add(
     "hidden"
@@ -415,7 +345,7 @@ function renderCurrentChat() {
   chat.messages.forEach(
     message => {
 
-      addMessageToDOM(
+      addMessage(
         message.role,
         message.content,
         false
@@ -431,7 +361,7 @@ function renderCurrentChat() {
 // ADD MESSAGE
 // ============================================================
 
-function addMessageToDOM(
+function addMessage(
   role,
   content,
   scroll = true
@@ -443,88 +373,68 @@ function addMessageToDOM(
 
 
   const wrapper =
-    document.createElement(
-      "div"
-    );
+  document.createElement(
+    "div"
+  );
+
 
   wrapper.className =
-    "message " +
-    (
-      role === "user"
-        ? "user"
-        : "ai"
-    );
+  `message ${role === "user" ? "user" : "ai"}`;
 
 
   const box =
-    document.createElement(
-      "div"
-    );
+  document.createElement(
+    "div"
+  );
+
 
   box.className =
-    "message-content";
+  "message-content";
 
 
-  const roleLabel =
-    document.createElement(
-      "div"
-    );
+  const label =
+  document.createElement(
+    "div"
+  );
 
-  roleLabel.className =
-    "message-role";
 
-  roleLabel.textContent =
-    role === "user"
-      ? "YOU"
-      : "LOGIC-LEAF";
+  label.className =
+  "message-role";
+
+
+  label.textContent =
+  role === "user"
+  ? "YOU"
+  : "LOGIC-LEAF";
 
 
   const text =
-    document.createElement(
-      "div"
-    );
+  document.createElement(
+    "div"
+  );
+
 
   text.className =
-    "message-text";
+  "message-text";
+
 
   text.textContent =
-    content;
+  content;
 
 
-  box.appendChild(
-    roleLabel
-  );
+  box.appendChild(label);
 
-  box.appendChild(
-    text
-  );
+  box.appendChild(text);
 
-  wrapper.appendChild(
-    box
-  );
+  wrapper.appendChild(box);
 
-  messages.appendChild(
-    wrapper
-  );
+  messages.appendChild(wrapper);
 
 
   if (scroll) {
 
-    setTimeout(() => {
-
-      const area =
-        document.querySelector(
-          ".chat-area"
-        );
-
-      if (area) {
-
-        area.scrollTop =
-          area.scrollHeight;
-
-      }
-
-    }, 20);
+    messages.scrollTop =
+    messages.scrollHeight;
 
   }
 
@@ -535,76 +445,63 @@ function addMessageToDOM(
 // GOOGLE LOGIN
 // ============================================================
 
-async function googleLogin() {
+googleLoginBtn?.addEventListener(
+  "click",
+  async () => {
 
-  if (!googleLoginBtn)
-    return;
+    loginError.textContent =
+    "";
 
-  if (loginError)
-    loginError.textContent = "";
-
-  googleLoginBtn.disabled =
+    googleLoginBtn.disabled =
     true;
 
 
-  try {
+    try {
 
-    const result =
+      const result =
       await signInWithPopup(
         auth,
-        provider
+        googleProvider
       );
 
 
-    console.log(
-      "Google login successful:",
-      result.user.email
-    );
+      console.log(
+        "Google login:",
+        result.user.email
+      );
 
 
-  } catch (error) {
+    } catch (error) {
 
-    console.error(
-      "Google login error:",
-      error
-    );
+      console.error(
+        error
+      );
 
-
-    if (loginError) {
 
       loginError.textContent =
-        formatFirebaseError(
-          error
-        );
+      firebaseError(error);
+
+
+    } finally {
+
+      googleLoginBtn.disabled =
+      false;
 
     }
 
-  } finally {
-
-    googleLoginBtn.disabled =
-      false;
-
   }
-
-}
-
-
-googleLoginBtn?.addEventListener(
-  "click",
-  googleLogin
 );
 
 
 // ============================================================
-// FIREBASE ERROR
+// FIREBASE ERRORS
 // ============================================================
 
-function formatFirebaseError(
-  error
-) {
+function firebaseError(error) {
 
   const code =
-    error?.code || "";
+  error?.code || "";
+
 
   if (
     code ===
@@ -613,8 +510,7 @@ function formatFirebaseError(
 
     return (
       "Firebase API key is not valid. " +
-      "Check the Firebase Web App configuration " +
-      "and Google Cloud API-key restrictions."
+      "Check the API key in Firebase Project Settings."
     );
 
   }
@@ -626,8 +522,8 @@ function formatFirebaseError(
   ) {
 
     return (
-      "This website is not authorized in Firebase. " +
-      "Add chenchukiranvemula.github.io " +
+      "Unauthorized domain. Add " +
+      "chenchukiranvemula.github.io " +
       "to Firebase Authentication → Authorized domains."
     );
 
@@ -639,9 +535,7 @@ function formatFirebaseError(
     "auth/popup-blocked"
   ) {
 
-    return (
-      "Google Login popup was blocked by the browser."
-    );
+    return "Google Login popup was blocked.";
 
   }
 
@@ -651,18 +545,18 @@ function formatFirebaseError(
     "auth/popup-closed-by-user"
   ) {
 
-    return (
-      "Google Login was cancelled."
-    );
+    return "Google Login was cancelled.";
 
   }
 
 
   return (
     code +
-    (error?.message
+    (
+      error?.message
       ? " — " + error.message
-      : "")
+      : ""
+    )
   );
 
 }
@@ -677,7 +571,7 @@ onAuthStateChanged(
   user => {
 
     currentUser =
-      user;
+    user;
 
 
     if (user) {
@@ -691,13 +585,13 @@ onAuthStateChanged(
       );
 
 
-      updateUserUI(
+      updateUser(
         user
       );
 
 
       const chats =
-        getChats();
+      getChats();
 
 
       if (!currentChatId) {
@@ -705,7 +599,7 @@ onAuthStateChanged(
         if (chats.length) {
 
           currentChatId =
-            chats[0].id;
+          chats[0].id;
 
         } else {
 
@@ -719,7 +613,6 @@ onAuthStateChanged(
       renderHistory();
 
       renderCurrentChat();
-
 
     } else {
 
@@ -741,36 +634,39 @@ onAuthStateChanged(
 // USER UI
 // ============================================================
 
-function updateUserUI(user) {
+function updateUser(user) {
 
   const name =
-    user.displayName ||
-    "User";
+  user.displayName ||
+  "User";
 
   const email =
-    user.email ||
-    "";
+  user.email ||
+  "";
 
   const photo =
-    user.photoURL ||
-    "";
+  user.photoURL ||
+  "";
 
 
   if ($("userName"))
     $("userName").textContent =
-      name;
+    name;
+
 
   if ($("userEmail"))
     $("userEmail").textContent =
-      email;
+    email;
+
 
   if ($("settingsName"))
     $("settingsName").textContent =
-      name;
+    name;
+
 
   if ($("settingsEmail"))
     $("settingsEmail").textContent =
-      email;
+    email;
 
 
   setAvatar(
@@ -779,11 +675,13 @@ function updateUserUI(user) {
     name
   );
 
+
   setAvatar(
     $("headerAvatar"),
     photo,
     name
   );
+
 
   setAvatar(
     $("settingsAvatar"),
@@ -804,36 +702,33 @@ function setAvatar(
     return;
 
 
-  element.innerHTML = "";
+  element.innerHTML =
+  "";
 
 
   if (photo) {
 
-    const img =
-      document.createElement(
-        "img"
-      );
+    const image =
+    document.createElement(
+      "img"
+    );
 
-    img.src =
-      photo;
+    image.src =
+    photo;
 
-    img.alt =
-      "";
+    image.alt =
+    "";
 
     element.appendChild(
-      img
+      image
     );
 
   } else {
 
     element.textContent =
-      (
-        name ||
-        "U"
-      )
-      .trim()
-      .charAt(0)
-      .toUpperCase();
+    name
+    .charAt(0)
+    .toUpperCase();
 
   }
 
@@ -844,30 +739,11 @@ function setAvatar(
 // LOGOUT
 // ============================================================
 
-logoutBtn?.addEventListener(
+$("logoutBtn")?.addEventListener(
   "click",
   async () => {
 
-    try {
-
-      await signOut(
-        auth
-      );
-
-      currentUser =
-        null;
-
-      currentChatId =
-        null;
-
-    } catch (error) {
-
-      console.error(
-        "Logout error:",
-        error
-      );
-
-    }
+    await signOut(auth);
 
   }
 );
@@ -877,7 +753,7 @@ logoutBtn?.addEventListener(
 // SIDEBAR
 // ============================================================
 
-openSidebarBtn?.addEventListener(
+$("openSidebarBtn")?.addEventListener(
   "click",
   () => {
 
@@ -889,7 +765,7 @@ openSidebarBtn?.addEventListener(
 );
 
 
-closeSidebarBtn?.addEventListener(
+$("closeSidebarBtn")?.addEventListener(
   "click",
   () => {
 
@@ -905,22 +781,11 @@ closeSidebarBtn?.addEventListener(
 // NEW CHAT
 // ============================================================
 
-newChatBtn?.addEventListener(
+$("newChatBtn")?.addEventListener(
   "click",
   () => {
 
     createChat();
-
-    if (
-      window.innerWidth <=
-      760
-    ) {
-
-      sidebar?.classList.remove(
-        "open"
-      );
-
-    }
 
     messageInput?.focus();
 
@@ -932,11 +797,12 @@ newChatBtn?.addEventListener(
 // SETTINGS
 // ============================================================
 
-settingsBtn?.addEventListener(
+$("settingsBtn")?.addEventListener(
   "click",
   () => {
 
-    settingsOverlay?.classList.remove(
+    $("settingsOverlay")
+    ?.classList.remove(
       "hidden"
     );
 
@@ -944,11 +810,12 @@ settingsBtn?.addEventListener(
 );
 
 
-profileBtn?.addEventListener(
+$("profileBtn")?.addEventListener(
   "click",
   () => {
 
-    settingsOverlay?.classList.remove(
+    $("settingsOverlay")
+    ?.classList.remove(
       "hidden"
     );
 
@@ -956,11 +823,12 @@ profileBtn?.addEventListener(
 );
 
 
-closeSettingsBtn?.addEventListener(
+$("closeSettingsBtn")?.addEventListener(
   "click",
   () => {
 
-    settingsOverlay?.classList.add(
+    $("settingsOverlay")
+    ?.classList.add(
       "hidden"
     );
 
@@ -972,15 +840,12 @@ closeSettingsBtn?.addEventListener(
 // API KEYS
 // ============================================================
 
-apiKeysBtn?.addEventListener(
+$("apiKeysBtn")?.addEventListener(
   "click",
   () => {
 
-    settingsOverlay?.classList.add(
-      "hidden"
-    );
-
-    apiOverlay?.classList.remove(
+    $("apiOverlay")
+    ?.classList.remove(
       "hidden"
     );
 
@@ -990,11 +855,12 @@ apiKeysBtn?.addEventListener(
 );
 
 
-closeApiBtn?.addEventListener(
+$("closeApiBtn")?.addEventListener(
   "click",
   () => {
 
-    apiOverlay?.classList.add(
+    $("apiOverlay")
+    ?.classList.add(
       "hidden"
     );
 
@@ -1021,9 +887,9 @@ async function workerRequest(
 
 
   const token =
-    await currentUser.getIdToken(
-      true
-    );
+  await currentUser.getIdToken(
+    true
+  );
 
 
   const headers = {
@@ -1031,7 +897,7 @@ async function workerRequest(
     ...(options.headers || {}),
 
     Authorization:
-      `Bearer ${token}`
+    `Bearer ${token}`
 
   };
 
@@ -1041,26 +907,24 @@ async function workerRequest(
     !(options.body instanceof FormData)
   ) {
 
-    headers[
-      "Content-Type"
-    ] =
-      "application/json";
+    headers["Content-Type"] =
+    "application/json";
 
   }
 
 
   const response =
-    await fetch(
-      API_URL + path,
-      {
-        ...options,
-        headers
-      }
-    );
+  await fetch(
+    API_URL + path,
+    {
+      ...options,
+      headers
+    }
+  );
 
 
   const text =
-    await response.text();
+  await response.text();
 
 
   let data;
@@ -1069,7 +933,7 @@ async function workerRequest(
   try {
 
     data =
-      JSON.parse(text);
+    JSON.parse(text);
 
   } catch {
 
@@ -1085,7 +949,7 @@ async function workerRequest(
     throw new Error(
       data?.error ||
       data?.message ||
-      `Request failed (${response.status})`
+      `Request failed: ${response.status}`
     );
 
   }
@@ -1102,12 +966,8 @@ async function workerRequest(
 
 async function sendMessage() {
 
-  if (!messageInput)
-    return;
-
-
   const text =
-    messageInput.value.trim();
+  messageInput?.value.trim();
 
 
   if (!text)
@@ -1117,7 +977,7 @@ async function sendMessage() {
   if (!currentUser) {
 
     alert(
-      "Please sign in with Google first."
+      "Please sign in with Google."
     );
 
     return;
@@ -1133,7 +993,7 @@ async function sendMessage() {
 
 
   const chat =
-    getCurrentChat();
+  currentChat();
 
 
   if (!chat)
@@ -1143,10 +1003,10 @@ async function sendMessage() {
   chat.messages.push({
 
     role:
-      "user",
+    "user",
 
     content:
-      text
+    text
 
   });
 
@@ -1157,9 +1017,9 @@ async function sendMessage() {
   ) {
 
     chat.title =
-      text.length > 45
-        ? text.slice(0, 45) + "…"
-        : text;
+    text.length > 45
+    ? text.slice(0, 45) + "…"
+    : text;
 
   }
 
@@ -1169,43 +1029,36 @@ async function sendMessage() {
   );
 
 
-  addMessageToDOM(
+  addMessage(
     "user",
     text
   );
 
 
   messageInput.value =
-    "";
-
-  messageInput.style.height =
-    "auto";
-
-
-  renderHistory();
+  "";
 
 
   sendBtn.disabled =
-    true;
+  true;
 
 
   const loading =
-    document.createElement(
-      "div"
-    );
+  document.createElement(
+    "div"
+  );
 
 
   loading.className =
-    "message ai";
-
-  loading.id =
-    "ai-loading";
+  "message ai";
 
 
   loading.innerHTML = `
     <div class="message-content">
-      <div class="message-role">LOGIC-LEAF</div>
-      <div class="ai-thinking">
+      <div class="message-role">
+        LOGIC-LEAF
+      </div>
+      <div class="message-text">
         Thinking…
       </div>
     </div>
@@ -1217,52 +1070,62 @@ async function sendMessage() {
   );
 
 
+  messages.scrollTop =
+  messages.scrollHeight;
+
+
   try {
 
-    const result =
-      await workerRequest(
-        "/v1/chat",
-        {
+    const data =
+    await workerRequest(
+      "/v1/chat",
+      {
 
-          method:
-            "POST",
+        method:
+        "POST",
 
-          body:
-            JSON.stringify({
+        body:
+        JSON.stringify({
 
-              messages:
-                chat.messages.map(
-                  message => ({
-                    role:
-                      message.role,
+          messages:
+          chat.messages.map(
+            item => ({
 
-                    content:
-                      message.content
-                  })
-                )
+              role:
+              item.role,
+
+              content:
+              item.content
 
             })
+          )
 
-        }
-      );
+        })
+
+      }
+    );
 
 
     loading.remove();
 
 
     const answer =
-      extractAIResponse(
-        result
-      );
+    data.response ||
+    data.text ||
+    data.output ||
+    data.content ||
+    data.message?.content ||
+    data.result?.response ||
+    "The AI returned no response.";
 
 
     chat.messages.push({
 
       role:
-        "assistant",
+      "assistant",
 
       content:
-        answer
+      answer
 
     });
 
@@ -1272,10 +1135,13 @@ async function sendMessage() {
     );
 
 
-    addMessageToDOM(
+    addMessage(
       "assistant",
       answer
     );
+
+
+    renderHistory();
 
 
   } catch (error) {
@@ -1283,24 +1149,18 @@ async function sendMessage() {
     loading.remove();
 
 
-    console.error(
-      "LOGIC-LEAF Worker error:",
-      error
-    );
-
-
-    const errorMessage =
-      "Sorry, something went wrong.\n\n" +
-      error.message;
+    const answer =
+    "Sorry, something went wrong.\n\n" +
+    error.message;
 
 
     chat.messages.push({
 
       role:
-        "assistant",
+      "assistant",
 
       content:
-        errorMessage
+      answer
 
     });
 
@@ -1310,17 +1170,17 @@ async function sendMessage() {
     );
 
 
-    addMessageToDOM(
+    addMessage(
       "assistant",
-      errorMessage
+      answer
     );
 
   } finally {
 
     sendBtn.disabled =
-      false;
+    false;
 
-    messageInput.focus();
+    messageInput?.focus();
 
   }
 
@@ -1328,42 +1188,7 @@ async function sendMessage() {
 
 
 // ============================================================
-// AI RESPONSE
-// ============================================================
-
-function extractAIResponse(
-  data
-) {
-
-  if (!data)
-    return "The AI returned an empty response.";
-
-
-  if (
-    typeof data ===
-    "string"
-  ) {
-
-    return data;
-
-  }
-
-
-  return (
-    data.response ||
-    data.text ||
-    data.output ||
-    data.content ||
-    data.message?.content ||
-    data.result?.response ||
-    "The AI returned no text."
-  );
-
-}
-
-
-// ============================================================
-// SEND BUTTON
+// SEND EVENTS
 // ============================================================
 
 sendBtn?.addEventListener(
@@ -1372,17 +1197,12 @@ sendBtn?.addEventListener(
 );
 
 
-// ============================================================
-// ENTER KEY
-// ============================================================
-
 messageInput?.addEventListener(
   "keydown",
   event => {
 
     if (
-      event.key ===
-      "Enter" &&
+      event.key === "Enter" &&
       !event.shiftKey
     ) {
 
@@ -1397,7 +1217,7 @@ messageInput?.addEventListener(
 
 
 // ============================================================
-// AUTO RESIZE INPUT
+// INPUT RESIZE
 // ============================================================
 
 messageInput?.addEventListener(
@@ -1405,13 +1225,13 @@ messageInput?.addEventListener(
   () => {
 
     messageInput.style.height =
-      "auto";
+    "auto";
 
     messageInput.style.height =
-      Math.min(
-        messageInput.scrollHeight,
-        160
-      ) + "px";
+    Math.min(
+      messageInput.scrollHeight,
+      160
+    ) + "px";
 
   }
 );
@@ -1422,70 +1242,53 @@ messageInput?.addEventListener(
 // ============================================================
 
 document
-  .querySelectorAll(
-    ".quick-card"
-  )
-  .forEach(button => {
+.querySelectorAll(".quick-card")
+.forEach(card => {
 
-    button.addEventListener(
-      "click",
-      () => {
+  card.addEventListener(
+    "click",
+    () => {
 
-        const prompt =
-          button.dataset.prompt ||
-          button.textContent ||
-          "";
+      messageInput.value =
+      card.dataset.prompt ||
+      "";
 
+      messageInput.focus();
 
-        messageInput.value =
-          prompt.trim();
+    }
+  );
 
-
-        messageInput.focus();
-
-
-        messageInput.dispatchEvent(
-          new Event("input")
-        );
-
-      }
-    );
-
-  });
+});
 
 
 // ============================================================
-// FILE UPLOAD
+// FILE
 // ============================================================
 
-attachBtn?.addEventListener(
+$("attachBtn")?.addEventListener(
   "click",
   () => {
 
-    fileInput?.click();
+    $("fileInput")?.click();
 
   }
 );
 
 
-fileInput?.addEventListener(
+$("fileInput")?.addEventListener(
   "change",
-  () => {
-
-    const file =
-      fileInput.files?.[0];
-
-
-    if (!file)
-      return;
-
+  event => {
 
     selectedFile =
-      file;
+    event.target.files?.[0];
 
 
-    addAttachmentChip(
-      file.name
+    if (!selectedFile)
+      return;
+
+
+    showAttachment(
+      selectedFile.name
     );
 
   }
@@ -1493,50 +1296,43 @@ fileInput?.addEventListener(
 
 
 // ============================================================
-// IMAGE PICKER
+// IMAGE
 // ============================================================
 
-imageBtn?.addEventListener(
+$("imageBtn")?.addEventListener(
   "click",
   () => {
 
-    imageInput?.click();
+    $("imageInput")?.click();
 
   }
 );
 
 
-imageInput?.addEventListener(
+$("imageInput")?.addEventListener(
   "change",
-  () => {
-
-    const file =
-      imageInput.files?.[0];
-
-
-    if (!file)
-      return;
-
+  event => {
 
     selectedImage =
-      file;
+    event.target.files?.[0];
+
+
+    if (!selectedImage)
+      return;
 
 
     const url =
-      URL.createObjectURL(
-        file
-      );
+    URL.createObjectURL(
+      selectedImage
+    );
 
 
-    if (imagePreview) {
-
-      imagePreview.src =
-        url;
-
-    }
+    $("imagePreview").src =
+    url;
 
 
-    imagePreviewOverlay?.classList.remove(
+    $("imagePreviewOverlay")
+    ?.classList.remove(
       "hidden"
     );
 
@@ -1544,30 +1340,22 @@ imageInput?.addEventListener(
 );
 
 
-// ============================================================
-// IMAGE PREVIEW
-// ============================================================
-
-closeImagePreviewBtn?.addEventListener(
+$("closeImagePreviewBtn")
+?.addEventListener(
   "click",
   () => {
 
-    imagePreviewOverlay?.classList.add(
+    $("imagePreviewOverlay")
+    ?.classList.add(
       "hidden"
     );
-
-    if (imagePreview) {
-
-      imagePreview.src =
-        "";
-
-    }
 
   }
 );
 
 
-useImageBtn?.addEventListener(
+$("useImageBtn")
+?.addEventListener(
   "click",
   () => {
 
@@ -1575,12 +1363,13 @@ useImageBtn?.addEventListener(
       return;
 
 
-    addAttachmentChip(
+    showAttachment(
       selectedImage.name
     );
 
 
-    imagePreviewOverlay?.classList.add(
+    $("imagePreviewOverlay")
+    ?.classList.add(
       "hidden"
     );
 
@@ -1588,39 +1377,12 @@ useImageBtn?.addEventListener(
 );
 
 
-// ============================================================
-// ATTACHMENT CHIP
-// ============================================================
+function showAttachment(name) {
 
-function addAttachmentChip(
-  name
-) {
-
-  if (!attachmentPreview)
-    return;
-
-
-  attachmentPreview.innerHTML =
-    "";
-
-
-  const chip =
-    document.createElement(
-      "div"
-    );
-
-
-  chip.className =
-    "attachment-chip";
-
-
-  chip.textContent =
-    "Attached: " + name;
-
-
-  attachmentPreview.appendChild(
-    chip
-  );
+  $("attachmentPreview").innerHTML =
+  `<div class="attachment-chip">
+    Attached: ${escapeHTML(name)}
+  </div>`;
 
 }
 
@@ -1630,162 +1392,126 @@ function addAttachmentChip(
 // ============================================================
 
 const SpeechRecognition =
-  window.SpeechRecognition ||
-  window.webkitSpeechRecognition;
+window.SpeechRecognition ||
+window.webkitSpeechRecognition;
 
 
 if (SpeechRecognition) {
 
   recognition =
-    new SpeechRecognition();
+  new SpeechRecognition();
 
 
   recognition.lang =
-    "en-IN";
+  "en-IN";
 
 
   recognition.continuous =
-    false;
+  false;
 
 
   recognition.interimResults =
-    false;
+  false;
 
 
   recognition.onstart =
-    () => {
+  () => {
 
-      if (voiceBtn) {
+    $("voiceBtn")
+    ?.classList.add(
+      "recording"
+    );
 
-        voiceBtn.classList.add(
-          "recording"
-        );
-
-      }
-
-    };
+  };
 
 
   recognition.onend =
-    () => {
+  () => {
 
-      if (voiceBtn) {
+    $("voiceBtn")
+    ?.classList.remove(
+      "recording"
+    );
 
-        voiceBtn.classList.remove(
-          "recording"
-        );
-
-      }
-
-    };
-
-
-  recognition.onerror =
-    error => {
-
-      console.error(
-        "Voice input error:",
-        error
-      );
-
-      voiceBtn?.classList.remove(
-        "recording"
-      );
-
-    };
+  };
 
 
   recognition.onresult =
-    event => {
+  event => {
 
-      const transcript =
-        event.results[0][0]
-          .transcript;
-
-
-      if (messageInput) {
-
-        messageInput.value +=
-          (
-            messageInput.value
-              ? " "
-              : ""
-          ) +
-          transcript;
+    const text =
+    event.results[0][0]
+    .transcript;
 
 
-        messageInput.dispatchEvent(
-          new Event("input")
-        );
+    messageInput.value +=
+    (
+      messageInput.value
+      ? " "
+      : ""
+    ) + text;
 
-      }
+  };
 
-    };
 
-} else {
+  recognition.onerror =
+  error => {
 
-  if (voiceBtn) {
+    console.error(
+      "Voice error:",
+      error
+    );
 
-    voiceBtn.disabled =
-      true;
+  };
 
-    voiceBtn.title =
-      "Voice input is not supported by this browser.";
 
-  }
+  $("voiceBtn")
+  ?.addEventListener(
+    "click",
+    () => {
+
+      try {
+
+        recognition.start();
+
+      } catch {}
+
+    }
+  );
 
 }
 
 
-voiceBtn?.addEventListener(
-  "click",
-  () => {
-
-    if (!recognition)
-      return;
-
-
-    try {
-
-      recognition.start();
-
-    } catch {
-
-      // Already running.
-
-    }
-
-  }
-);
-
-
 // ============================================================
-// API KEY LIST
+// API KEYS
 // ============================================================
 
 async function loadApiKeys() {
 
-  if (!apiKeyList)
+  const list =
+  $("apiKeyList");
+
+
+  if (!list)
     return;
 
 
-  apiKeyList.innerHTML = `
-    <div class="empty-state">
-      Loading API keys…
-    </div>
-  `;
+  list.innerHTML =
+  `<div class="empty-state">
+    Loading API keys…
+  </div>`;
 
 
   try {
 
     const data =
-      await workerRequest(
-        "/v1/keys",
-        {
-          method:
-            "GET"
-        }
-      );
+    await workerRequest(
+      "/v1/keys",
+      {
+        method:
+        "GET"
+      }
+    );
 
 
     renderApiKeys(
@@ -1797,160 +1523,75 @@ async function loadApiKeys() {
 
   } catch (error) {
 
-    apiKeyList.innerHTML = `
-      <div class="empty-state">
-        ${escapeHTML(
-          error.message
-        )}
-      </div>
-    `;
+    list.innerHTML =
+    `<div class="empty-state">
+      ${escapeHTML(error.message)}
+    </div>`;
 
   }
 
 }
 
 
-// ============================================================
-// RENDER API KEYS
-// ============================================================
+function renderApiKeys(keys) {
 
-function renderApiKeys(
-  keys
-) {
+  const list =
+  $("apiKeyList");
 
-  apiKeyList.innerHTML =
-    "";
+
+  list.innerHTML =
+  "";
 
 
   if (!keys.length) {
 
-    apiKeyList.innerHTML = `
-      <div class="empty-state">
-        No API keys created yet.
-      </div>
-    `;
+    list.innerHTML =
+    `<div class="empty-state">
+      No API keys created yet.
+    </div>`;
 
     return;
 
   }
 
 
-  keys.forEach(
-    key => {
+  keys.forEach(key => {
 
-      const item =
-        document.createElement(
-          "div"
-        );
-
-
-      item.className =
-        "api-key-item";
+    const item =
+    document.createElement(
+      "div"
+    );
 
 
-      const top =
-        document.createElement(
-          "div"
-        );
+    item.className =
+    "api-key-item";
 
 
-      top.className =
-        "api-key-item-top";
+    item.innerHTML = `
+      <div>
+        <strong>
+          ${escapeHTML(
+            key.name ||
+            "LOGIC-LEAF API Key"
+          )}
+        </strong>
+
+        <small>
+          ${escapeHTML(
+            key.prefix ||
+            key.status ||
+            "active"
+          )}
+        </small>
+      </div>
+    `;
 
 
-      const info =
-        document.createElement(
-          "div"
-        );
+    list.appendChild(
+      item
+    );
 
-
-      const name =
-        document.createElement(
-          "div"
-        );
-
-
-      name.className =
-        "api-key-name";
-
-
-      name.textContent =
-        key.name ||
-        "LOGIC-LEAF API key";
-
-
-      const meta =
-        document.createElement(
-          "div"
-        );
-
-
-      meta.className =
-        "api-key-meta";
-
-
-      meta.textContent =
-        key.prefix
-          ? `${key.prefix} • ${key.status || "active"}`
-          : key.status ||
-            "active";
-
-
-      info.appendChild(
-        name
-      );
-
-      info.appendChild(
-        meta
-      );
-
-
-      const revoke =
-        document.createElement(
-          "button"
-        );
-
-
-      revoke.className =
-        "revoke-key-btn";
-
-
-      revoke.textContent =
-        "Revoke";
-
-
-      revoke.addEventListener(
-        "click",
-        () => {
-
-          revokeApiKey(
-            key
-          );
-
-        }
-      );
-
-
-      top.appendChild(
-        info
-      );
-
-      top.appendChild(
-        revoke
-      );
-
-
-      item.appendChild(
-        top
-      );
-
-
-      apiKeyList.appendChild(
-        item
-      );
-
-    }
-  );
+  });
 
 }
 
@@ -1959,42 +1600,49 @@ function renderApiKeys(
 // CREATE API KEY
 // ============================================================
 
-createApiKeyBtn?.addEventListener(
+$("createApiKeyBtn")
+?.addEventListener(
   "click",
   async () => {
 
-    createApiKeyBtn.disabled =
-      true;
+    const button =
+    $("createApiKeyBtn");
 
 
-    createApiKeyBtn.textContent =
-      "Creating…";
+    button.disabled =
+    true;
+
+
+    button.textContent =
+    "Creating…";
 
 
     try {
 
       const data =
-        await workerRequest(
-          "/v1/keys",
-          {
+      await workerRequest(
+        "/v1/keys",
+        {
 
-            method:
-              "POST",
+          method:
+          "POST",
 
-            body:
-              JSON.stringify({
-                name:
-                  "LOGIC-LEAF API Key"
-              })
+          body:
+          JSON.stringify({
 
-          }
-        );
+            name:
+            "LOGIC-LEAF API Key"
+
+          })
+
+        }
+      );
 
 
       const key =
-        data.key ||
-        data.api_key ||
-        data.apiKey;
+      data.key ||
+      data.api_key ||
+      data.apiKey;
 
 
       if (!key) {
@@ -2006,38 +1654,32 @@ createApiKeyBtn?.addEventListener(
       }
 
 
-      if (newApiKey) {
-
-        newApiKey.textContent =
-          key;
-
-      }
+      $("newApiKey").textContent =
+      key;
 
 
-      newKeyBox?.classList.remove(
+      $("newKeyBox")
+      ?.classList.remove(
         "hidden"
       );
 
 
-      await loadApiKeys();
+      loadApiKeys();
 
 
     } catch (error) {
 
       alert(
-        "Could not create API key:\n\n" +
         error.message
       );
 
-
     } finally {
 
-      createApiKeyBtn.disabled =
-        false;
+      button.disabled =
+      false;
 
-
-      createApiKeyBtn.textContent =
-        "+ Create API key";
+      button.textContent =
+      "+ Create API key";
 
     }
 
@@ -2049,50 +1691,45 @@ createApiKeyBtn?.addEventListener(
 // COPY API KEY
 // ============================================================
 
-copyApiKeyBtn?.addEventListener(
+$("copyApiKeyBtn")
+?.addEventListener(
   "click",
   async () => {
 
-    const value =
-      newApiKey?.textContent.trim();
+    const key =
+    $("newApiKey")
+    ?.textContent;
 
 
-    if (
-      !value ||
-      value === "—"
-    ) {
-
+    if (!key || key === "—")
       return;
-
-    }
 
 
     try {
 
       await navigator.clipboard.writeText(
-        value
+        key
       );
 
 
-      copyApiKeyBtn.textContent =
-        "Copied";
+      $("copyApiKeyBtn").textContent =
+      "Copied";
 
 
       setTimeout(
         () => {
 
-          copyApiKeyBtn.textContent =
-            "Copy";
+          $("copyApiKeyBtn").textContent =
+          "Copy";
 
         },
         1500
       );
 
-
     } catch {
 
       alert(
-        "Copy failed. Please copy the API key manually."
+        "Copy failed."
       );
 
     }
@@ -2102,178 +1739,57 @@ copyApiKeyBtn?.addEventListener(
 
 
 // ============================================================
-// REVOKE API KEY
+// HTML ESCAPE
 // ============================================================
 
-async function revokeApiKey(
-  key
-) {
-
-  const id =
-    key.id ||
-    key.key_id ||
-    key.keyId;
-
-
-  if (!id) {
-
-    alert(
-      "This API key has no ID."
-    );
-
-    return;
-
-  }
-
-
-  if (
-    !confirm(
-      "Revoke this API key?"
-    )
-  ) {
-
-    return;
-
-  }
-
-
-  try {
-
-    await workerRequest(
-      `/v1/keys/${encodeURIComponent(id)}`,
-      {
-        method:
-          "DELETE"
-      }
-    );
-
-
-    await loadApiKeys();
-
-
-  } catch (error) {
-
-    alert(
-      "Could not revoke API key:\n\n" +
-      error.message
-    );
-
-  }
-
-}
-
-
-// ============================================================
-// ESCAPE HTML
-// ============================================================
-
-function escapeHTML(
-  value
-) {
+function escapeHTML(value) {
 
   return String(value)
 
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
+  .replaceAll(
+    "&",
+    "&amp;"
+  )
 
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
+  .replaceAll(
+    "<",
+    "&lt;"
+  )
 
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
+  .replaceAll(
+    ">",
+    "&gt;"
+  )
 
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
+  .replaceAll(
+    '"',
+    "&quot;"
+  )
 
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
+  .replaceAll(
+    "'",
+    "&#039;"
+  );
 
 }
 
 
 // ============================================================
-// OVERLAY CLOSE
-// ============================================================
-
-settingsOverlay?.addEventListener(
-  "click",
-  event => {
-
-    if (
-      event.target ===
-      settingsOverlay
-    ) {
-
-      settingsOverlay.classList.add(
-        "hidden"
-      );
-
-    }
-
-  }
-);
-
-
-apiOverlay?.addEventListener(
-  "click",
-  event => {
-
-    if (
-      event.target ===
-      apiOverlay
-    ) {
-
-      apiOverlay.classList.add(
-        "hidden"
-      );
-
-    }
-
-  }
-);
-
-
-imagePreviewOverlay?.addEventListener(
-  "click",
-  event => {
-
-    if (
-      event.target ===
-      imagePreviewOverlay
-    ) {
-
-      imagePreviewOverlay.classList.add(
-        "hidden"
-      );
-
-    }
-
-  }
-);
-
-
-// ============================================================
-// STARTUP
+// START
 // ============================================================
 
 renderHistory();
 
-
 console.log(
-  "LOGIC-LEAF initialized."
+  "LOGIC-LEAF loaded"
 );
 
 console.log(
   "Worker:",
   API_URL
+);
+
+console.log(
+  "Firebase project:",
+  firebaseConfig.projectId
 );
