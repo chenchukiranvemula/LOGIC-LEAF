@@ -1,207 +1,623 @@
-/* =========================================================
-   LOGIC-LEAF AI
-   Frontend controller
-========================================================= */
+// ============================================================
+// LOGIC-LEAF — APP.JS
+// Firebase Google Login + Worker + Chat + History + Settings
+// ============================================================
 
-"use strict";
+import { initializeApp } from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from
+  "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
 
-/* =========================================================
-   CONFIG
-========================================================= */
+// ============================================================
+// CONFIG
+// ============================================================
 
-const API_URL =
-  "https://ck.qtmkiller6.workers.dev";
+const API_URL = "https://logic-leaf.qtmkiller6.workers.dev";
 
-
-const API = {
-
-  chat:
-    `${API_URL}/v1/chat`,
-
-  chats:
-    `${API_URL}/api/chats`,
-
-  vision:
-    `${API_URL}/api/vision`,
-
-  image:
-    `${API_URL}/api/image`,
-
-  transcribe:
-    `${API_URL}/api/transcribe`,
-
-  speech:
-    `${API_URL}/api/speech`,
-
-  user:
-    `${API_URL}/api/user`,
-
-  config:
-    `${API_URL}/api/config`,
-
-  keys:
-    `${API_URL}/api/keys`
-
+const firebaseConfig = {
+  apiKey: "AIzaSyC_C_ACjRupgX9jEUON1FsS58igSA45aw",
+  authDomain: "logic-leaf.firebaseapp.com",
+  databaseURL: "https://logic-leaf-default-rtdb.firebaseio.com",
+  projectId: "logic-leaf",
+  storageBucket: "logic-leaf.firebasestorage.app",
+  messagingSenderId: "288673697563",
+  appId: "1:288673697563:web:c14d08452b01568d1c8dbe",
+  measurementId: "G-Z30K3K85LX"
 };
 
 
-/* =========================================================
-   STATE
-========================================================= */
+// ============================================================
+// FIREBASE
+// ============================================================
 
-const state = {
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const provider = new GoogleAuthProvider();
 
-  user: null,
 
-  currentChatId: null,
+// ============================================================
+// DOM
+// ============================================================
 
-  chats: [],
+const $ = (id) => document.getElementById(id);
 
-  messages: [],
+const loginScreen = $("loginScreen");
+const appScreen = $("appScreen");
 
-  selectedFile: null,
+const googleLoginBtn = $("googleLoginBtn");
+const loginError = $("loginError");
 
-  isGenerating: false,
+const sidebar = $("sidebar");
+const openSidebarBtn = $("openSidebarBtn");
+const closeSidebarBtn = $("closeSidebarBtn");
 
-  isRecording: false,
+const newChatBtn = $("newChatBtn");
+const chatHistory = $("chatHistory");
 
-  recognition: null,
+const messages = $("messages");
+const welcomeView = $("welcomeView");
 
-  firebaseReady: false,
+const messageInput = $("messageInput");
+const sendBtn = $("sendBtn");
 
-  settings: {
+const attachBtn = $("attachBtn");
+const fileInput = $("fileInput");
 
-    autoRead: false,
+const imageBtn = $("imageBtn");
+const imageInput = $("imageInput");
 
-    darkMode: true
+const voiceBtn = $("voiceBtn");
 
+const settingsBtn = $("settingsBtn");
+const profileBtn = $("profileBtn");
+
+const settingsOverlay = $("settingsOverlay");
+const closeSettingsBtn = $("closeSettingsBtn");
+
+const apiKeysBtn = $("apiKeysBtn");
+const apiOverlay = $("apiOverlay");
+const closeApiBtn = $("closeApiBtn");
+
+const logoutBtn = $("logoutBtn");
+
+const createApiKeyBtn = $("createApiKeyBtn");
+const copyApiKeyBtn = $("copyApiKeyBtn");
+
+const newKeyBox = $("newKeyBox");
+const newApiKey = $("newApiKey");
+
+const apiKeyList = $("apiKeyList");
+
+const attachmentPreview = $("attachmentPreview");
+
+const imagePreviewOverlay = $("imagePreviewOverlay");
+const imagePreview = $("imagePreview");
+const closeImagePreviewBtn = $("closeImagePreviewBtn");
+const useImageBtn = $("useImageBtn");
+
+
+// ============================================================
+// STATE
+// ============================================================
+
+let currentUser = null;
+let currentChatId = null;
+let selectedFile = null;
+let selectedImage = null;
+let recognition = null;
+
+const STORAGE_KEY = "logic_leaf_chats";
+
+
+// ============================================================
+// CHAT STORAGE
+// ============================================================
+
+function getChats() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch {
+    return [];
   }
+}
 
-};
+function saveChats(chats) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
+}
 
+function createChat() {
 
-/* =========================================================
-   DOM
-========================================================= */
+  const id =
+    "chat_" +
+    Date.now() +
+    "_" +
+    Math.random().toString(36).slice(2, 8);
 
-const $ = id =>
-  document.getElementById(id);
+  const chat = {
+    id,
+    title: "New chat",
+    messages: [],
+    createdAt: Date.now()
+  };
 
+  const chats = getChats();
 
-const sidebar =
-  $("sidebar");
+  chats.unshift(chat);
 
-const chatList =
-  $("chatList");
+  saveChats(chats);
 
-const messages =
-  $("messages");
+  currentChatId = id;
 
-const welcomeScreen =
-  $("welcomeScreen");
+  renderHistory();
+  renderCurrentChat();
 
-const messageInput =
-  $("messageInput");
+  return chat;
+}
 
-const chatForm =
-  $("chatForm");
+function getCurrentChat() {
 
-const sendBtn =
-  $("sendBtn");
+  const chats = getChats();
 
-const fileInput =
-  $("fileInput");
+  return chats.find(
+    chat => chat.id === currentChatId
+  );
+}
 
-const attachmentPreview =
-  $("attachmentPreview");
+function saveCurrentChat() {
 
-const toast =
-  $("toast");
+  if (!currentChatId) return;
 
-const toastText =
-  $("toastText");
+  const chats = getChats();
 
+  const index = chats.findIndex(
+    chat => chat.id === currentChatId
+  );
 
-/* =========================================================
-   TOAST
-========================================================= */
+  if (index === -1) return;
 
-let toastTimer = null;
-
-
-function showToast(text) {
-
-  toastText.textContent = text;
-
-  toast.classList.add("show");
-
-  clearTimeout(toastTimer);
-
-  toastTimer =
-    setTimeout(() => {
-
-      toast.classList.remove("show");
-
-    }, 2600);
-
+  saveChats(chats);
 }
 
 
-/* =========================================================
-   AUTH TOKEN
-========================================================= */
+// ============================================================
+// HISTORY UI
+// ============================================================
 
-async function getAuthToken() {
+function renderHistory() {
 
-  try {
+  if (!chatHistory) return;
 
-    const firebase =
-      window.logicLeafFirebase;
+  const chats = getChats();
 
-    if (
-      !firebase ||
-      !firebase.auth ||
-      !firebase.auth.currentUser
-    ) {
-      return null;
+  chatHistory.innerHTML = "";
+
+  if (!chats.length) {
+
+    const empty = document.createElement("div");
+
+    empty.className = "empty-state";
+    empty.textContent = "No chats yet.";
+
+    chatHistory.appendChild(empty);
+
+    return;
+  }
+
+  chats.forEach(chat => {
+
+    const button = document.createElement("button");
+
+    button.className = "history-item";
+
+    if (chat.id === currentChatId) {
+      button.classList.add("active");
     }
 
-    return await firebase.auth.currentUser
-      .getIdToken();
+    button.textContent =
+      chat.title || "New chat";
 
-  } catch (error) {
+    button.addEventListener("click", () => {
 
-    console.error(
-      "Token error:",
-      error
-    );
+      currentChatId = chat.id;
 
-    return null;
-  }
+      renderHistory();
+      renderCurrentChat();
 
+      if (window.innerWidth <= 760) {
+        sidebar.classList.remove("open");
+      }
+    });
+
+    chatHistory.appendChild(button);
+
+  });
 }
 
 
-/* =========================================================
-   FETCH HELPER
-========================================================= */
+// ============================================================
+// CHAT RENDER
+// ============================================================
 
-async function apiFetch(
-  url,
+function renderCurrentChat() {
+
+  if (!messages) return;
+
+  messages.innerHTML = "";
+
+  const chat = getCurrentChat();
+
+  if (!chat || !chat.messages.length) {
+
+    welcomeView?.classList.remove("hidden");
+
+    return;
+  }
+
+  welcomeView?.classList.add("hidden");
+
+  chat.messages.forEach(message => {
+
+    addMessageToDOM(
+      message.role,
+      message.content,
+      false
+    );
+
+  });
+
+}
+
+function addMessageToDOM(
+  role,
+  content,
+  scroll = true
+) {
+
+  welcomeView?.classList.add("hidden");
+
+  const wrapper = document.createElement("div");
+
+  wrapper.className =
+    "message " +
+    (role === "user" ? "user" : "ai");
+
+  const box = document.createElement("div");
+
+  box.className = "message-content";
+
+  const roleLabel = document.createElement("div");
+
+  roleLabel.className = "message-role";
+
+  roleLabel.textContent =
+    role === "user"
+      ? "YOU"
+      : "LOGIC-LEAF";
+
+  const text = document.createElement("div");
+
+  text.textContent = content;
+
+  box.appendChild(roleLabel);
+  box.appendChild(text);
+
+  wrapper.appendChild(box);
+
+  messages.appendChild(wrapper);
+
+  if (scroll) {
+
+    setTimeout(() => {
+
+      const area = document.querySelector(".chat-area");
+
+      if (area) {
+        area.scrollTop = area.scrollHeight;
+      }
+
+    }, 20);
+  }
+}
+
+
+// ============================================================
+// LOGIN
+// ============================================================
+
+googleLoginBtn?.addEventListener(
+  "click",
+  async () => {
+
+    loginError.textContent = "";
+
+    googleLoginBtn.disabled = true;
+
+    try {
+
+      await signInWithPopup(
+        auth,
+        provider
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      loginError.textContent =
+        error?.message ||
+        "Google login failed.";
+
+      googleLoginBtn.disabled = false;
+    }
+  }
+);
+
+
+// ============================================================
+// AUTH STATE
+// ============================================================
+
+onAuthStateChanged(
+  auth,
+  user => {
+
+    currentUser = user;
+
+    if (user) {
+
+      loginScreen?.classList.add("hidden");
+      appScreen?.classList.remove("hidden");
+
+      updateUserUI(user);
+
+      const chats = getChats();
+
+      if (!currentChatId) {
+
+        if (chats.length) {
+          currentChatId = chats[0].id;
+        } else {
+          createChat();
+        }
+
+      }
+
+      renderHistory();
+      renderCurrentChat();
+
+    } else {
+
+      loginScreen?.classList.remove("hidden");
+      appScreen?.classList.add("hidden");
+
+    }
+
+  }
+);
+
+
+// ============================================================
+// USER UI
+// ============================================================
+
+function updateUserUI(user) {
+
+  const name =
+    user.displayName ||
+    "User";
+
+  const email =
+    user.email ||
+    "";
+
+  const photo =
+    user.photoURL ||
+    "";
+
+  $("userName").textContent = name;
+  $("userEmail").textContent = email;
+
+  $("settingsName").textContent = name;
+  $("settingsEmail").textContent = email;
+
+  setAvatar(
+    $("userAvatar"),
+    photo,
+    name
+  );
+
+  setAvatar(
+    $("headerAvatar"),
+    photo,
+    name
+  );
+
+  setAvatar(
+    $("settingsAvatar"),
+    photo,
+    name
+  );
+}
+
+function setAvatar(element, photo, name) {
+
+  if (!element) return;
+
+  element.innerHTML = "";
+
+  if (photo) {
+
+    const img =
+      document.createElement("img");
+
+    img.src = photo;
+    img.alt = "";
+
+    element.appendChild(img);
+
+  } else {
+
+    element.textContent =
+      (name || "U")
+        .trim()
+        .charAt(0)
+        .toUpperCase();
+  }
+}
+
+
+// ============================================================
+// SIGN OUT
+// ============================================================
+
+logoutBtn?.addEventListener(
+  "click",
+  async () => {
+
+    try {
+
+      await signOut(auth);
+
+      currentUser = null;
+      currentChatId = null;
+
+    } catch (error) {
+
+      console.error(
+        "Logout error:",
+        error
+      );
+
+    }
+  }
+);
+
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+
+openSidebarBtn?.addEventListener(
+  "click",
+  () => {
+    sidebar?.classList.add("open");
+  }
+);
+
+closeSidebarBtn?.addEventListener(
+  "click",
+  () => {
+    sidebar?.classList.remove("open");
+  }
+);
+
+
+// ============================================================
+// NEW CHAT
+// ============================================================
+
+newChatBtn?.addEventListener(
+  "click",
+  () => {
+
+    createChat();
+
+    if (window.innerWidth <= 760) {
+      sidebar?.classList.remove("open");
+    }
+
+    messageInput?.focus();
+  }
+);
+
+
+// ============================================================
+// SETTINGS
+// ============================================================
+
+settingsBtn?.addEventListener(
+  "click",
+  () => {
+
+    settingsOverlay?.classList.remove("hidden");
+
+  }
+);
+
+profileBtn?.addEventListener(
+  "click",
+  () => {
+
+    settingsOverlay?.classList.remove("hidden");
+
+  }
+);
+
+closeSettingsBtn?.addEventListener(
+  "click",
+  () => {
+
+    settingsOverlay?.classList.add("hidden");
+
+  }
+);
+
+
+// ============================================================
+// API PANEL
+// ============================================================
+
+apiKeysBtn?.addEventListener(
+  "click",
+  () => {
+
+    settingsOverlay?.classList.add("hidden");
+    apiOverlay?.classList.remove("hidden");
+
+    loadApiKeys();
+
+  }
+);
+
+closeApiBtn?.addEventListener(
+  "click",
+  () => {
+
+    apiOverlay?.classList.add("hidden");
+
+  }
+);
+
+
+// ============================================================
+// API REQUEST HELPER
+// ============================================================
+
+async function workerRequest(
+  path,
   options = {}
 ) {
 
-  const token =
-    await getAuthToken();
+  if (!currentUser) {
+    throw new Error("Please sign in first.");
+  }
 
+  const token =
+    await currentUser.getIdToken();
 
   const headers = {
-
-    ...(options.headers || {})
-
+    ...(options.headers || {}),
+    Authorization:
+      `Bearer ${token}`
   };
-
 
   if (
     options.body &&
@@ -210,1713 +626,275 @@ async function apiFetch(
 
     headers["Content-Type"] =
       "application/json";
-
   }
-
-
-  if (token) {
-
-    headers["Authorization"] =
-      `Bearer ${token}`;
-
-  }
-
 
   const response =
     await fetch(
-      url,
+      API_URL + path,
       {
         ...options,
         headers
       }
     );
 
-
-  const contentType =
-    response.headers.get(
-      "content-type"
-    ) || "";
-
+  const text =
+    await response.text();
 
   let data;
 
-
-  if (
-    contentType.includes(
-      "application/json"
-    )
-  ) {
-
-    data =
-      await response.json();
-
-  } else {
-
-    data =
-      await response.text();
-
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = {
+      error: text
+    };
   }
-
 
   if (!response.ok) {
 
     throw new Error(
       data?.error ||
+      data?.message ||
       `Request failed (${response.status})`
     );
-
   }
-
 
   return data;
-
 }
 
 
-/* =========================================================
-   SIDEBAR
-========================================================= */
-
-$("openSidebarBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      sidebar.classList.add(
-        "open"
-      );
-
-    }
-  );
-
-
-$("closeSidebarBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      sidebar.classList.remove(
-        "open"
-      );
-
-    }
-  );
-
-
-/* =========================================================
-   MODAL
-========================================================= */
-
-function openModal(id) {
-
-  $(id).classList.remove(
-    "hidden"
-  );
-
-}
-
-
-function closeModal(id) {
-
-  $(id).classList.add(
-    "hidden"
-  );
-
-}
-
-
-document
-  .querySelectorAll(
-    "[data-close-modal]"
-  )
-  .forEach(button => {
-
-    button.addEventListener(
-      "click",
-      () => {
-
-        closeModal(
-          button.dataset.closeModal
-        );
-
-      }
-    );
-
-  });
-
-
-document
-  .querySelectorAll(
-    ".modal-backdrop"
-  )
-  .forEach(backdrop => {
-
-    backdrop.addEventListener(
-      "click",
-      () => {
-
-        const modal =
-          backdrop.parentElement;
-
-        modal.classList.add(
-          "hidden"
-        );
-
-      }
-    );
-
-  });
-
-
-/* =========================================================
-   SETTINGS
-========================================================= */
-
-function openSettings() {
-
-  openModal(
-    "settingsModal"
-  );
-
-}
-
-
-$("settingsBtn")
-  .addEventListener(
-    "click",
-    openSettings
-  );
-
-
-$("topSettingsBtn")
-  .addEventListener(
-    "click",
-    openSettings
-  );
-
-
-$("menuSettings")
-  .addEventListener(
-    "click",
-    () => {
-
-      $("accountMenu")
-        .classList.add(
-          "hidden"
-        );
-
-      openSettings();
-
-    }
-  );
-
-
-$("developerBtn")
-  .addEventListener(
-    "click",
-    openDeveloper
-  );
-
-
-$("openDeveloperFromSettings")
-  .addEventListener(
-    "click",
-    () => {
-
-      closeModal(
-        "settingsModal"
-      );
-
-      openDeveloper();
-
-    }
-  );
-
-
-function openDeveloper() {
-
-  openModal(
-    "developerModal"
-  );
-
-  loadApiKeys();
-
-}
-
-
-/* =========================================================
-   ACCOUNT MENU
-========================================================= */
-
-$("accountMenuBtn")
-  .addEventListener(
-    "click",
-    event => {
-
-      event.stopPropagation();
-
-      $("accountMenu")
-        .classList.toggle(
-          "hidden"
-        );
-
-    }
-  );
-
-
-document.addEventListener(
-  "click",
-  () => {
-
-    $("accountMenu")
-      .classList.add(
-        "hidden"
-      );
-
-  }
-);
-
-
-/* =========================================================
-   FIREBASE AUTH
-========================================================= */
-
-async function signInGoogle() {
-
-  if (
-    !window.logicLeafFirebase
-  ) {
-
-    showToast(
-      "Firebase is still loading."
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    await window
-      .logicLeafFirebase
-      .signInWithPopup(
-        window.logicLeafFirebase.auth,
-        window.logicLeafFirebase.googleProvider
-      );
-
-  } catch (error) {
-
-    console.error(
-      "Google login:",
-      error
-    );
-
-
-    if (
-      error.code ===
-      "auth/popup-blocked"
-    ) {
-
-      showToast(
-        "Google popup was blocked."
-      );
-
-    } else if (
-      error.code ===
-      "auth/unauthorized-domain"
-    ) {
-
-      showToast(
-        "Add this GitHub domain to Firebase Authorized domains."
-      );
-
-    } else {
-
-      showToast(
-        error.message ||
-        "Google sign-in failed."
-      );
-
-    }
-
-  }
-
-}
-
-
-async function logout() {
-
-  try {
-
-    await window
-      .logicLeafFirebase
-      .signOut(
-        window.logicLeafFirebase.auth
-      );
-
-    state.user = null;
-
-    updateAccountUI();
-
-    showToast(
-      "Signed out."
-    );
-
-  } catch (error) {
-
-    console.error(error);
-
-    showToast(
-      "Could not sign out."
-    );
-
-  }
-
-}
-
-
-$("loginBtn")
-  .addEventListener(
-    "click",
-    signInGoogle
-  );
-
-
-$("settingsLoginBtn")
-  .addEventListener(
-    "click",
-    signInGoogle
-  );
-
-
-$("logoutBtn")
-  .addEventListener(
-    "click",
-    logout
-  );
-
-
-$("menuLogout")
-  .addEventListener(
-    "click",
-    logout
-  );
-
-
-window.addEventListener(
-  "firebase-ready",
-  () => {
-
-    state.firebaseReady = true;
-
-    window
-      .logicLeafFirebase
-      .onAuthStateChanged(
-        window.logicLeafFirebase.auth,
-        async user => {
-
-          state.user = user;
-
-          updateAccountUI();
-
-          if (user) {
-
-            showToast(
-              `Welcome, ${user.displayName || "User"}`
-            );
-
-            await loadChats();
-
-            await loadUser();
-
-          } else {
-
-            renderChats();
-
-          }
-
-        }
-      );
-
-  }
-);
-
-
-/* =========================================================
-   ACCOUNT UI
-========================================================= */
-
-function setAvatar(
-  element,
-  user
-) {
-
-  element.innerHTML = "";
-
-
-  if (
-    user &&
-    user.photoURL
-  ) {
-
-    const img =
-      document.createElement(
-        "img"
-      );
-
-    img.src =
-      user.photoURL;
-
-    img.alt = "";
-
-    element.appendChild(
-      img
-    );
-
-  } else {
-
-    element.textContent =
-      user
-        ? (
-            user.displayName ||
-            "U"
-          )
-          .charAt(0)
-          .toUpperCase()
-        : "G";
-
-  }
-
-}
-
-
-function updateAccountUI() {
-
-  const user =
-    state.user;
-
-
-  const name =
-    user?.displayName ||
-    "Guest";
-
-
-  const email =
-    user?.email ||
-    "Not signed in";
-
-
-  $("accountName")
-    .textContent =
-      name;
-
-
-  $("accountEmail")
-    .textContent =
-      email;
-
-
-  $("settingsName")
-    .textContent =
-      name;
-
-
-  $("settingsEmail")
-    .textContent =
-      email;
-
-
-  setAvatar(
-    $("accountAvatar"),
-    user
-  );
-
-
-  setAvatar(
-    $("settingsAvatar"),
-    user
-  );
-
-
-  if (user) {
-
-    $("loginBtn")
-      .textContent =
-        "Signed in";
-
-    $("settingsLoginBtn")
-      .classList.add(
-        "hidden"
-      );
-
-    $("logoutBtn")
-      .classList.remove(
-        "hidden"
-      );
-
-  } else {
-
-    $("loginBtn")
-      .textContent =
-        "Sign in with Google";
-
-    $("settingsLoginBtn")
-      .classList.remove(
-        "hidden"
-      );
-
-    $("logoutBtn")
-      .classList.add(
-        "hidden"
-      );
-
-  }
-
-}
-
-
-/* =========================================================
-   USER
-========================================================= */
-
-async function loadUser() {
-
-  try {
-
-    await apiFetch(
-      API.user
-    );
-
-  } catch (error) {
-
-    console.warn(
-      "User endpoint:",
-      error.message
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   CHAT HISTORY
-========================================================= */
-
-async function loadChats() {
-
-  if (!state.user) {
-
-    renderChats();
-
-    return;
-
-  }
-
-
-  try {
-
-    const data =
-      await apiFetch(
-        API.chats
-      );
-
-
-    state.chats =
-      data.chats ||
-      [];
-
-
-    renderChats();
-
-  } catch (error) {
-
-    console.error(
-      "Chats:",
-      error
-    );
-
-    showToast(
-      "Could not load chat history."
-    );
-
-  }
-
-}
-
-
-function renderChats() {
-
-  chatList.innerHTML = "";
-
-
-  if (!state.chats.length) {
-
-    const empty =
-      document.createElement(
-        "div"
-      );
-
-    empty.className =
-      "empty-chats";
-
-    empty.textContent =
-      "No conversations yet";
-
-    chatList.appendChild(
-      empty
-    );
-
-    return;
-
-  }
-
-
-  state.chats.forEach(
-    chat => {
-
-      const item =
-        document.createElement(
-          "button"
-        );
-
-      item.className =
-        "chat-item";
-
-
-      if (
-        chat.id ===
-        state.currentChatId
-      ) {
-
-        item.classList.add(
-          "active"
-        );
-
-      }
-
-
-      const title =
-        document.createElement(
-          "span"
-        );
-
-      title.className =
-        "chat-item-title";
-
-      title.textContent =
-        chat.title ||
-        "New chat";
-
-
-      item.appendChild(
-        title
-      );
-
-
-      item.addEventListener(
-        "click",
-        () => {
-
-          loadChat(
-            chat.id
-          );
-
-          sidebar.classList.remove(
-            "open"
-          );
-
-        }
-      );
-
-
-      chatList.appendChild(
-        item
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   NEW CHAT
-========================================================= */
-
-$("newChatBtn")
-  .addEventListener(
-    "click",
-    newChat
-  );
-
-
-async function newChat() {
-
-  state.currentChatId =
-    null;
-
-  state.messages =
-    [];
-
-  messages.innerHTML =
-    "";
-
-  welcomeScreen
-    .classList.remove(
-      "hidden"
-    );
-
-  renderChats();
-
-  messageInput.focus();
-
-}
-
-
-/* =========================================================
-   LOAD CHAT
-========================================================= */
-
-async function loadChat(
-  chatId
-) {
-
-  try {
-
-    const data =
-      await apiFetch(
-        `${API.chats}/${encodeURIComponent(chatId)}`
-      );
-
-
-    state.currentChatId =
-      chatId;
-
-
-    state.messages =
-      data.messages ||
-      [];
-
-
-    welcomeScreen
-      .classList.add(
-        "hidden"
-      );
-
-
-    renderMessages();
-
-    renderChats();
-
-    scrollBottom();
-
-  } catch (error) {
-
-    console.error(
-      error
-    );
-
-    showToast(
-      "Could not open conversation."
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   SEND MESSAGE
-========================================================= */
-
-chatForm.addEventListener(
-  "submit",
-  event => {
-
-    event.preventDefault();
-
-    sendMessage();
-
-  }
-);
-
-
-async function sendMessage(
-  forcedMessage = null
-) {
-
-  if (
-    state.isGenerating
-  ) {
-
-    return;
-
-  }
-
+// ============================================================
+// SEND CHAT
+// ============================================================
+
+async function sendMessage() {
 
   const text =
-    forcedMessage !== null
-      ? forcedMessage.trim()
-      : messageInput.value.trim();
+    messageInput.value.trim();
 
+  if (!text) return;
 
-  if (!text) {
+  if (!currentUser) {
 
-    if (!state.selectedFile) {
+    alert("Please sign in first.");
 
-      return;
-
-    }
-
+    return;
   }
 
+  if (!currentChatId) {
+    createChat();
+  }
 
-  state.isGenerating =
-    true;
+  const chat = getCurrentChat();
 
+  if (!chat) return;
 
-  sendBtn.disabled =
-    true;
+  chat.messages.push({
+    role: "user",
+    content: text
+  });
 
+  if (
+    chat.title === "New chat"
+  ) {
 
-  welcomeScreen
-    .classList.add(
-      "hidden"
-    );
+    chat.title =
+      text.length > 45
+        ? text.slice(0, 45) + "…"
+        : text;
+  }
 
+  saveChats(getChats());
 
-  let displayText =
-    text ||
-    `Analyze this file: ${state.selectedFile?.name || ""}`;
-
-
-  addMessage(
+  addMessageToDOM(
     "user",
-    displayText
+    text
   );
 
+  messageInput.value = "";
+  messageInput.style.height = "auto";
 
-  messageInput.value =
-    "";
+  renderHistory();
 
+  sendBtn.disabled = true;
 
-  resizeTextarea();
+  const loading = document.createElement("div");
 
+  loading.className =
+    "message ai";
 
-  const typingId =
-    showTyping();
+  loading.id =
+    "ai-loading";
 
+  loading.innerHTML = `
+    <div class="message-content">
+      <div class="message-role">LOGIC-LEAF</div>
+      <div>Thinking…</div>
+    </div>
+  `;
+
+  messages.appendChild(loading);
 
   try {
 
-    let answer;
+    const result =
+      await workerRequest(
+        "/v1/chat",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            messages: chat.messages.map(
+              m => ({
+                role: m.role,
+                content: m.content
+              })
+            )
+          })
+        }
+      );
 
+    loading.remove();
 
-    if (
-      state.selectedFile &&
-      state.selectedFile.type.startsWith(
-        "image/"
-      )
-    ) {
+    const answer =
+      extractAIResponse(result);
 
-      answer =
-        await sendVision(
-          displayText,
-          state.selectedFile
-        );
+    chat.messages.push({
+      role: "assistant",
+      content: answer
+    });
 
-    } else {
+    saveChats(getChats());
 
-      answer =
-        await sendChat(
-          displayText
-        );
-
-    }
-
-
-    removeTyping(
-      typingId
-    );
-
-
-    addMessage(
+    addMessageToDOM(
       "assistant",
       answer
     );
 
-
-    if (
-      state.settings.autoRead
-    ) {
-
-      speakText(
-        answer
-      );
-
-    }
-
-
-    clearAttachment();
-
   } catch (error) {
 
-    removeTyping(
-      typingId
-    );
+    loading.remove();
 
+    const errorMessage =
+      "Sorry, something went wrong.\n\n" +
+      error.message;
 
-    addMessage(
+    chat.messages.push({
+      role: "assistant",
+      content: errorMessage
+    });
+
+    saveChats(getChats());
+
+    addMessageToDOM(
       "assistant",
-      `**Error:** ${error.message}`
+      errorMessage
     );
-
 
     console.error(
+      "Worker error:",
       error
     );
 
   } finally {
 
-    state.isGenerating =
-      false;
-
-    sendBtn.disabled =
-      false;
+    sendBtn.disabled = false;
 
     messageInput.focus();
-
   }
-
 }
 
 
-/* =========================================================
-   CHAT API
-========================================================= */
+// ============================================================
+// RESPONSE PARSER
+// ============================================================
 
-async function sendChat(
-  text
-) {
+function extractAIResponse(data) {
 
-  const data =
-    await apiFetch(
-      API.chat,
-      {
-        method: "POST",
+  if (!data) {
+    return "The AI returned an empty response.";
+  }
 
-        body: JSON.stringify({
-
-          message: text,
-
-          conversationId:
-            state.currentChatId,
-
-          mode: detectMode(text),
-
-          max_tokens: 4096
-
-        })
-
-      }
-    );
-
-
-  state.currentChatId =
-    data.conversationId;
-
-
-  await loadChats();
-
+  if (typeof data === "string") {
+    return data;
+  }
 
   return (
-    data.message ||
     data.response ||
-    "No response returned."
+    data.text ||
+    data.output ||
+    data.content ||
+    data.message?.content ||
+    data.result?.response ||
+    "The AI returned no text."
   );
-
 }
 
 
-/* =========================================================
-   MODE
-========================================================= */
-
-function detectMode(
-  text
-) {
-
-  const value =
-    text.toLowerCase();
-
-
-  if (
-    value.includes(
-      "code"
-    ) ||
-    value.includes(
-      "javascript"
-    ) ||
-    value.includes(
-      "python"
-    ) ||
-    value.includes(
-      "html"
-    ) ||
-    value.includes(
-      "css"
-    ) ||
-    value.includes(
-      "debug"
-    )
-  ) {
-
-    return "code";
-
-  }
-
-
-  if (
-    value.includes(
-      "study"
-    ) ||
-    value.includes(
-      "learn"
-    ) ||
-    value.includes(
-      "explain"
-    ) ||
-    value.includes(
-      "jee"
-    )
-  ) {
-
-    return "study";
-
-  }
-
-
-  return "general";
-
-}
-
-
-/* =========================================================
-   VISION
-========================================================= */
-
-async function sendVision(
-  prompt,
-  file
-) {
-
-  const base64 =
-    await fileToBase64(
-      file
-    );
-
-
-  const data =
-    await apiFetch(
-      API.vision,
-      {
-        method: "POST",
-
-        body: JSON.stringify({
-
-          prompt,
-
-          image: base64
-
-        })
-
-      }
-    );
-
-
-  return (
-    data.message ||
-    data.response ||
-    "I couldn't analyze that image."
-  );
-
-}
-
-
-function fileToBase64(
-  file
-) {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      const reader =
-        new FileReader();
-
-
-      reader.onload = () => {
-
-        const result =
-          reader.result;
-
-
-        const comma =
-          result.indexOf(",");
-
-
-        resolve(
-          comma >= 0
-            ? result.slice(
-                comma + 1
-              )
-            : result
-        );
-
-      };
-
-
-      reader.onerror =
-        reject;
-
-
-      reader.readAsDataURL(
-        file
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   MESSAGE RENDERING
-========================================================= */
-
-function addMessage(
-  role,
-  content
-) {
-
-  const message = {
-
-    id:
-      crypto.randomUUID(),
-
-    role,
-
-    content,
-
-    created_at:
-      Date.now()
-
-  };
-
-
-  state.messages.push(
-    message
-  );
-
-
-  renderMessages();
-
-  scrollBottom();
-
-}
-
-
-function renderMessages() {
-
-  messages.innerHTML =
-    "";
-
-
-  state.messages.forEach(
-    message => {
-
-      const wrapper =
-        document.createElement(
-          "div"
-        );
-
-
-      wrapper.className =
-        `message ${message.role}`;
-
-
-      const inner =
-        document.createElement(
-          "div"
-        );
-
-
-      inner.className =
-        "message-inner";
-
-
-      const avatar =
-        document.createElement(
-          "div"
-        );
-
-
-      avatar.className =
-        "message-avatar";
-
-
-      avatar.textContent =
-        message.role ===
-        "assistant"
-          ? "L"
-          : "U";
-
-
-      const body =
-        document.createElement(
-          "div"
-        );
-
-
-      body.className =
-        "message-body";
-
-
-      const role =
-        document.createElement(
-          "div"
-        );
-
-
-      role.className =
-        "message-role";
-
-
-      role.textContent =
-        message.role ===
-        "assistant"
-          ? "LOGIC-LEAF"
-          : "You";
-
-
-      const content =
-        document.createElement(
-          "div"
-        );
-
-
-      content.className =
-        "message-content";
-
-
-      content.innerHTML =
-        markdownToHtml(
-          message.content ||
-          ""
-        );
-
-
-      body.appendChild(
-        role
-      );
-
-      body.appendChild(
-        content
-      );
-
-
-      if (
-        message.role ===
-        "assistant"
-      ) {
-
-        const actions =
-          document.createElement(
-            "div"
-          );
-
-
-        actions.className =
-          "message-actions";
-
-
-        const copy =
-          document.createElement(
-            "button"
-          );
-
-
-        copy.className =
-          "message-action";
-
-        copy.textContent =
-          "Copy";
-
-
-        copy.onclick =
-          () => {
-
-            navigator.clipboard
-              .writeText(
-                message.content
-              );
-
-            showToast(
-              "Copied."
-            );
-
-          };
-
-
-        const read =
-          document.createElement(
-            "button"
-          );
-
-
-        read.className =
-          "message-action";
-
-        read.textContent =
-          "Read aloud";
-
-
-        read.onclick =
-          () => {
-
-            speakText(
-              message.content
-            );
-
-          };
-
-
-        actions.appendChild(
-          copy
-        );
-
-        actions.appendChild(
-          read
-        );
-
-
-        body.appendChild(
-          actions
-        );
-
-      }
-
-
-      inner.appendChild(
-        avatar
-      );
-
-      inner.appendChild(
-        body
-      );
-
-      wrapper.appendChild(
-        inner
-      );
-
-      messages.appendChild(
-        wrapper
-      );
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   BASIC MARKDOWN
-========================================================= */
-
-function escapeHtml(
-  text
-) {
-
-  return text
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    );
-
-}
-
-
-function markdownToHtml(
-  markdown
-) {
-
-  let text =
-    escapeHtml(
-      String(markdown)
-    );
-
-
-  const blocks = [];
-
-
-  text =
-    text.replace(
-      /```([\s\S]*?)```/g,
-      (_, code) => {
-
-        const id =
-          `CODEBLOCK_${blocks.length}`;
-
-        blocks.push(
-          `<pre><code>${code.trim()}</code></pre>`
-        );
-
-        return id;
-
-      }
-    );
-
-
-  text =
-    text.replace(
-      /\*\*(.*?)\*\*/g,
-      "<strong>$1</strong>"
-    );
-
-
-  text =
-    text.replace(
-      /`([^`]+)`/g,
-      "<code>$1</code>"
-    );
-
-
-  text =
-    text.replace(
-      /^### (.*)$/gm,
-      "<h4>$1</h4>"
-    );
-
-
-  text =
-    text.replace(
-      /^## (.*)$/gm,
-      "<h3>$1</h3>"
-    );
-
-
-  text =
-    text.replace(
-      /^# (.*)$/gm,
-      "<h2>$1</h2>"
-    );
-
-
-  text =
-    text.replace(
-      /\n/g,
-      "<br>"
-    );
-
-
-  blocks.forEach(
-    (html, index) => {
-
-      text =
-        text.replace(
-          `CODEBLOCK_${index}`,
-          html
-        );
-
-    }
-  );
-
-
-  return text;
-
-}
-
-
-/* =========================================================
-   TYPING
-========================================================= */
-
-let typingCounter =
-  0;
-
-
-function showTyping() {
-
-  const id =
-    `typing_${++typingCounter}`;
-
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-
-  wrapper.className =
-    "message assistant";
-
-
-  wrapper.id =
-    id;
-
-
-  wrapper.innerHTML = `
-    <div class="message-inner">
-      <div class="message-avatar">L</div>
-
-      <div class="message-body">
-
-        <div class="message-role">
-          LOGIC-LEAF
-        </div>
-
-        <div class="message-content">
-
-          <div class="typing">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-        </div>
-
-      </div>
-    </div>
-  `;
-
-
-  messages.appendChild(
-    wrapper
-  );
-
-
-  scrollBottom();
-
-
-  return id;
-
-}
-
-
-function removeTyping(
-  id
-) {
-
-  const element =
-    document.getElementById(
-      id
-    );
-
-
-  if (element) {
-
-    element.remove();
-
-  }
-
-}
-
-
-/* =========================================================
-   SCROLL
-========================================================= */
-
-function scrollBottom() {
-
-  const area =
-    $("chatArea");
-
-
-  requestAnimationFrame(
-    () => {
-
-      area.scrollTop =
-        area.scrollHeight;
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   TEXTAREA
-========================================================= */
-
-messageInput.addEventListener(
-  "input",
-  resizeTextarea
+// ============================================================
+// SEND EVENTS
+// ============================================================
+
+sendBtn?.addEventListener(
+  "click",
+  sendMessage
 );
 
-
-function resizeTextarea() {
-
-  messageInput.style.height =
-    "auto";
-
-
-  messageInput.style.height =
-    Math.min(
-      messageInput.scrollHeight,
-      160
-    ) + "px";
-
-}
-
-
-messageInput.addEventListener(
+messageInput?.addEventListener(
   "keydown",
   event => {
 
     if (
-      event.key ===
-      "Enter" &&
+      event.key === "Enter" &&
       !event.shiftKey
     ) {
 
       event.preventDefault();
 
       sendMessage();
-
     }
 
   }
 );
 
+messageInput?.addEventListener(
+  "input",
+  () => {
 
-/* =========================================================
-   QUICK PROMPTS
-========================================================= */
+    messageInput.style.height =
+      "auto";
+
+    messageInput.style.height =
+      Math.min(
+        messageInput.scrollHeight,
+        160
+      ) + "px";
+
+  }
+);
+
+
+// ============================================================
+// QUICK ACTIONS
+// ============================================================
 
 document
-  .querySelectorAll(
-    ".quick-card"
-  )
-  .forEach(card => {
+  .querySelectorAll(".quick-card")
+  .forEach(button => {
 
-    card.addEventListener(
+    button.addEventListener(
       "click",
       () => {
 
         const prompt =
-          card.dataset.prompt;
+          button.dataset.prompt || "";
 
-        sendMessage(
-          prompt
+        messageInput.value =
+          prompt;
+
+        messageInput.focus();
+
+        messageInput.dispatchEvent(
+          new Event("input")
         );
 
       }
@@ -1925,952 +903,558 @@ document
   });
 
 
-/* =========================================================
-   FILES
-========================================================= */
+// ============================================================
+// FILE CONTROL
+// ============================================================
 
-$("attachBtn")
-  .addEventListener(
-    "click",
-    () => {
+attachBtn?.addEventListener(
+  "click",
+  () => {
+    fileInput?.click();
+  }
+);
 
-      fileInput.click();
-
-    }
-  );
-
-
-fileInput.addEventListener(
+fileInput?.addEventListener(
   "change",
   () => {
 
     const file =
       fileInput.files?.[0];
 
+    if (!file) return;
 
-    if (!file) {
+    selectedFile = file;
 
-      return;
-
-    }
-
-
-    state.selectedFile =
-      file;
-
-
-    renderAttachment(
-      file
+    addAttachmentChip(
+      file.name
     );
 
   }
 );
 
 
-function renderAttachment(
-  file
-) {
+// ============================================================
+// IMAGE CONTROL
+// ============================================================
 
-  attachmentPreview.innerHTML =
-    "";
+imageBtn?.addEventListener(
+  "click",
+  () => {
+    imageInput?.click();
+  }
+);
 
+imageInput?.addEventListener(
+  "change",
+  () => {
 
-  const chip =
-    document.createElement(
-      "div"
+    const file =
+      imageInput.files?.[0];
+
+    if (!file) return;
+
+    selectedImage = file;
+
+    const url =
+      URL.createObjectURL(file);
+
+    imagePreview.src = url;
+
+    imagePreviewOverlay.classList.remove(
+      "hidden"
     );
 
+  }
+);
+
+closeImagePreviewBtn?.addEventListener(
+  "click",
+  () => {
+
+    imagePreviewOverlay.classList.add(
+      "hidden"
+    );
+
+    imagePreview.src = "";
+
+  }
+);
+
+useImageBtn?.addEventListener(
+  "click",
+  () => {
+
+    if (!selectedImage) return;
+
+    addAttachmentChip(
+      selectedImage.name
+    );
+
+    imagePreviewOverlay.classList.add(
+      "hidden"
+    );
+
+  }
+);
+
+
+// ============================================================
+// ATTACHMENT UI
+// ============================================================
+
+function addAttachmentChip(name) {
+
+  attachmentPreview.innerHTML = "";
+
+  const chip =
+    document.createElement("div");
 
   chip.className =
     "attachment-chip";
 
-
-  chip.innerHTML = `
-    <span>📎 ${escapeHtml(file.name)}</span>
-    <button type="button">×</button>
-  `;
-
-
-  chip
-    .querySelector(
-      "button"
-    )
-    .onclick =
-      clearAttachment;
-
+  chip.textContent =
+    "Attached: " + name;
 
   attachmentPreview.appendChild(
     chip
   );
-
 }
 
 
-function clearAttachment() {
+// ============================================================
+// VOICE INPUT
+// ============================================================
 
-  state.selectedFile =
-    null;
+const SpeechRecognition =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
 
-  fileInput.value =
-    "";
+if (SpeechRecognition) {
 
-  attachmentPreview.innerHTML =
-    "";
-
-}
-
-
-/* =========================================================
-   IMAGE GENERATION
-========================================================= */
-
-$("imageBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      openModal(
-        "imageModal"
-      );
-
-      $("imagePrompt")
-        .focus();
-
-    }
-  );
-
-
-$("generateImageBtn")
-  .addEventListener(
-    "click",
-    generateImage
-  );
-
-
-async function generateImage() {
-
-  const prompt =
-    $("imagePrompt")
-      .value
-      .trim();
-
-
-  if (!prompt) {
-
-    showToast(
-      "Enter an image description."
-    );
-
-    return;
-
-  }
-
-
-  const button =
-    $("generateImageBtn");
-
-
-  button.disabled =
-    true;
-
-  button.textContent =
-    "Generating...";
-
-
-  $("imageResult")
-    .innerHTML =
-      "";
-
-
-  try {
-
-    const data =
-      await apiFetch(
-        API.image,
-        {
-          method: "POST",
-
-          body: JSON.stringify({
-            prompt
-          })
-
-        }
-      );
-
-
-    const image =
-      document.createElement(
-        "img"
-      );
-
-
-    image.src =
-      data.image;
-
-
-    image.alt =
-      prompt;
-
-
-    $("imageResult")
-      .appendChild(
-        image
-      );
-
-
-    showToast(
-      "Image generated."
-    );
-
-  } catch (error) {
-
-    $("imageResult")
-      .textContent =
-        error.message;
-
-
-  } finally {
-
-    button.disabled =
-      false;
-
-    button.textContent =
-      "Generate";
-
-  }
-
-}
-
-
-/* =========================================================
-   VOICE INPUT
-========================================================= */
-
-$("voiceBtn")
-  .addEventListener(
-    "click",
-    toggleVoice
-  );
-
-
-function toggleVoice() {
-
-  const SpeechRecognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
-
-
-  if (!SpeechRecognition) {
-
-    showToast(
-      "Voice input is not supported by this browser."
-    );
-
-    return;
-
-  }
-
-
-  if (
-    state.isRecording &&
-    state.recognition
-  ) {
-
-    state.recognition.stop();
-
-    return;
-
-  }
-
-
-  const recognition =
+  recognition =
     new SpeechRecognition();
 
+  recognition.lang = "en-IN";
 
-  recognition.lang =
-    "en-IN";
+  recognition.continuous = false;
 
+  recognition.interimResults = false;
 
-  recognition.continuous =
-    false;
+  recognition.onstart = () => {
 
+    voiceBtn.textContent = "●";
 
-  recognition.interimResults =
-    true;
+  };
 
+  recognition.onend = () => {
 
-  state.recognition =
-    recognition;
+    voiceBtn.textContent = "◉";
 
-  state.isRecording =
-    true;
+  };
 
+  recognition.onerror = error => {
 
-  $("voiceBtn")
-    .classList.add(
-      "recording"
+    console.error(
+      "Voice error:",
+      error
     );
 
+    voiceBtn.textContent = "◉";
+
+  };
 
   recognition.onresult =
     event => {
 
-      let transcript =
-        "";
+      const transcript =
+        event.results[0][0].transcript;
 
+      messageInput.value +=
+        (
+          messageInput.value
+            ? " "
+            : ""
+        ) + transcript;
 
-      for (
-        let i =
-          event.resultIndex;
-
-        i <
-          event.results.length;
-
-        i++
-      ) {
-
-        transcript +=
-          event.results[i][0]
-            .transcript;
-
-      }
-
-
-      messageInput.value =
-        transcript;
-
-
-      resizeTextarea();
-
-    };
-
-
-  recognition.onerror =
-    error => {
-
-      console.error(
-        error
+      messageInput.dispatchEvent(
+        new Event("input")
       );
 
     };
 
+} else {
 
-  recognition.onend =
-    () => {
+  voiceBtn.disabled = true;
 
-      state.isRecording =
-        false;
-
-      state.recognition =
-        null;
-
-
-      $("voiceBtn")
-        .classList.remove(
-          "recording"
-        );
-
-    };
-
-
-  recognition.start();
+  voiceBtn.title =
+    "Voice input is not supported by this browser.";
 
 }
 
+voiceBtn?.addEventListener(
+  "click",
+  () => {
 
-/* =========================================================
-   READ ALOUD
-========================================================= */
+    if (!recognition) return;
 
-function speakText(
-  text
-) {
+    try {
 
-  if (
-    !("speechSynthesis" in window)
-  ) {
+      recognition.start();
 
-    showToast(
-      "Read aloud is not supported."
-    );
+    } catch {
 
-    return;
-
-  }
-
-
-  window.speechSynthesis.cancel();
-
-
-  const clean =
-    String(text)
-      .replace(
-        /```[\s\S]*?```/g,
-        ""
-      )
-      .replace(
-        /[*#`]/g,
-        ""
-      );
-
-
-  const utterance =
-    new SpeechSynthesisUtterance(
-      clean
-    );
-
-
-  utterance.rate =
-    .95;
-
-
-  utterance.pitch =
-    1;
-
-
-  utterance.volume =
-    1;
-
-
-  window.speechSynthesis
-    .speak(
-      utterance
-    );
-
-}
-
-
-/* =========================================================
-   SETTINGS STORAGE
-========================================================= */
-
-function loadSettings() {
-
-  try {
-
-    const saved =
-      JSON.parse(
-        localStorage.getItem(
-          "logic_leaf_settings"
-        ) || "{}"
-      );
-
-
-    state.settings = {
-
-      ...state.settings,
-
-      ...saved
-
-    };
-
-  } catch {
-
-    // defaults
-
-  }
-
-
-  $("autoReadToggle")
-    .checked =
-      !!state.settings.autoRead;
-
-
-  $("darkModeToggle")
-    .checked =
-      !!state.settings.darkMode;
-
-}
-
-
-function saveSettings() {
-
-  localStorage.setItem(
-    "logic_leaf_settings",
-    JSON.stringify(
-      state.settings
-    )
-  );
-
-}
-
-
-$("autoReadToggle")
-  .addEventListener(
-    "change",
-    event => {
-
-      state.settings.autoRead =
-        event.target.checked;
-
-      saveSettings();
+      // Prevent duplicate start errors.
 
     }
-  );
+
+  }
+);
 
 
-$("darkModeToggle")
-  .addEventListener(
-    "change",
-    event => {
-
-      state.settings.darkMode =
-        event.target.checked;
-
-      saveSettings();
-
-      document.body.style.filter =
-        state.settings.darkMode
-          ? ""
-          : "brightness(1.15)";
-
-    }
-  );
-
-
-/* =========================================================
-   API KEY SYSTEM
-========================================================= */
-
-$("createApiKeyBtn")
-  .addEventListener(
-    "click",
-    createApiKey
-  );
-
+// ============================================================
+// API KEY LIST
+// ============================================================
 
 async function loadApiKeys() {
 
-  const list =
-    $("apiKeyList");
-
-
-  if (!state.user) {
-
-    list.innerHTML = `
-      <div class="empty-developer">
-        Sign in with Google to manage API keys.
-      </div>
-    `;
-
-    $("dailyUsage")
-      .textContent =
-        "—";
-
-    return;
-
-  }
-
+  apiKeyList.innerHTML = `
+    <div class="empty-state">
+      Loading API keys…
+    </div>
+  `;
 
   try {
 
     const data =
-      await apiFetch(
-        API.keys
+      await workerRequest(
+        "/v1/keys",
+        {
+          method: "GET"
+        }
       );
 
-
-    const keys =
-      data.keys ||
-      [];
-
-
     renderApiKeys(
-      keys
+      data.keys || data.data || []
     );
-
-
-    $("dailyUsage")
-      .textContent =
-        data.usage ??
-        "0";
-
-
-    $("dailyLimit")
-      .textContent =
-        Number(
-          data.limit ||
-          300000
-        ).toLocaleString();
-
 
   } catch (error) {
 
-    console.warn(
-      "API key endpoint:",
-      error.message
-    );
-
-
-    list.innerHTML = `
-      <div class="empty-developer">
-        API-key management is not available on the current Worker yet.
+    apiKeyList.innerHTML = `
+      <div class="empty-state">
+        ${escapeHTML(error.message)}
       </div>
     `;
 
   }
-
 }
 
+function renderApiKeys(keys) {
 
-function renderApiKeys(
-  keys
-) {
-
-  const list =
-    $("apiKeyList");
-
-
-  list.innerHTML =
-    "";
-
+  apiKeyList.innerHTML = "";
 
   if (!keys.length) {
 
-    list.innerHTML = `
-      <div class="empty-developer">
+    apiKeyList.innerHTML = `
+      <div class="empty-state">
         No API keys created yet.
       </div>
     `;
 
     return;
-
   }
 
+  keys.forEach(key => {
 
-  keys.forEach(
-    key => {
+    const item =
+      document.createElement("div");
 
-      const item =
-        document.createElement(
-          "div"
-        );
+    item.className =
+      "api-key-item";
 
+    const top =
+      document.createElement("div");
 
-      item.className =
-        "api-key-item";
+    top.className =
+      "api-key-item-top";
 
+    const info =
+      document.createElement("div");
 
-      const info =
-        document.createElement(
-          "div"
-        );
+    const name =
+      document.createElement("div");
 
+    name.className =
+      "api-key-name";
 
-      info.className =
-        "key-info";
+    name.textContent =
+      key.name ||
+      "LOGIC-LEAF API key";
 
+    const meta =
+      document.createElement("div");
 
-      const name =
-        document.createElement(
-          "div"
-        );
+    meta.className =
+      "api-key-meta";
 
+    meta.textContent =
+      key.prefix
+        ? `${key.prefix} • ${key.status || "active"}`
+        : key.status || "active";
 
-      name.className =
-        "key-name";
+    info.appendChild(name);
+    info.appendChild(meta);
 
+    const revoke =
+      document.createElement("button");
 
-      name.textContent =
-        key.name ||
-        "LOGIC-LEAF API key";
+    revoke.className =
+      "revoke-key-btn";
 
+    revoke.textContent =
+      "Revoke";
 
-      const prefix =
-        document.createElement(
-          "div"
-        );
+    revoke.addEventListener(
+      "click",
+      () => revokeApiKey(key)
+    );
 
+    top.appendChild(info);
+    top.appendChild(revoke);
 
-      prefix.className =
-        "key-prefix";
+    item.appendChild(top);
 
+    apiKeyList.appendChild(item);
 
-      prefix.textContent =
-        key.prefix ||
-        "••••••••";
-
-
-      info.appendChild(
-        name
-      );
-
-      info.appendChild(
-        prefix
-      );
-
-
-      const revoke =
-        document.createElement(
-          "button"
-        );
-
-
-      revoke.className =
-        "revoke-btn";
-
-      revoke.textContent =
-        "Revoke";
-
-
-      revoke.onclick =
-        () => revokeApiKey(
-          key.id
-        );
-
-
-      item.appendChild(
-        info
-      );
-
-      item.appendChild(
-        revoke
-      );
-
-
-      list.appendChild(
-        item
-      );
-
-    }
-  );
-
+  });
 }
 
 
-async function createApiKey() {
+// ============================================================
+// CREATE API KEY
+// ============================================================
 
-  if (!state.user) {
+createApiKeyBtn?.addEventListener(
+  "click",
+  async () => {
 
-    showToast(
-      "Sign in with Google first."
-    );
+    createApiKeyBtn.disabled = true;
 
-    return;
+    createApiKeyBtn.textContent =
+      "Creating…";
 
-  }
+    try {
 
-
-  const name =
-    prompt(
-      "API key name:",
-      "My application"
-    );
-
-
-  if (!name) {
-
-    return;
-
-  }
-
-
-  try {
-
-    const data =
-      await apiFetch(
-        API.keys,
-        {
-          method: "POST",
-
-          body: JSON.stringify({
-            name
-          })
-
-        }
-      );
-
-
-    if (
-      data.key
-    ) {
-
-      $("newApiKey")
-        .textContent =
-          data.key;
-
-
-      $("newKeyBox")
-        .classList.remove(
-          "hidden"
+      const data =
+        await workerRequest(
+          "/v1/keys",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              name: "LOGIC-LEAF API Key"
+            })
+          }
         );
 
+      const key =
+        data.key ||
+        data.api_key ||
+        data.apiKey;
 
-      showToast(
-        "API key created."
+      if (!key) {
+
+        throw new Error(
+          "The Worker did not return an API key."
+        );
+      }
+
+      newApiKey.textContent =
+        key;
+
+      newKeyBox.classList.remove(
+        "hidden"
+      );
+
+      await loadApiKeys();
+
+    } catch (error) {
+
+      alert(
+        "Could not create API key:\n\n" +
+        error.message
+      );
+
+    } finally {
+
+      createApiKeyBtn.disabled =
+        false;
+
+      createApiKeyBtn.textContent =
+        "+ Create API key";
+
+    }
+  }
+);
+
+
+// ============================================================
+// COPY API KEY
+// ============================================================
+
+copyApiKeyBtn?.addEventListener(
+  "click",
+  async () => {
+
+    const value =
+      newApiKey.textContent.trim();
+
+    if (!value || value === "—") {
+      return;
+    }
+
+    try {
+
+      await navigator.clipboard.writeText(
+        value
+      );
+
+      copyApiKeyBtn.textContent =
+        "Copied";
+
+      setTimeout(() => {
+
+        copyApiKeyBtn.textContent =
+          "Copy";
+
+      }, 1500);
+
+    } catch {
+
+      alert(
+        "Copy failed. Please copy it manually."
       );
 
     }
+  }
+);
 
 
-    await loadApiKeys();
+// ============================================================
+// REVOKE API KEY
+// ============================================================
 
-  } catch (error) {
+async function revokeApiKey(key) {
 
-    showToast(
-      error.message ||
-      "Could not create API key."
+  const id =
+    key.id ||
+    key.key_id ||
+    key.keyId;
+
+  if (!id) {
+
+    alert(
+      "This API key has no revocation ID."
     );
 
+    return;
   }
 
-}
-
-
-async function revokeApiKey(
-  keyId
-) {
-
-  if (
-    !confirm(
+  const confirmed =
+    confirm(
       "Revoke this API key?"
-    )
-  ) {
+    );
 
-    return;
-
-  }
-
+  if (!confirmed) return;
 
   try {
 
-    await apiFetch(
-      `${API.keys}/${encodeURIComponent(keyId)}`,
+    await workerRequest(
+      `/v1/keys/${encodeURIComponent(id)}`,
       {
         method: "DELETE"
       }
     );
 
-
-    showToast(
-      "API key revoked."
-    );
-
-
     await loadApiKeys();
 
   } catch (error) {
 
-    showToast(
-      error.message ||
-      "Could not revoke key."
+    alert(
+      "Could not revoke key:\n\n" +
+      error.message
     );
 
   }
+}
+
+
+// ============================================================
+// SECURITY HELPERS
+// ============================================================
+
+function escapeHTML(value) {
+
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
 }
 
 
-/* =========================================================
-   COPY API KEY
-========================================================= */
+// ============================================================
+// CLOSE OVERLAYS WHEN CLICKING BACKDROP
+// ============================================================
 
-$("copyApiKeyBtn")
-  .addEventListener(
-    "click",
-    async () => {
-
-      const key =
-        $("newApiKey")
-          .textContent;
-
-
-      try {
-
-        await navigator
-          .clipboard
-          .writeText(
-            key
-          );
-
-        showToast(
-          "API key copied."
-        );
-
-      } catch {
-
-        showToast(
-          "Copy failed."
-        );
-
-      }
-
-    }
-  );
-
-
-/* =========================================================
-   CONFIG / HEALTH
-========================================================= */
-
-async function checkBackend() {
-
-  try {
-
-    const data =
-      await fetch(
-        `${API_URL}/api/health`
-      )
-      .then(
-        response =>
-          response.json()
-      );
-
-
-    if (
-      data.ok
-    ) {
-
-      $("modelStatus")
-        .innerHTML = `
-          <span class="status-dot"></span>
-          Online
-        `;
-
-    }
-
-  } catch {
-
-    $("modelStatus")
-      .innerHTML = `
-        <span class="status-dot"></span>
-        Offline
-      `;
-
-  }
-
-}
-
-
-/* =========================================================
-   KEYBOARD / ESC
-========================================================= */
-
-document.addEventListener(
-  "keydown",
+settingsOverlay?.addEventListener(
+  "click",
   event => {
 
     if (
-      event.key ===
-      "Escape"
+      event.target ===
+      settingsOverlay
     ) {
 
-      document
-        .querySelectorAll(
-          ".modal"
-        )
-        .forEach(
-          modal =>
-            modal.classList.add(
-              "hidden"
-            )
-        );
+      settingsOverlay.classList.add(
+        "hidden"
+      );
 
+    }
 
-      $("accountMenu")
-        .classList.add(
-          "hidden"
-        );
+  }
+);
+
+apiOverlay?.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target ===
+      apiOverlay
+    ) {
+
+      apiOverlay.classList.add(
+        "hidden"
+      );
+
+    }
+
+  }
+);
+
+imagePreviewOverlay?.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target ===
+      imagePreviewOverlay
+    ) {
+
+      imagePreviewOverlay.classList.add(
+        "hidden"
+      );
 
     }
 
@@ -2878,21 +1462,17 @@ document.addEventListener(
 );
 
 
-/* =========================================================
-   INITIALIZATION
-========================================================= */
+// ============================================================
+// STARTUP
+// ============================================================
 
-function init() {
+renderHistory();
 
-  loadSettings();
+console.log(
+  "LOGIC-LEAF frontend initialized."
+);
 
-  updateAccountUI();
-
-  checkBackend();
-
-  messageInput.focus();
-
-}
-
-
-init();
+console.log(
+  "Worker:",
+  API_URL
+);
