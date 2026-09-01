@@ -2,719 +2,177 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <meta
-    name="theme-color"
-    content="#07090d"
-  >
-
-  <meta
-    name="description"
-    content="LOGIC-LEAF — intelligent AI workspace"
-  >
-
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="theme-color" content="#07090d">
   <title>LOGIC-LEAF AI</title>
-
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-  <!-- =====================================================
-       LOGIN SCREEN
-       ===================================================== -->
+<!-- LOGIN -->
+<section id="loginScreen" class="login-screen">
 
-  <section
-    id="loginScreen"
-    class="login-screen"
-  >
+  <div class="login-card">
 
-    <div class="login-background">
+    <div class="brand-logo">LL</div>
 
-      <div class="orb orb-one"></div>
-      <div class="orb orb-two"></div>
-      <div class="orb orb-three"></div>
+    <h1>LOGIC-LEAF</h1>
 
-    </div>
+    <p>Your intelligent AI workspace</p>
 
+    <button id="googleLoginBtn" class="google-login-btn">
+      <span class="google-icon">G</span>
+      Continue with Google
+    </button>
 
-    <div class="login-card">
+    <div id="loginError" class="login-error"></div>
 
-      <div class="brand-mark">
-        LL
-      </div>
+    <small>
+      Sign in to access your personal AI workspace.
+    </small>
 
-      <h1>
-        LOGIC-LEAF
-      </h1>
+  </div>
 
-      <p class="login-subtitle">
-        Your intelligent AI workspace
-      </p>
+</section>
 
 
-      <button
-        id="googleLoginBtn"
-        class="google-login-btn"
-        type="button"
-      >
+<!-- APP -->
+<section id="appScreen" class="app-screen hidden">
 
-        <span class="google-icon">
-          G
-        </span>
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="sidebar">
 
-        <span>
-          Continue with Google
-        </span>
+    <div class="sidebar-header">
 
-      </button>
-
-
-      <div
-        id="loginError"
-        class="login-error"
-      ></div>
-
-
-      <p class="login-note">
-        Sign in to access your chats,
-        AI tools and personal workspace.
-      </p>
-
-    </div>
-
-  </section>
-
-
-
-  <!-- =====================================================
-       MAIN APPLICATION
-       ===================================================== -->
-
-  <section
-    id="appScreen"
-    class="app-screen hidden"
-  >
-
-
-    <!-- ===================================================
-         SIDEBAR
-         =================================================== -->
-
-    <aside
-      id="sidebar"
-      class="sidebar"
-    >
-
-      <div class="sidebar-header">
-
-        <div class="brand">
-
-          <div class="brand-logo">
-            LL
-          </div>
-
-          <div>
-
-            <div class="brand-name">
-              LOGIC-LEAF
-            </div>
-
-            <div class="brand-version">
-              AI WORKSPACE
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <button
-          id="closeSidebarBtn"
-          class="icon-btn mobile-only"
-          type="button"
-          aria-label="Close sidebar"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <button
-        id="newChatBtn"
-        class="new-chat-btn"
-        type="button"
-      >
-
-        <span class="button-symbol">
-          +
-        </span>
-
-        <span>
-          New chat
-        </span>
-
-      </button>
-
-
-      <div class="sidebar-label">
-        RECENT CHATS
-      </div>
-
-
-      <div
-        id="chatHistory"
-        class="chat-history"
-      ></div>
-
-
-      <div class="sidebar-bottom">
-
-
-        <button
-          id="apiKeysBtn"
-          class="sidebar-action"
-          type="button"
-        >
-
-          <span>
-            API Keys
-          </span>
-
-        </button>
-
-
-        <button
-          id="settingsBtn"
-          class="sidebar-action"
-          type="button"
-        >
-
-          <span>
-            Settings
-          </span>
-
-        </button>
-
-
-        <button
-          id="profileBtn"
-          class="profile-card"
-          type="button"
-        >
-
-          <div
-            id="userAvatar"
-            class="avatar"
-          >
-            U
-          </div>
-
-          <div class="profile-info">
-
-            <strong id="userName">
-              User
-            </strong>
-
-            <span id="userEmail">
-              —
-            </span>
-
-          </div>
-
-        </button>
-
-      </div>
-
-    </aside>
-
-
-
-    <!-- ===================================================
-         MAIN
-         =================================================== -->
-
-    <main class="main-area">
-
-
-      <!-- TOP BAR -->
-
-      <header class="topbar">
-
-        <button
-          id="openSidebarBtn"
-          class="icon-btn"
-          type="button"
-          aria-label="Open sidebar"
-        >
-          ☰
-        </button>
-
-
-        <div class="topbar-title">
-          LOGIC-LEAF
-        </div>
-
-
-        <div class="topbar-right">
-
-          <div
-            id="headerAvatar"
-            class="avatar small"
-          >
-            U
-          </div>
-
-        </div>
-
-      </header>
-
-
-
-      <!-- =================================================
-           CHAT AREA
-           ================================================= -->
-
-      <div class="chat-area">
-
-
-        <!-- WELCOME -->
-
-        <div
-          id="welcomeView"
-          class="welcome-view"
-        >
-
-          <div class="welcome-badge">
-            LOGIC-LEAF AI
-          </div>
-
-
-          <h2>
-            Think.
-            <span>Build.</span>
-            Explore.
-          </h2>
-
-
-          <p>
-            Ask questions, solve problems,
-            write code, study, analyze files,
-            and explore ideas with your AI workspace.
-          </p>
-
-
-          <div class="quick-grid">
-
-
-            <button
-              class="quick-card"
-              data-prompt="Explain this topic to me step by step."
-              type="button"
-            >
-
-              <strong>
-                Explain
-              </strong>
-
-              <span>
-                Learn a difficult topic clearly
-              </span>
-
-            </button>
-
-
-            <button
-              class="quick-card"
-              data-prompt="Help me solve this problem step by step."
-              type="button"
-            >
-
-              <strong>
-                Solve
-              </strong>
-
-              <span>
-                Work through a problem
-              </span>
-
-            </button>
-
-
-            <button
-              class="quick-card"
-              data-prompt="Help me write and improve this code."
-              type="button"
-            >
-
-              <strong>
-                Code
-              </strong>
-
-              <span>
-                Build and debug software
-              </span>
-
-            </button>
-
-
-            <button
-              class="quick-card"
-              data-prompt="Help me create a study plan for my exams."
-              type="button"
-            >
-
-              <strong>
-                Study
-              </strong>
-
-              <span>
-                Learn smarter and prepare
-              </span>
-
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <!-- MESSAGES -->
-
-        <div
-          id="messages"
-          class="messages"
-        ></div>
-
-
-      </div>
-
-
-
-      <!-- =================================================
-           ATTACHMENT PREVIEW
-           ================================================= -->
-
-      <div
-        id="attachmentPreview"
-        class="attachment-preview"
-      ></div>
-
-
-
-      <!-- =================================================
-           COMPOSER
-           ================================================= -->
-
-      <div class="composer-area">
-
-        <div class="composer">
-
-
-          <div class="composer-tools">
-
-
-            <button
-              id="attachBtn"
-              class="tool-btn"
-              type="button"
-              aria-label="Attach file"
-              title="Attach file"
-            >
-              +
-            </button>
-
-
-            <button
-              id="imageBtn"
-              class="tool-btn"
-              type="button"
-              aria-label="Upload image"
-              title="Upload image"
-            >
-              Image
-            </button>
-
-
-            <button
-              id="voiceBtn"
-              class="tool-btn"
-              type="button"
-              aria-label="Voice input"
-              title="Voice input"
-            >
-              Mic
-            </button>
-
-
-            <input
-              id="fileInput"
-              type="file"
-              hidden
-              accept=".pdf,.txt,.doc,.docx,.csv,.json,.js,.html,.css,.py,.java,.cpp"
-            >
-
-
-            <input
-              id="imageInput"
-              type="file"
-              hidden
-              accept="image/*"
-            >
-
-          </div>
-
-
-          <textarea
-            id="messageInput"
-            rows="1"
-            placeholder="Message LOGIC-LEAF..."
-            autocomplete="off"
-          ></textarea>
-
-
-          <button
-            id="sendBtn"
-            class="send-btn"
-            type="button"
-            aria-label="Send message"
-          >
-            →
-          </button>
-
-        </div>
-
-
-        <div class="composer-note">
-          LOGIC-LEAF can make mistakes.
-          Verify important information.
-        </div>
-
-      </div>
-
-    </main>
-
-  </section>
-
-
-
-  <!-- =====================================================
-       SETTINGS OVERLAY
-       ===================================================== -->
-
-  <div
-    id="settingsOverlay"
-    class="overlay hidden"
-  >
-
-    <div class="modal settings-modal">
-
-
-      <div class="modal-header">
+      <div class="brand">
+        <div class="brand-logo small-logo">LL</div>
 
         <div>
-
-          <div class="modal-eyebrow">
-            ACCOUNT
-          </div>
-
-          <h3>
-            Settings
-          </h3>
-
+          <strong>LOGIC-LEAF</strong>
+          <span>AI WORKSPACE</span>
         </div>
-
-
-        <button
-          id="closeSettingsBtn"
-          class="modal-close"
-          type="button"
-        >
-          ×
-        </button>
-
       </div>
 
+      <button
+        id="closeSidebarBtn"
+        class="icon-btn mobile-only">
+        ×
+      </button>
 
-      <div class="settings-profile">
+    </div>
 
-        <div
-          id="settingsAvatar"
-          class="avatar large"
-        >
+
+    <button id="newChatBtn" class="new-chat-btn">
+      <b>+</b>
+      New chat
+    </button>
+
+
+    <div class="sidebar-label">
+      RECENT CHATS
+    </div>
+
+    <div id="chatHistory" class="chat-history"></div>
+
+
+    <div class="sidebar-bottom">
+
+      <button id="apiKeysBtn" class="sidebar-action">
+        API Keys
+      </button>
+
+      <button id="settingsBtn" class="sidebar-action">
+        Settings
+      </button>
+
+      <button id="profileBtn" class="profile-card">
+
+        <div id="userAvatar" class="avatar">
           U
         </div>
 
-        <div>
-
-          <strong id="settingsName">
-            User
-          </strong>
-
-          <span id="settingsEmail">
-            —
-          </span>
-
+        <div class="profile-info">
+          <strong id="userName">User</strong>
+          <span id="userEmail">—</span>
         </div>
 
-      </div>
-
-
-      <div class="settings-section">
-
-        <div class="section-title">
-          Developer
-        </div>
-
-        <div class="developer-card">
-
-          <strong>
-            V.CHENCHUKIRAN
-          </strong>
-
-          <span>
-            Cloud security & AI development
-          </span>
-
-        </div>
-
-      </div>
-
-
-      <div class="settings-section">
-
-        <div class="section-title">
-          Workspace
-        </div>
-
-        <div class="info-row">
-
-          <span>
-            Application
-          </span>
-
-          <strong>
-            LOGIC-LEAF
-          </strong>
-
-        </div>
-
-        <div class="info-row">
-
-          <span>
-            AI
-          </span>
-
-          <strong>
-            Online
-          </strong>
-
-        </div>
-
-      </div>
-
-
-      <button
-        id="logoutBtn"
-        class="logout-btn"
-        type="button"
-      >
-        Sign out
       </button>
-
 
     </div>
 
-  </div>
+  </aside>
 
 
+  <!-- MAIN -->
+  <main class="main-area">
 
-  <!-- =====================================================
-       API KEY OVERLAY
-       ===================================================== -->
-
-  <div
-    id="apiOverlay"
-    class="overlay hidden"
-  >
-
-    <div class="modal api-modal">
-
-
-      <div class="modal-header">
-
-        <div>
-
-          <div class="modal-eyebrow">
-            DEVELOPER
-          </div>
-
-          <h3>
-            API Keys
-          </h3>
-
-        </div>
-
-
-        <button
-          id="closeApiBtn"
-          class="modal-close"
-          type="button"
-        >
-          ×
-        </button>
-
-      </div>
-
-
-      <p class="modal-description">
-
-        Create and manage API keys
-        for your LOGIC-LEAF services.
-
-      </p>
-
+    <header class="topbar">
 
       <button
-        id="createApiKeyBtn"
-        class="primary-btn"
-        type="button"
-      >
-        + Create API key
+        id="openSidebarBtn"
+        class="icon-btn">
+        ☰
       </button>
 
+      <strong>LOGIC-LEAF</strong>
 
       <div
-        id="newKeyBox"
-        class="new-key-box hidden"
-      >
+        id="headerAvatar"
+        class="avatar small">
+        U
+      </div>
 
-        <div class="key-warning">
-          Copy this key now.
-          You may not be able to see it again.
+    </header>
+
+
+    <!-- CHAT -->
+    <div class="chat-area">
+
+      <div id="welcomeView" class="welcome-view">
+
+        <div class="welcome-badge">
+          LOGIC-LEAF AI
         </div>
 
+        <h2>
+          Think. Build. Explore.
+        </h2>
 
-        <div class="key-display">
+        <p>
+          Ask questions, solve problems, write code,
+          study, analyze files and explore ideas.
+        </p>
 
-          <code id="newApiKey">
-            —
-          </code>
+
+        <div class="quick-grid">
 
           <button
-            id="copyApiKeyBtn"
-            type="button"
-          >
-            Copy
+            class="quick-card"
+            data-prompt="Explain this topic to me step by step.">
+            <strong>Explain</strong>
+            <span>Learn a difficult topic</span>
+          </button>
+
+          <button
+            class="quick-card"
+            data-prompt="Help me solve this problem step by step.">
+            <strong>Solve</strong>
+            <span>Work through a problem</span>
+          </button>
+
+          <button
+            class="quick-card"
+            data-prompt="Help me write and improve this code.">
+            <strong>Code</strong>
+            <span>Build and debug software</span>
+          </button>
+
+          <button
+            class="quick-card"
+            data-prompt="Help me create a study plan for my exams.">
+            <strong>Study</strong>
+            <span>Prepare effectively</span>
           </button>
 
         </div>
@@ -722,92 +180,289 @@
       </div>
 
 
-      <div class="api-list-title">
-        YOUR API KEYS
-      </div>
-
-
-      <div
-        id="apiKeyList"
-        class="api-key-list"
-      >
-
-        <div class="empty-state">
-          No API keys created yet.
-        </div>
-
-      </div>
-
+      <div id="messages" class="messages"></div>
 
     </div>
 
-  </div>
+
+    <!-- ATTACHMENTS -->
+    <div
+      id="attachmentPreview"
+      class="attachment-preview">
+    </div>
 
 
+    <!-- COMPOSER -->
+    <div class="composer-area">
 
-  <!-- =====================================================
-       IMAGE PREVIEW
-       ===================================================== -->
+      <div class="composer">
 
-  <div
-    id="imagePreviewOverlay"
-    class="overlay hidden"
-  >
+        <div class="composer-tools">
 
-    <div class="modal image-modal">
+          <button
+            id="attachBtn"
+            class="tool-btn"
+            title="Attach file">
+            +
+          </button>
+
+          <button
+            id="imageBtn"
+            class="tool-btn"
+            title="Upload image">
+            Image
+          </button>
+
+          <button
+            id="voiceBtn"
+            class="tool-btn"
+            title="Voice input">
+            Mic
+          </button>
+
+          <input
+            id="fileInput"
+            type="file"
+            hidden
+            accept=".pdf,.txt,.doc,.docx,.csv,.json,.js,.html,.css,.py,.java,.cpp">
+
+          <input
+            id="imageInput"
+            type="file"
+            hidden
+            accept="image/*">
+
+        </div>
 
 
-      <div class="modal-header">
+        <textarea
+          id="messageInput"
+          rows="1"
+          placeholder="Message LOGIC-LEAF...">
+        </textarea>
 
-        <h3>
-          Image
-        </h3>
 
         <button
-          id="closeImagePreviewBtn"
-          class="modal-close"
-          type="button"
-        >
-          ×
+          id="sendBtn"
+          class="send-btn">
+          →
         </button>
 
       </div>
 
 
-      <div class="image-preview-container">
+      <div class="composer-note">
+        LOGIC-LEAF can make mistakes. Verify important information.
+      </div>
 
-        <img
-          id="imagePreview"
-          src=""
-          alt="Selected image"
-        >
+    </div>
+
+  </main>
+
+</section>
+
+
+<!-- SETTINGS -->
+<div id="settingsOverlay" class="overlay hidden">
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <div>
+        <small>ACCOUNT</small>
+        <h3>Settings</h3>
+      </div>
+
+      <button
+        id="closeSettingsBtn"
+        class="modal-close">
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="settings-profile">
+
+      <div
+        id="settingsAvatar"
+        class="avatar large">
+        U
+      </div>
+
+      <div>
+        <strong id="settingsName">User</strong>
+        <span id="settingsEmail">—</span>
+      </div>
+
+    </div>
+
+
+    <div class="settings-section">
+
+      <div class="section-title">
+        Developer
+      </div>
+
+      <div class="developer-card">
+
+        <strong>
+          V.CHENCHUKIRAN
+        </strong>
+
+        <span>
+          Cloud security & AI development
+        </span>
 
       </div>
 
+    </div>
+
+
+    <div class="settings-section">
+
+      <div class="section-title">
+        Workspace
+      </div>
+
+      <div class="info-row">
+        <span>Application</span>
+        <strong>LOGIC-LEAF</strong>
+      </div>
+
+      <div class="info-row">
+        <span>AI</span>
+        <strong>Online</strong>
+      </div>
+
+    </div>
+
+
+    <button
+      id="logoutBtn"
+      class="logout-btn">
+      Sign out
+    </button>
+
+  </div>
+
+</div>
+
+
+<!-- API KEYS -->
+<div id="apiOverlay" class="overlay hidden">
+
+  <div class="modal">
+
+    <div class="modal-header">
+
+      <div>
+        <small>DEVELOPER</small>
+        <h3>API Keys</h3>
+      </div>
 
       <button
-        id="useImageBtn"
-        class="primary-btn"
-        type="button"
-      >
-        Use image
+        id="closeApiBtn"
+        class="modal-close">
+        ×
       </button>
 
+    </div>
+
+
+    <p>
+      Create and manage your LOGIC-LEAF API keys.
+    </p>
+
+
+    <button
+      id="createApiKeyBtn"
+      class="primary-btn">
+      + Create API key
+    </button>
+
+
+    <div
+      id="newKeyBox"
+      class="new-key-box hidden">
+
+      <div class="key-warning">
+        Copy this key now. You may not be able to see it again.
+      </div>
+
+      <div class="key-display">
+
+        <code id="newApiKey">—</code>
+
+        <button id="copyApiKeyBtn">
+          Copy
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="api-list-title">
+      YOUR API KEYS
+    </div>
+
+    <div id="apiKeyList" class="api-key-list">
+
+      <div class="empty-state">
+        No API keys created yet.
+      </div>
 
     </div>
 
   </div>
 
+</div>
 
 
-  <!-- =====================================================
-       JAVASCRIPT
-       ===================================================== -->
+<!-- IMAGE PREVIEW -->
+<div id="imagePreviewOverlay" class="overlay hidden">
 
-  <script
-    type="module"
-    src="app.js"
-  ></script>
+  <div class="modal image-modal">
+
+    <div class="modal-header">
+
+      <h3>Image</h3>
+
+      <button
+        id="closeImagePreviewBtn"
+        class="modal-close">
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="image-preview-container">
+
+      <img
+        id="imagePreview"
+        alt="Selected image">
+
+    </div>
+
+
+    <button
+      id="useImageBtn"
+      class="primary-btn">
+      Use image
+    </button>
+
+  </div>
+
+</div>
+
+
+<script
+  type="module"
+  src="app.js">
+</script>
 
 </body>
-  </html>
+          </html>
