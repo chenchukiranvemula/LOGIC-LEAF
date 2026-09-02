@@ -1,2531 +1,2293 @@
-"use strict";
+/* =========================================================
+   LOGIC-LEAF — app.js
+   Frontend controller
+   ========================================================= */
 
-/*
-=========================================================
- LOGIC-LEAF FRONTEND
-=========================================================
+(() => {
+  "use strict";
 
- Worker:
- https://logic-leaf.qtmkiller6.workers.dev
+  /* =======================================================
+     CONFIG
+     ======================================================= */
 
- Endpoints:
- /v1/chat
- /v1/vision
- /v1/file
- /v1/image
- /v1/pdf
- /v1/search
- /v1/history
- /v1/conversation
-=========================================================
-*/
+  const API_URL =
+    window.LOGIC_LEAF_API_URL ||
+    localStorage.getItem("logic_leaf_api_url") ||
+    "https://logic-leaf.qtmkiller6.workers.dev";
 
+  const STORAGE = {
+    chats: "logic_leaf_chats",
+    current: "logic_leaf_current_chat",
+    apiKey: "logic_leaf_api_key",
+    user: "logic_leaf_user"
+  };
 
-const API_URL =
-  "https://logic-leaf.qtmkiller6.workers.dev";
+  /* =======================================================
+     STATE
+     ======================================================= */
 
+  const state = {
+    chats: loadJSON(STORAGE.chats, []),
+    currentChatId: localStorage.getItem(STORAGE.current) || null,
+    messages: [],
+    attachments: [],
+    busy: false,
+    searchMode: false,
+    generatedImages: []
+  };
 
-/* ===================================================== */
-/* STATE */
-/* ===================================================== */
+  /* =======================================================
+     DOM
+     ======================================================= */
 
-let conversationId =
-  localStorage.getItem("logic_leaf_conversation") ||
-  crypto.randomUUID();
+  const $ = (selector, root = document) =>
+    root.querySelector(selector);
 
-let userId =
-  localStorage.getItem("logic_leaf_user") ||
-  ("web-" + crypto.randomUUID());
+  const $$ = (selector, root = document) =>
+    [...root.querySelectorAll(selector)];
 
-let attachments = [];
+  const dom = {
+    sidebar: $(".sidebar"),
+    sidebarOverlay: $(".sidebar-overlay"),
 
-let isGenerating = false;
+    menuButton:
+      $("#menuButton") ||
+      $(".menu-button") ||
+      $('[data-action="menu"]'),
 
+    newChat:
+      $("#newChat") ||
+      $(".new-chat") ||
+      $('[data-action="new-chat"]'),
 
-/* ===================================================== */
-/* DOM */
-/* ===================================================== */
+    chatList:
+      $("#chatList") ||
+      $(".chat-list"),
 
-const $ = id =>
-  document.getElementById(id);
+    messages:
+      $("#messages") ||
+      $(".messages") ||
+      $(".chat-messages"),
 
-const chat =
-  $("chat");
+    welcome:
+      $("#welcome") ||
+      $(".welcome"),
 
-const messageInput =
-  $("messageInput");
+    composer:
+      $("#composer") ||
+      $(".composer"),
 
-const sendBtn =
-  $("sendBtn");
+    input:
+      $("#messageInput") ||
+      $("#prompt") ||
+      $(".composer-input") ||
+      $("textarea"),
 
-const fileInput =
-  $("fileInput");
+    sendButton:
+      $("#sendButton") ||
+      $(".send-button") ||
+      $('[data-action="send"]'),
 
-const cameraInput =
-  $("cameraInput");
+    attachButton:
+      $("#attachButton") ||
+      $('[data-action="attach"]'),
 
-const attachmentPreview =
-  $("attachmentPreview");
+    cameraButton:
+      $("#cameraButton") ||
+      $('[data-action="camera"]'),
 
-const historyList =
-  $("historyList");
+    imageButton:
+      $("#imageButton") ||
+      $('[data-action="image"]'),
 
-const searchPanel =
-  $("searchPanel");
+    pdfButton:
+      $("#pdfButton") ||
+      $('[data-action="pdf"]'),
 
-const searchInput =
-  $("searchInput");
+    searchButton:
+      $("#searchButton") ||
+      $('[data-action="search"]'),
 
-const searchResults =
-  $("searchResults");
+    fileInput:
+      $("#fileInput") ||
+      'input[type="file"]',
 
-const settingsModal =
-  $("settingsModal");
+    cameraInput:
+      $("#cameraInput"),
 
+    attachments:
+      $("#attachments") ||
+      $(".attachments"),
 
-/* ===================================================== */
-/* INITIALIZE */
-/* ===================================================== */
+    toolMenu:
+      $("#toolMenu") ||
+      $(".tool-menu"),
 
-document.addEventListener(
-  "DOMContentLoaded",
-  init
-);
+    settingsButton:
+      $("#settingsButton") ||
+      $('[data-action="settings"]'),
 
+    apiButton:
+      $("#apiButton") ||
+      $('[data-action="api"]'),
 
-async function init() {
+    loginButton:
+      $("#loginButton") ||
+      $('[data-action="login"]'),
 
-  localStorage.setItem(
-    "logic_leaf_conversation",
-    conversationId
-  );
+    toast:
+      $("#toast") ||
+      $(".toast"),
 
-  localStorage.setItem(
-    "logic_leaf_user",
-    userId
-  );
+    modalBackdrop:
+      $("#modalBackdrop") ||
+      $(".modal-backdrop")
+  };
 
-  setupEvents();
+  /* =======================================================
+     START
+     ======================================================= */
 
-  await checkAPI();
+  document.addEventListener("DOMContentLoaded", init);
 
-  await loadHistory();
+  function init() {
+    ensureChat();
 
-  await loadConversation();
+    bindEvents();
 
-}
+    renderSidebar();
+    renderMessages();
 
+    autoResize();
 
-/* ===================================================== */
-/* EVENTS */
-/* ===================================================== */
+    console.log("LOGIC-LEAF frontend ready");
+    console.log("Worker:", API_URL);
+  }
 
-function setupEvents() {
+  /* =======================================================
+     EVENTS
+     ======================================================= */
 
-  $("openSidebar").onclick =
-    openSidebar;
+  function bindEvents() {
 
-  $("closeSidebar").onclick =
-    closeSidebar;
-
-  $("newChatBtn").onclick =
-    newChat;
-
-  $("attachBtn").onclick =
-    () => fileInput.click();
-
-  $("cameraBtn").onclick =
-    () => cameraInput.click();
-
-  $("imageBtn").onclick =
-    generateImage;
-
-  $("pdfBtn").onclick =
-    generatePDF;
-
-  $("searchBtn").onclick =
-    toggleSearch;
-
-  $("searchToggle").onclick =
-    toggleSearch;
-
-  $("runSearchBtn").onclick =
-    runSearch;
-
-  $("settingsBtn").onclick =
-    () => settingsModal.classList.remove("hidden");
-
-  $("closeSettings").onclick =
-    () => settingsModal.classList.add("hidden");
-
-  $("profileBtn").onclick =
-    () => settingsModal.classList.remove("hidden");
-
-  fileInput.onchange =
-    handleFiles;
-
-  cameraInput.onchange =
-    handleFiles;
-
-  sendBtn.onclick =
-    sendMessage;
-
-  messageInput.addEventListener(
-    "input",
-    autoResize
-  );
-
-  messageInput.addEventListener(
-    "keydown",
-    e => {
-
-      if (
-        e.key === "Enter" &&
-        !e.shiftKey
-      ) {
-
-        e.preventDefault();
-
-        sendMessage();
-      }
-
+    if (dom.menuButton) {
+      dom.menuButton.addEventListener("click", toggleSidebar);
     }
-  );
 
+    if (dom.sidebarOverlay) {
+      dom.sidebarOverlay.addEventListener(
+        "click",
+        closeSidebar
+      );
+    }
 
-  document
-    .querySelectorAll(
-      ".suggestions button"
-    )
-    .forEach(button => {
+    if (dom.newChat) {
+      dom.newChat.addEventListener("click", newChat);
+    }
 
-      button.onclick = () => {
+    if (dom.input) {
 
-        messageInput.value =
-          button.dataset.prompt;
+      dom.input.addEventListener(
+        "input",
+        autoResize
+      );
 
-        autoResize();
+      dom.input.addEventListener(
+        "keydown",
+        event => {
 
-        sendMessage();
+          if (
+            event.key === "Enter" &&
+            !event.shiftKey
+          ) {
+            event.preventDefault();
+            sendMessage();
+          }
+        }
+      );
+    }
 
-      };
+    if (dom.sendButton) {
+      dom.sendButton.addEventListener(
+        "click",
+        sendMessage
+      );
+    }
 
-    });
+    if (dom.attachButton) {
+      dom.attachButton.addEventListener(
+        "click",
+        () => openFilePicker(false)
+      );
+    }
 
-}
+    if (dom.cameraButton) {
+      dom.cameraButton.addEventListener(
+        "click",
+        openCamera
+      );
+    }
 
+    if (dom.imageButton) {
+      dom.imageButton.addEventListener(
+        "click",
+        generateImageFromComposer
+      );
+    }
 
-/* ===================================================== */
-/* SIDEBAR */
-/* ===================================================== */
+    if (dom.pdfButton) {
+      dom.pdfButton.addEventListener(
+        "click",
+        () => openFilePicker(true)
+      );
+    }
 
-function openSidebar() {
+    if (dom.searchButton) {
+      dom.searchButton.addEventListener(
+        "click",
+        toggleSearchMode
+      );
+    }
 
-  $("sidebar")
-    .classList
-    .remove("closed");
+    if (dom.fileInput) {
+      dom.fileInput.addEventListener(
+        "change",
+        handleFiles
+      );
+    }
 
-}
+    if (dom.cameraInput) {
+      dom.cameraInput.addEventListener(
+        "change",
+        handleFiles
+      );
+    }
 
-function closeSidebar() {
+    if (dom.settingsButton) {
+      dom.settingsButton.addEventListener(
+        "click",
+        openSettings
+      );
+    }
 
-  $("sidebar")
-    .classList
-    .add("closed");
+    if (dom.apiButton) {
+      dom.apiButton.addEventListener(
+        "click",
+        openApiSettings
+      );
+    }
 
-}
+    if (dom.loginButton) {
+      dom.loginButton.addEventListener(
+        "click",
+        openLogin
+      );
+    }
 
+    document.addEventListener(
+      "click",
+      handleDocumentClick
+    );
+  }
 
-/* ===================================================== */
-/* NEW CHAT */
-/* ===================================================== */
+  /* =======================================================
+     SIDEBAR
+     ======================================================= */
 
-function newChat() {
+  function toggleSidebar() {
 
-  conversationId =
-    crypto.randomUUID();
+    if (!dom.sidebar) return;
 
-  localStorage.setItem(
-    "logic_leaf_conversation",
-    conversationId
-  );
+    const collapsed =
+      dom.sidebar.classList.contains("collapsed");
 
-  chat.innerHTML = `
-    <div id="welcome" class="welcome">
+    if (collapsed) {
+      dom.sidebar.classList.remove("collapsed");
 
-      <div class="welcome-logo">
-        LL
-      </div>
+      if (dom.sidebarOverlay) {
+        dom.sidebarOverlay.classList.add("show");
+      }
+    } else {
+      closeSidebar();
+    }
+  }
 
-      <h1>How can I help you?</h1>
+  function closeSidebar() {
 
-      <p>
-        Ask questions, solve problems, write code,
-        analyze files, search knowledge, create images
-        and generate documents.
-      </p>
+    if (!dom.sidebar) return;
 
-      <div class="suggestions">
+    if (window.innerWidth <= 760) {
+      dom.sidebar.classList.add("collapsed");
 
-        <button data-prompt="Explain quantum computing simply">
-          <span>Explain</span>
-          Quantum computing
-        </button>
+      if (dom.sidebarOverlay) {
+        dom.sidebarOverlay.classList.remove("show");
+      }
+    } else {
+      dom.sidebar.classList.add("collapsed");
+    }
+  }
 
-        <button data-prompt="Help me build a website">
-          <span>Build</span>
-          A website
-        </button>
+  /* =======================================================
+     CHAT MANAGEMENT
+     ======================================================= */
 
-        <button data-prompt="Create a study plan for JEE">
-          <span>Study</span>
-          Create a study plan
-        </button>
+  function ensureChat() {
 
-        <button data-prompt="Write a Python program to sort a list">
-          <span>Code</span>
-          Python program
-        </button>
+    if (!state.currentChatId) {
 
-      </div>
+      const chat = createChatObject();
 
-    </div>
-  `;
+      state.chats.unshift(chat);
+      state.currentChatId = chat.id;
 
-  document
-    .querySelectorAll(
-      ".suggestions button"
-    )
-    .forEach(button => {
+      saveChats();
+    }
 
-      button.onclick = () => {
+    const existing =
+      state.chats.find(
+        chat => chat.id === state.currentChatId
+      );
 
-        messageInput.value =
-          button.dataset.prompt;
+    if (existing) {
+      state.messages = existing.messages || [];
+    }
+  }
 
-        autoResize();
+  function createChatObject() {
 
-        sendMessage();
+    return {
+      id:
+        Date.now().toString(36) +
+        Math.random().toString(36).slice(2),
 
-      };
+      title: "New chat",
 
-    });
+      createdAt: Date.now(),
 
-  attachments = [];
+      updatedAt: Date.now(),
 
-  renderAttachments();
+      messages: []
+    };
+  }
 
-  loadHistory();
+  function newChat() {
 
-  if (
-    window.innerWidth <= 760
-  ) {
+    const chat = createChatObject();
+
+    state.chats.unshift(chat);
+
+    state.currentChatId = chat.id;
+
+    state.messages = [];
+
+    state.attachments = [];
+
+    localStorage.setItem(
+      STORAGE.current,
+      chat.id
+    );
+
+    saveChats();
+
+    renderSidebar();
+    renderMessages();
+
+    if (dom.input) {
+      dom.input.value = "";
+      autoResize();
+      dom.input.focus();
+    }
+
+    renderAttachments();
+
     closeSidebar();
   }
 
-}
+  function currentChat() {
 
+    return state.chats.find(
+      chat => chat.id === state.currentChatId
+    );
+  }
 
-/* ===================================================== */
-/* API CHECK */
-/* ===================================================== */
+  function saveCurrentChat() {
 
-async function checkAPI() {
+    const chat = currentChat();
 
-  const status =
-    $("apiStatus");
+    if (!chat) return;
 
-  try {
+    chat.messages = state.messages;
 
-    const response =
-      await fetch(
-        API_URL + "/",
-        {
-          method: "GET"
-        }
-      );
-
-    const data =
-      await response.json();
+    chat.updatedAt = Date.now();
 
     if (
-      response.ok &&
-      data.ok
+      state.messages.length > 0 &&
+      chat.title === "New chat"
     ) {
 
-      status.textContent =
-        "Online";
+      const firstUser =
+        state.messages.find(
+          message => message.role === "user"
+        );
 
-      status.style.color =
-        "#9ee7b0";
+      if (firstUser) {
+
+        chat.title =
+          firstUser.content
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 42) ||
+          "New chat";
+      }
+    }
+
+    saveChats();
+  }
+
+  function saveChats() {
+
+    localStorage.setItem(
+      STORAGE.chats,
+      JSON.stringify(state.chats)
+    );
+
+    localStorage.setItem(
+      STORAGE.current,
+      state.currentChatId || ""
+    );
+  }
+
+  function loadChat(id) {
+
+    const chat =
+      state.chats.find(
+        item => item.id === id
+      );
+
+    if (!chat) return;
+
+    state.currentChatId = id;
+    state.messages = chat.messages || [];
+
+    localStorage.setItem(
+      STORAGE.current,
+      id
+    );
+
+    renderSidebar();
+    renderMessages();
+
+    closeSidebar();
+  }
+
+  /* =======================================================
+     SIDEBAR RENDER
+     ======================================================= */
+
+  function renderSidebar() {
+
+    if (!dom.chatList) return;
+
+    dom.chatList.innerHTML = "";
+
+    const chats =
+      [...state.chats]
+        .sort(
+          (a, b) =>
+            b.updatedAt - a.updatedAt
+        );
+
+    if (!chats.length) {
+
+      dom.chatList.innerHTML = `
+        <div class="empty-chats">
+          Your conversations will appear here.
+        </div>
+      `;
+
+      return;
+    }
+
+    chats.forEach(chat => {
+
+      const item =
+        document.createElement("button");
+
+      item.className =
+        "chat-item" +
+        (
+          chat.id === state.currentChatId
+            ? " active"
+            : ""
+        );
+
+      item.textContent =
+        chat.title || "New chat";
+
+      item.title =
+        chat.title || "New chat";
+
+      item.addEventListener(
+        "click",
+        () => loadChat(chat.id)
+      );
+
+      dom.chatList.appendChild(item);
+    });
+  }
+
+  /* =======================================================
+     MESSAGE RENDERING
+     ======================================================= */
+
+  function renderMessages() {
+
+    if (!dom.messages) return;
+
+    dom.messages.innerHTML = "";
+
+    if (
+      !state.messages.length &&
+      dom.welcome
+    ) {
+
+      dom.welcome.style.display = "flex";
+
+      dom.messages.appendChild(
+        dom.welcome
+      );
+
+      return;
+    }
+
+    if (dom.welcome) {
+      dom.welcome.style.display = "none";
+    }
+
+    state.messages.forEach(
+      message => renderMessage(message)
+    );
+
+    scrollToBottom();
+  }
+
+  function renderMessage(message) {
+
+    if (!dom.messages) return;
+
+    const wrapper =
+      document.createElement("div");
+
+    wrapper.className =
+      `message ${
+        message.role === "user"
+          ? "user"
+          : "ai"
+      }`;
+
+    const inner =
+      document.createElement("div");
+
+    inner.className = "message-inner";
+
+    const label =
+      document.createElement("div");
+
+    label.className = "message-label";
+
+    label.textContent =
+      message.role === "user"
+        ? "You"
+        : "LOGIC-LEAF";
+
+    const content =
+      document.createElement("div");
+
+    content.className =
+      "message-content";
+
+    if (message.type === "image") {
+
+      content.innerHTML =
+        renderImageMessage(message);
 
     } else {
 
-      status.textContent =
-        "Unavailable";
-
+      content.innerHTML =
+        renderMarkdown(
+          message.content || ""
+        );
     }
 
-  } catch (error) {
+    inner.appendChild(label);
+    inner.appendChild(content);
 
-    status.textContent =
-      "Connection failed";
+    if (message.role !== "user") {
 
-  }
+      const actions =
+        document.createElement("div");
 
-}
+      actions.className =
+        "message-actions";
 
+      actions.innerHTML = `
+        <button
+          class="message-action"
+          title="Copy"
+          data-copy-message
+        >
+          ${iconCopy()}
+        </button>
 
-/* ===================================================== */
-/* LOAD HISTORY */
-/* ===================================================== */
+        <button
+          class="message-action"
+          title="Regenerate"
+          data-regenerate-message
+        >
+          ${iconRefresh()}
+        </button>
+      `;
 
-async function loadHistory() {
-
-  try {
-
-    const response =
-      await fetch(
-        API_URL + "/v1/history",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            userId
-          })
-        }
-      );
-
-    const data =
-      await response.json();
-
-    if (
-      !data.ok
-    ) {
-      return;
-    }
-
-    historyList.innerHTML = "";
-
-    const chats =
-      data.chats || [];
-
-    if (
-      chats.length === 0
-    ) {
-
-      historyList.innerHTML =
-        `<div class="history-empty">
-          No conversations yet
-        </div>`;
-
-      return;
-    }
-
-    chats.forEach(item => {
-
-      const button =
-        document.createElement("button");
-
-      button.className =
-        "history-item";
-
-      if (
-        item.conversation_id ===
-        conversationId
-      ) {
-        button.classList.add("active");
-      }
-
-      button.textContent =
-        item.title ||
-        "New conversation";
-
-      button.onclick =
-        () => openConversation(
-          item.conversation_id
+      actions
+        .querySelector("[data-copy-message]")
+        ?.addEventListener(
+          "click",
+          () => copyText(
+            message.content || ""
+          )
         );
 
-      historyList.appendChild(
-        button
-      );
+      actions
+        .querySelector("[data-regenerate-message]")
+        ?.addEventListener(
+          "click",
+          () => regenerate(message)
+        );
 
-    });
+      inner.appendChild(actions);
+    }
 
-  } catch (error) {
+    wrapper.appendChild(inner);
 
-    console.warn(
-      "History error:",
-      error
+    dom.messages.appendChild(wrapper);
+  }
+
+  /* =======================================================
+     MARKDOWN
+     ======================================================= */
+
+  function renderMarkdown(text) {
+
+    let safe = escapeHTML(
+      String(text)
     );
 
+    const blocks = [];
+
+    safe = safe.replace(
+      /```([\w+-]*)\n?([\s\S]*?)```/g,
+      (_, lang, code) => {
+
+        const index = blocks.length;
+
+        blocks.push(`
+          <div class="code-block">
+            <div class="code-header">
+              <span>${escapeHTML(
+                lang || "code"
+              )}</span>
+
+              <button
+                class="code-copy"
+                data-code-index="${index}"
+              >
+                Copy
+              </button>
+            </div>
+
+            <pre><code>${code}</code></pre>
+          </div>
+        `);
+
+        return `@@CODE_${index}@@`;
+      }
+    );
+
+    safe = safe
+      .replace(
+        /^### (.*)$/gm,
+        "<h3>$1</h3>"
+      )
+      .replace(
+        /^## (.*)$/gm,
+        "<h2>$1</h2>"
+      )
+      .replace(
+        /^# (.*)$/gm,
+        "<h1>$1</h1>"
+      )
+      .replace(
+        /\*\*(.*?)\*\*/g,
+        "<strong>$1</strong>"
+      )
+      .replace(
+        /`([^`]+)`/g,
+        "<code>$1</code>"
+      )
+      .replace(
+        /^\s*[-*]\s+(.*)$/gm,
+        "<li>$1</li>"
+      )
+      .replace(
+        /(<li>.*<\/li>)/gs,
+        "<ul>$1</ul>"
+      )
+      .replace(
+        /\n{2,}/g,
+        "</p><p>"
+      )
+      .replace(
+        /\n/g,
+        "<br>"
+      );
+
+    safe =
+      "<p>" +
+      safe +
+      "</p>";
+
+    blocks.forEach(
+      (block, index) => {
+
+        safe = safe.replace(
+          `<p>@@CODE_${index}@@</p>`,
+          block
+        );
+
+        safe = safe.replace(
+          `@@CODE_${index}@@`,
+          block
+        );
+      }
+    );
+
+    return safe;
   }
 
-}
+  function renderImageMessage(message) {
 
+    if (!message.url) {
 
-/* ===================================================== */
-/* OPEN CONVERSATION */
-/* ===================================================== */
+      return `
+        <div class="error-message">
+          Image was returned without a usable image URL.
+        </div>
+      `;
+    }
 
-async function openConversation(id) {
+    return `
+      <div class="generated-image">
+        <img
+          src="${escapeAttribute(message.url)}"
+          alt="Generated image"
+          loading="lazy"
+        />
 
-  conversationId = id;
+        <div class="image-actions">
+          <button
+            class="secondary-button"
+            onclick="window.open('${escapeAttribute(
+              message.url
+            )}', '_blank')"
+          >
+            Open image
+          </button>
+        </div>
+      </div>
+    `;
+  }
 
-  localStorage.setItem(
-    "logic_leaf_conversation",
-    id
-  );
+  /* =======================================================
+     SEND MESSAGE
+     ======================================================= */
 
-  await loadConversation();
+  async function sendMessage() {
 
-  await loadHistory();
+    if (state.busy) return;
 
-  if (
-    window.innerWidth <= 760
+    const text =
+      dom.input?.value.trim() || "";
+
+    if (
+      !text &&
+      !state.attachments.length
+    ) {
+      return;
+    }
+
+    state.busy = true;
+
+    updateSendState();
+
+    const attachments =
+      [...state.attachments];
+
+    if (dom.input) {
+      dom.input.value = "";
+      autoResize();
+    }
+
+    renderAttachments();
+
+    const userMessage = {
+      role: "user",
+      content: text || "Analyze the attached file.",
+      attachments: attachments.map(
+        item => ({
+          name: item.name,
+          type: item.type
+        })
+      )
+    };
+
+    state.messages.push(
+      userMessage
+    );
+
+    saveCurrentChat();
+    renderMessages();
+
+    const loadingId =
+      addLoadingMessage();
+
+    try {
+
+      let response;
+
+      const imageAttachment =
+        attachments.find(
+          item =>
+            item.type.startsWith("image/")
+        );
+
+      const pdfAttachment =
+        attachments.find(
+          item =>
+            item.type === "application/pdf"
+        );
+
+      if (imageAttachment) {
+
+        response =
+          await visionRequest(
+            text,
+            imageAttachment
+          );
+
+      } else if (pdfAttachment) {
+
+        response =
+          await fileRequest(
+            text,
+            pdfAttachment
+          );
+
+      } else if (state.searchMode) {
+
+        response =
+          await searchRequest(
+            text
+          );
+
+      } else {
+
+        response =
+          await chatRequest(
+            text
+          );
+      }
+
+      removeLoadingMessage(
+        loadingId
+      );
+
+      const assistantMessage = {
+        role: "assistant",
+        content:
+          extractText(response)
+      };
+
+      state.messages.push(
+        assistantMessage
+      );
+
+      saveCurrentChat();
+
+      renderMessages();
+
+    } catch (error) {
+
+      console.error(error);
+
+      removeLoadingMessage(
+        loadingId
+      );
+
+      state.messages.push({
+        role: "assistant",
+        content:
+          `I couldn't complete that request.\n\n${error.message || "Unknown server error."}`
+      });
+
+      saveCurrentChat();
+      renderMessages();
+
+      showToast(
+        error.message ||
+        "Request failed"
+      );
+
+    } finally {
+
+      state.attachments = [];
+
+      renderAttachments();
+
+      state.busy = false;
+
+      updateSendState();
+    }
+  }
+
+  /* =======================================================
+     CHAT REQUEST
+     ======================================================= */
+
+  async function chatRequest(text) {
+
+    const history =
+      state.messages
+        .filter(
+          message =>
+            message.role === "user" ||
+            message.role === "assistant"
+        )
+        .slice(-30)
+        .map(
+          message => ({
+            role: message.role,
+            content: message.content
+          })
+        );
+
+    const payload = {
+      message: text,
+
+      prompt: text,
+
+      messages: history,
+
+      conversation_id:
+        state.currentChatId,
+
+      history,
+
+      stream: false
+    };
+
+    return request(
+      "/v1/chat",
+      payload
+    );
+  }
+
+  /* =======================================================
+     VISION
+     ======================================================= */
+
+  async function visionRequest(
+    text,
+    file
   ) {
-    closeSidebar();
+
+    const base64 =
+      await fileToBase64(file);
+
+    return request(
+      "/v1/vision",
+      {
+        message:
+          text ||
+          "Analyze this image carefully.",
+
+        prompt:
+          text ||
+          "Analyze this image carefully.",
+
+        image: base64,
+
+        image_base64: base64,
+
+        mime_type: file.type,
+
+        conversation_id:
+          state.currentChatId,
+
+        history:
+          state.messages.slice(-20)
+      }
+    );
   }
 
-}
+  /* =======================================================
+     FILE / PDF
+     ======================================================= */
 
+  async function fileRequest(
+    text,
+    file
+  ) {
 
-/* ===================================================== */
-/* LOAD CONVERSATION */
-/* ===================================================== */
+    const base64 =
+      await fileToBase64(file);
 
-async function loadConversation() {
+    return request(
+      "/v1/file",
+      {
+        message:
+          text ||
+          "Analyze this file.",
 
-  try {
+        prompt:
+          text ||
+          "Analyze this file.",
+
+        file: base64,
+
+        file_base64: base64,
+
+        filename: file.name,
+
+        mime_type: file.type,
+
+        conversation_id:
+          state.currentChatId
+      }
+    );
+  }
+
+  /* =======================================================
+     SEARCH
+     ======================================================= */
+
+  async function searchRequest(text) {
+
+    return request(
+      "/v1/search",
+      {
+        query: text,
+
+        q: text,
+
+        conversation_id:
+          state.currentChatId
+      }
+    );
+  }
+
+  /* =======================================================
+     IMAGE GENERATION
+     ======================================================= */
+
+  async function generateImageFromComposer() {
+
+    if (state.busy) return;
+
+    const prompt =
+      dom.input?.value.trim() || "";
+
+    if (!prompt) {
+
+      showToast(
+        "Describe the image you want to create."
+      );
+
+      dom.input?.focus();
+
+      return;
+    }
+
+    state.busy = true;
+
+    updateSendState();
+
+    if (dom.input) {
+      dom.input.value = "";
+      autoResize();
+    }
+
+    state.messages.push({
+      role: "user",
+      content:
+        `Create an image: ${prompt}`
+    });
+
+    saveCurrentChat();
+    renderMessages();
+
+    const loadingId =
+      addLoadingMessage();
+
+    try {
+
+      const response =
+        await request(
+          "/v1/image",
+          {
+            prompt,
+
+            conversation_id:
+              state.currentChatId
+          }
+        );
+
+      removeLoadingMessage(
+        loadingId
+      );
+
+      const imageURL =
+        extractImageURL(response);
+
+      if (!imageURL) {
+        throw new Error(
+          "The image endpoint did not return an image."
+        );
+      }
+
+      state.messages.push({
+        role: "assistant",
+        type: "image",
+        content:
+          "Generated image",
+        url: imageURL
+      });
+
+      saveCurrentChat();
+      renderMessages();
+
+    } catch (error) {
+
+      removeLoadingMessage(
+        loadingId
+      );
+
+      state.messages.push({
+        role: "assistant",
+        content:
+          `Image generation failed.\n\n${error.message}`
+      });
+
+      saveCurrentChat();
+      renderMessages();
+
+      showToast(
+        error.message ||
+        "Image generation failed"
+      );
+
+    } finally {
+
+      state.busy = false;
+
+      updateSendState();
+    }
+  }
+
+  /* =======================================================
+     GENERIC REQUEST
+     ======================================================= */
+
+  async function request(
+    endpoint,
+    body
+  ) {
+
+    const headers = {
+      "Content-Type":
+        "application/json"
+    };
+
+    const apiKey =
+      localStorage.getItem(
+        STORAGE.apiKey
+      );
+
+    if (apiKey) {
+      headers.Authorization =
+        `Bearer ${apiKey}`;
+    }
 
     const response =
       await fetch(
-        API_URL + "/v1/conversation",
+        API_URL + endpoint,
         {
           method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            conversationId
-          })
+          headers,
+          body: JSON.stringify(body)
         }
       );
 
-    const data =
-      await response.json();
+    const raw =
+      await response.text();
 
-    if (
-      !data.ok ||
-      !Array.isArray(data.messages)
-    ) {
-      return;
+    let data;
+
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      data = {
+        text: raw
+      };
+    }
+
+    if (!response.ok) {
+
+      const message =
+        data?.error ||
+        data?.message ||
+        data?.details ||
+        raw ||
+        `HTTP ${response.status}`;
+
+      throw new Error(
+        String(message)
+      );
+    }
+
+    return data;
+  }
+
+  /* =======================================================
+     RESPONSE EXTRACTION
+     ======================================================= */
+
+  function extractText(data) {
+
+    if (!data) {
+      return "No response received.";
+    }
+
+    if (typeof data === "string") {
+      return data;
+    }
+
+    const candidates = [
+      data.response,
+      data.answer,
+      data.text,
+      data.content,
+      data.message,
+      data.result?.response,
+      data.result?.answer,
+      data.result?.text,
+      data.result?.content,
+      data.output_text
+    ];
+
+    for (const value of candidates) {
+
+      if (
+        typeof value === "string" &&
+        value.trim()
+      ) {
+        return value;
+      }
     }
 
     if (
-      data.messages.length === 0
+      Array.isArray(data.response)
     ) {
+      return data.response
+        .map(item =>
+          typeof item === "string"
+            ? item
+            : item?.text || ""
+        )
+        .join("\n");
+    }
+
+    return JSON.stringify(
+      data,
+      null,
+      2
+    );
+  }
+
+  function extractImageURL(data) {
+
+    if (!data) return null;
+
+    const candidates = [
+      data.url,
+      data.image_url,
+      data.image,
+      data.imageUrl,
+      data.result?.url,
+      data.result?.image_url,
+      data.result?.image,
+      data.result?.imageUrl
+    ];
+
+    for (const value of candidates) {
+
+      if (
+        typeof value === "string" &&
+        (
+          value.startsWith("http") ||
+          value.startsWith("data:image/")
+        )
+      ) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  /* =======================================================
+     FILE PICKERS
+     ======================================================= */
+
+  function openFilePicker(pdfOnly) {
+
+    if (!dom.fileInput) {
+      showToast(
+        "File input is missing from HTML."
+      );
       return;
     }
 
-    chat.innerHTML = "";
+    dom.fileInput.accept =
+      pdfOnly
+        ? ".pdf,application/pdf"
+        : "image/*,.pdf,.txt,.csv,.json,.doc,.docx";
 
-    data.messages.forEach(
-      message => {
+    dom.fileInput.multiple = true;
+
+    dom.fileInput.click();
+  }
+
+  function openCamera() {
+
+    if (!dom.cameraInput) {
+
+      if (dom.fileInput) {
+
+        dom.fileInput.accept =
+          "image/*";
+
+        dom.fileInput.capture =
+          "environment";
+
+        dom.fileInput.click();
+
+        return;
+      }
+
+      showToast(
+        "Camera input is missing from HTML."
+      );
+
+      return;
+    }
+
+    dom.cameraInput.accept =
+      "image/*";
+
+    dom.cameraInput.capture =
+      "environment";
+
+    dom.cameraInput.click();
+  }
+
+  async function handleFiles(event) {
+
+    const files =
+      [...(event.target.files || [])];
+
+    if (!files.length) return;
+
+    for (const file of files) {
+
+      if (
+        state.attachments.length >= 5
+      ) {
+        showToast(
+          "Maximum 5 attachments."
+        );
+        break;
+      }
+
+      if (
+        file.size >
+        15 * 1024 * 1024
+      ) {
+        showToast(
+          `${file.name} is larger than 15 MB.`
+        );
+        continue;
+      }
+
+      state.attachments.push(
+        file
+      );
+    }
+
+    event.target.value = "";
+
+    renderAttachments();
+  }
+
+  function renderAttachments() {
+
+    if (!dom.attachments) return;
+
+    dom.attachments.innerHTML = "";
+
+    state.attachments.forEach(
+      (file, index) => {
+
+        const item =
+          document.createElement("div");
+
+        item.className =
+          "attachment";
 
         if (
-          message.role === "user"
+          file.type.startsWith("image/")
         ) {
 
-          addUserMessage(
-            message.content
-          );
+          const img =
+            document.createElement("img");
+
+          img.src =
+            URL.createObjectURL(file);
+
+          img.alt =
+            file.name;
+
+          item.appendChild(img);
 
         } else {
 
-          addAIMessage(
-            message.content
-          );
+          item.innerHTML = `
+            <div class="attachment-file">
+              <strong>${escapeHTML(
+                file.type ===
+                "application/pdf"
+                  ? "PDF"
+                  : "FILE"
+              )}</strong>
 
+              <span>${escapeHTML(
+                file.name
+              )}</span>
+            </div>
+          `;
         }
 
+        const remove =
+          document.createElement("button");
+
+        remove.className =
+          "remove-attachment";
+
+        remove.innerHTML =
+          iconClose();
+
+        remove.addEventListener(
+          "click",
+          () => {
+
+            state.attachments.splice(
+              index,
+              1
+            );
+
+            renderAttachments();
+          }
+        );
+
+        item.appendChild(remove);
+
+        dom.attachments.appendChild(
+          item
+        );
       }
+    );
+  }
+
+  /* =======================================================
+     SEARCH MODE
+     ======================================================= */
+
+  function toggleSearchMode() {
+
+    state.searchMode =
+      !state.searchMode;
+
+    if (dom.searchButton) {
+
+      dom.searchButton.classList.toggle(
+        "active",
+        state.searchMode
+      );
+    }
+
+    showToast(
+      state.searchMode
+        ? "Search mode enabled"
+        : "Search mode disabled"
+    );
+  }
+
+  /* =======================================================
+     LOADING
+     ======================================================= */
+
+  function addLoadingMessage() {
+
+    const id =
+      "loading-" +
+      Date.now();
+
+    if (!dom.messages) return id;
+
+    const wrapper =
+      document.createElement("div");
+
+    wrapper.className =
+      "message ai";
+
+    wrapper.id = id;
+
+    wrapper.innerHTML = `
+      <div class="message-inner">
+        <div class="message-label">
+          LOGIC-LEAF
+        </div>
+
+        <div class="message-content">
+          <div class="typing">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    dom.messages.appendChild(
+      wrapper
     );
 
     scrollToBottom();
 
-  } catch (error) {
-
-    console.warn(
-      "Conversation load error:",
-      error
-    );
-
+    return id;
   }
 
-}
+  function removeLoadingMessage(id) {
 
-
-/* ===================================================== */
-/* SEND MESSAGE */
-/* ===================================================== */
-
-async function sendMessage() {
-
-  if (isGenerating) {
-    return;
+    document
+      .getElementById(id)
+      ?.remove();
   }
 
-  const text =
-    messageInput.value.trim();
+  /* =======================================================
+     REGENERATE
+     ======================================================= */
 
-  if (
-    !text &&
-    attachments.length === 0
-  ) {
-    return;
-  }
+  async function regenerate(message) {
 
-  isGenerating = true;
+    const index =
+      state.messages.indexOf(message);
 
-  sendBtn.disabled = true;
+    if (index === -1) return;
 
-  const files =
-    [...attachments];
-
-  attachments = [];
-
-  renderAttachments();
-
-  const visibleText =
-    text ||
-    "Please analyze the attached file.";
-
-  hideWelcome();
-
-  addUserMessage(
-    visibleText,
-    files
-  );
-
-  messageInput.value = "";
-
-  autoResize();
-
-  const typing =
-    addTyping();
-
-  try {
-
-    let answer;
-
-    /*
-    ================================================
-    FILE / VISION
-    ================================================
-    */
-
-    if (
-      files.length > 0
-    ) {
-
-      const first =
-        files[0];
-
-      if (
-        first.type.startsWith(
-          "image/"
-        )
-      ) {
-
-        answer =
-          await visionRequest(
-            first,
-            text
-          );
-
-      } else {
-
-        answer =
-          await fileRequest(
-            first,
-            text
-          );
-
-      }
-
-    } else {
-
-      answer =
-        await chatRequest(
-          text,
-          false
+    const previousUser =
+      state.messages
+        .slice(0, index)
+        .reverse()
+        .find(
+          item =>
+            item.role === "user"
         );
 
+    if (!previousUser) return;
+
+    state.messages.splice(
+      index,
+      1
+    );
+
+    saveCurrentChat();
+    renderMessages();
+
+    if (dom.input) {
+      dom.input.value =
+        previousUser.content;
     }
 
-    typing.remove();
-
-    addAIMessage(
-      answer
-    );
-
-    await loadHistory();
-
-  } catch (error) {
-
-    console.error(error);
-
-    typing.remove();
-
-    addAIMessage(
-      "I couldn't complete that request. Please check the Worker endpoint and try again.",
-      true
-    );
-
+    await sendMessage();
   }
 
-  isGenerating = false;
+  /* =======================================================
+     SETTINGS
+     ======================================================= */
 
-  sendBtn.disabled = false;
+  function openSettings() {
 
-}
+    const api =
+      API_URL;
 
+    showModal(
+      `
+      <div class="modal-header">
+        <div class="modal-title">
+          Settings
+        </div>
 
-/* ===================================================== */
-/* CHAT REQUEST */
-/* ===================================================== */
+        <button
+          class="modal-close"
+          data-close-modal
+        >
+          ${iconClose()}
+        </button>
+      </div>
 
-async function chatRequest(
-  message,
-  search = false
-) {
+      <div class="settings-row">
+        <div class="settings-info">
+          <strong>LOGIC-LEAF</strong>
+          <span>AI assistant</span>
+        </div>
+      </div>
 
-  const response =
-    await fetch(
-      API_URL + "/v1/chat",
-      {
-        method: "POST",
+      <div class="settings-row">
+        <div class="settings-info">
+          <strong>Worker status</strong>
+          <span>${escapeHTML(api)}</span>
+        </div>
+      </div>
 
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
+      <div class="settings-row">
+        <div class="settings-info">
+          <strong>Conversation history</strong>
+          <span>Stored locally in this browser</span>
+        </div>
+      </div>
 
-        body: JSON.stringify({
-
-          message,
-
-          userId,
-
-          conversationId,
-
-          search: search
-
-        })
-      }
+      <div style="margin-top:18px">
+        <button
+          class="secondary-button"
+          id="clearHistoryButton"
+        >
+          Clear local history
+        </button>
+      </div>
+      `
     );
 
-  const data =
-    await response.json();
-
-  if (
-    !response.ok ||
-    !data.ok
-  ) {
-
-    throw new Error(
-      data.error ||
-      "Chat request failed"
-    );
-
-  }
-
-  if (
-    data.conversationId
-  ) {
-
-    conversationId =
-      data.conversationId;
-
-    localStorage.setItem(
-      "logic_leaf_conversation",
-      conversationId
-    );
-
-  }
-
-  return (
-    data.answer ||
-    "I couldn't generate a response."
-  );
-
-}
-
-
-/* ===================================================== */
-/* VISION REQUEST */
-/* ===================================================== */
-
-async function visionRequest(
-  file,
-  question
-) {
-
-  const base64 =
-    await fileToBase64(file);
-
-  const response =
-    await fetch(
-      API_URL + "/v1/vision",
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-
-          message:
-            question ||
-            "Analyze this image.",
-
-          userId,
-
-          conversationId,
-
-          fileName:
-            file.name,
-
-          mimeType:
-            file.type,
-
-          image:
-            base64
-
-        })
-      }
-    );
-
-  const data =
-    await response.json();
-
-  if (
-    !response.ok ||
-    !data.ok
-  ) {
-
-    throw new Error(
-      data.error ||
-      "Vision request failed"
-    );
-
-  }
-
-  return (
-    data.answer ||
-    data.response ||
-    "Image analysis completed."
-  );
-
-}
-
-
-/* ===================================================== */
-/* FILE REQUEST */
-/* ===================================================== */
-
-async function fileRequest(
-  file,
-  question
-) {
-
-  const base64 =
-    await fileToBase64(file);
-
-  const response =
-    await fetch(
-      API_URL + "/v1/file",
-      {
-        method: "POST",
-
-        headers: {
-          "Content-Type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-
-          message:
-            question ||
-            "Analyze this file.",
-
-          userId,
-
-          conversationId,
-
-          fileName:
-            file.name,
-
-          mimeType:
-            file.type ||
-            "application/octet-stream",
-
-          file:
-            base64
-
-        })
-      }
-    );
-
-  const data =
-    await response.json();
-
-  if (
-    !response.ok ||
-    !data.ok
-  ) {
-
-    throw new Error(
-      data.error ||
-      "File request failed"
-    );
-
-  }
-
-  return (
-    data.answer ||
-    data.response ||
-    "File analysis completed."
-  );
-
-}
-
-
-/* ===================================================== */
-/* FILE TO BASE64 */
-/* ===================================================== */
-
-function fileToBase64(file) {
-
-  return new Promise(
-    (resolve, reject) => {
-
-      const reader =
-        new FileReader();
-
-      reader.onload = () => {
-
-        const result =
-          String(reader.result);
-
-        const comma =
-          result.indexOf(",");
-
-        resolve(
-          comma >= 0
-            ? result.slice(
-                comma + 1
-              )
-            : result
-        );
-
-      };
-
-      reader.onerror =
-        reject;
-
-      reader.readAsDataURL(file);
-
-    }
-  );
-
-}
-
-
-/* ===================================================== */
-/* IMAGE GENERATION */
-/* ===================================================== */
-
-async function generateImage() {
-
-  if (isGenerating) {
-    return;
-  }
-
-  const prompt =
-    messageInput.value.trim();
-
-  if (!prompt) {
-
-    messageInput.focus();
-
-    messageInput.placeholder =
-      "Describe the image you want...";
-
-    return;
-
-  }
-
-  isGenerating = true;
-
-  sendBtn.disabled = true;
-
-  hideWelcome();
-
-  addUserMessage(
-    "Create an image: " +
-    prompt
-  );
-
-  messageInput.value = "";
-
-  autoResize();
-
-  const typing =
-    addTyping();
-
-  try {
-
-    const response =
-      await fetch(
-        API_URL + "/v1/image",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-            prompt
-          })
+    $("#clearHistoryButton")
+      ?.addEventListener(
+        "click",
+        () => {
+
+          if (
+            !confirm(
+              "Delete all local conversations?"
+            )
+          ) {
+            return;
+          }
+
+          state.chats = [];
+
+          localStorage.removeItem(
+            STORAGE.chats
+          );
+
+          newChat();
+
+          closeModal();
+
+          showToast(
+            "History cleared"
+          );
         }
       );
+  }
 
-    const contentType =
-      response.headers.get(
-        "content-type"
+  /* =======================================================
+     API KEY
+     ======================================================= */
+
+  function openApiSettings() {
+
+    const current =
+      localStorage.getItem(
+        STORAGE.apiKey
       ) || "";
 
-    if (
-      contentType.includes(
-        "application/json"
-      )
-    ) {
-
-      const data =
-        await response.json();
-
-      if (
-        !response.ok ||
-        data.ok === false
-      ) {
-
-        throw new Error(
-          data.error ||
-          "Image generation failed"
-        );
-
-      }
-
-      const imageSource =
-        extractImageSource(
-          data
-        );
-
-      typing.remove();
-
-      if (
-        imageSource
-      ) {
-
-        addGeneratedImage(
-          imageSource
-        );
-
-      } else {
-
-        addAIMessage(
-          data.answer ||
-          "The image endpoint returned a response, but no image data was found."
-        );
-
-      }
-
-    } else {
-
-      const blob =
-        await response.blob();
-
-      if (
-        !blob.type.startsWith(
-          "image/"
-        )
-      ) {
-
-        throw new Error(
-          "Worker did not return an image."
-        );
-
-      }
-
-      const imageURL =
-        URL.createObjectURL(blob);
-
-      typing.remove();
-
-      addGeneratedImage(
-        imageURL
-      );
-
-    }
-
-  } catch (error) {
-
-    typing.remove();
-
-    addAIMessage(
-      "Image generation failed: " +
-      error.message,
-      true
-    );
-
-  }
-
-  isGenerating = false;
-
-  sendBtn.disabled = false;
-
-}
-
-
-/* ===================================================== */
-/* EXTRACT IMAGE */
-/* ===================================================== */
-
-function extractImageSource(
-  data
-) {
-
-  const possible = [
-
-    data.image,
-
-    data.image_url,
-
-    data.imageUrl,
-
-    data.url,
-
-    data.data,
-
-    data.result?.image,
-
-    data.result?.image_url,
-
-    data.result?.url
-
-  ];
-
-  for (
-    const value of possible
-  ) {
-
-    if (
-      typeof value !==
-      "string"
-    ) {
-      continue;
-    }
-
-    if (
-      value.startsWith(
-        "data:image/"
-      )
-    ) {
-      return value;
-    }
-
-    if (
-      value.startsWith(
-        "http://"
-      ) ||
-      value.startsWith(
-        "https://"
-      )
-    ) {
-      return value;
-    }
-
-    /*
-      Base64 image
-    */
-
-    if (
-      value.length > 100
-    ) {
-
-      return (
-        "data:image/png;base64," +
-        value
-      );
-
-    }
-
-  }
-
-  return null;
-
-}
-
-
-/* ===================================================== */
-/* GENERATED IMAGE UI */
-/* ===================================================== */
-
-function addGeneratedImage(
-  src
-) {
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message ai";
-
-  const label =
-    document.createElement(
-      "div"
-    );
-
-  label.className =
-    "ai-label";
-
-  label.textContent =
-    "LOGIC-LEAF";
-
-  const bubble =
-    document.createElement(
-      "div"
-    );
-
-  bubble.className =
-    "message-bubble";
-
-  const image =
-    document.createElement(
-      "img"
-    );
-
-  image.className =
-    "generated-image";
-
-  image.src =
-    src;
-
-  image.alt =
-    "Generated image";
-
-  const actions =
-    document.createElement(
-      "div"
-    );
-
-  actions.className =
-    "image-actions";
-
-  const download =
-    document.createElement(
-      "button"
-    );
-
-  download.textContent =
-    "Download";
-
-  download.onclick =
-    () => downloadImage(
-      src
-    );
-
-  actions.appendChild(
-    download
-  );
-
-  bubble.appendChild(
-    image
-  );
-
-  bubble.appendChild(
-    actions
-  );
-
-  wrapper.appendChild(
-    label
-  );
-
-  wrapper.appendChild(
-    bubble
-  );
-
-  chat.appendChild(
-    wrapper
-  );
-
-  scrollToBottom();
-
-}
-
-
-/* ===================================================== */
-/* DOWNLOAD IMAGE */
-/* ===================================================== */
-
-async function downloadImage(
-  src
-) {
-
-  try {
-
-    const response =
-      await fetch(src);
-
-    const blob =
-      await response.blob();
-
-    const url =
-      URL.createObjectURL(
-        blob
-      );
-
-    const a =
-      document.createElement(
-        "a"
-      );
-
-    a.href = url;
-
-    a.download =
-      "logic-leaf-image.png";
-
-    document.body.appendChild(a);
-
-    a.click();
-
-    a.remove();
-
-    URL.revokeObjectURL(url);
-
-  } catch {
-
-    window.open(
-      src,
-      "_blank"
-    );
-
-  }
-
-}
-
-
-/* ===================================================== */
-/* PDF / DOCUMENT */
-/* ===================================================== */
-
-async function generatePDF() {
-
-  if (isGenerating) {
-    return;
-  }
-
-  const prompt =
-    messageInput.value.trim();
-
-  if (!prompt) {
-
-    messageInput.placeholder =
-      "Describe the document you want...";
-
-    messageInput.focus();
-
-    return;
-
-  }
-
-  isGenerating = true;
-
-  sendBtn.disabled = true;
-
-  hideWelcome();
-
-  addUserMessage(
-    "Create a document: " +
-    prompt
-  );
-
-  messageInput.value = "";
-
-  autoResize();
-
-  const typing =
-    addTyping();
-
-  try {
-
-    const response =
-      await fetch(
-        API_URL + "/v1/pdf",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body: JSON.stringify({
-
-            prompt,
-
-            title:
-              "LOGIC-LEAF Document"
-
-          })
-        }
-      );
-
-    if (
-      !response.ok
-    ) {
-
-      const data =
-        await safeJSON(
-          response
-        );
-
-      throw new Error(
-        data?.error ||
-        "Document generation failed"
-      );
-
-    }
-
-    const html =
-      await response.text();
-
-    typing.remove();
-
-    addDocumentResult(
-      html
-    );
-
-  } catch (error) {
-
-    typing.remove();
-
-    addAIMessage(
-      "Document generation failed: " +
-      error.message,
-      true
-    );
-
-  }
-
-  isGenerating = false;
-
-  sendBtn.disabled = false;
-
-}
-
-
-/* ===================================================== */
-/* DOCUMENT RESULT */
-/* ===================================================== */
-
-function addDocumentResult(
-  html
-) {
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message ai";
-
-  const label =
-    document.createElement(
-      "div"
-    );
-
-  label.className =
-    "ai-label";
-
-  label.textContent =
-    "LOGIC-LEAF DOCUMENT";
-
-  const bubble =
-    document.createElement(
-      "div"
-    );
-
-  bubble.className =
-    "message-bubble";
-
-  const button =
-    document.createElement(
-      "button"
-    );
-
-  button.className =
-    "image-actions";
-
-  button.style.cssText =
-    `
-      border:1px solid rgba(255,255,255,.12);
-      background:#151a22;
-      color:#e5e9ee;
-      padding:9px 12px;
-      border-radius:9px;
-      cursor:pointer;
-      margin-bottom:10px;
-    `;
-
-  button.textContent =
-    "Open / Save as PDF";
-
-  button.onclick =
-    () => {
-
-      const win =
-        window.open(
-          "",
-          "_blank"
-        );
-
-      if (!win) {
-        alert(
-          "Please allow pop-ups for LOGIC-LEAF."
-        );
-        return;
-      }
-
-      win.document.open();
-
-      win.document.write(
-        html
-      );
-
-      win.document.close();
-
-    };
-
-  bubble.appendChild(
-    button
-  );
-
-  const info =
-    document.createElement(
-      "div"
-    );
-
-  info.textContent =
-    "The generated document will open in a new tab. Use your browser's Print → Save as PDF option.";
-
-  info.style.color =
-    "#858d99";
-
-  info.style.fontSize =
-    "12px";
-
-  bubble.appendChild(
-    info
-  );
-
-  wrapper.appendChild(
-    label
-  );
-
-  wrapper.appendChild(
-    bubble
-  );
-
-  chat.appendChild(
-    wrapper
-  );
-
-  scrollToBottom();
-
-}
-
-
-/* ===================================================== */
-/* SEARCH */
-/* ===================================================== */
-
-function toggleSearch() {
-
-  searchPanel
-    .classList
-    .toggle("open");
-
-  if (
-    searchPanel.classList.contains(
-      "open"
-    )
-  ) {
-
-    searchInput.focus();
-
-  }
-
-}
-
-
-async function runSearch() {
-
-  const query =
-    searchInput.value.trim();
-
-  if (!query) {
-    return;
-  }
-
-  searchResults.innerHTML =
-    `
-      <div class="search-result">
-        Searching...
+    showModal(
+      `
+      <div class="modal-header">
+        <div class="modal-title">
+          API Key
+        </div>
+
+        <button
+          class="modal-close"
+          data-close-modal
+        >
+          ${iconClose()}
+        </button>
       </div>
-    `;
 
-  try {
+      <p style="
+        color:#9298a4;
+        font-size:11px;
+        line-height:1.6;
+        margin-bottom:14px;
+      ">
+        Optional API authentication for your
+        LOGIC-LEAF Worker.
+      </p>
 
-    const response =
-      await fetch(
-        API_URL + "/v1/search",
-        {
-          method: "POST",
+      <div class="api-key-box">
+        <input
+          id="apiKeyInput"
+          class="input"
+          type="password"
+          placeholder="Enter API key"
+          value="${escapeAttribute(current)}"
+        />
+      </div>
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+      <div style="
+        display:flex;
+        gap:8px;
+        margin-top:12px;
+      ">
+        <button
+          class="primary-button"
+          id="saveApiKey"
+        >
+          Save key
+        </button>
 
-          body: JSON.stringify({
-            query
-          })
+        <button
+          class="secondary-button"
+          id="removeApiKey"
+        >
+          Remove
+        </button>
+      </div>
+      `
+    );
+
+    $("#saveApiKey")
+      ?.addEventListener(
+        "click",
+        () => {
+
+          const value =
+            $("#apiKeyInput")
+              ?.value.trim();
+
+          if (value) {
+
+            localStorage.setItem(
+              STORAGE.apiKey,
+              value
+            );
+
+          } else {
+
+            localStorage.removeItem(
+              STORAGE.apiKey
+            );
+          }
+
+          closeModal();
+
+          showToast(
+            "API key saved"
+          );
         }
       );
 
-    const data =
-      await response.json();
+    $("#removeApiKey")
+      ?.addEventListener(
+        "click",
+        () => {
 
-    if (
-      !response.ok ||
-      !data.ok
-    ) {
-
-      throw new Error(
-        data.error ||
-        "Search failed"
-      );
-
-    }
-
-    searchResults.innerHTML = "";
-
-    const results =
-      data.results || [];
-
-    if (
-      results.length === 0
-    ) {
-
-      searchResults.innerHTML =
-        `
-          <div class="search-result">
-            No indexed results found.
-          </div>
-        `;
-
-      return;
-
-    }
-
-    results.forEach(
-      result => {
-
-        const div =
-          document.createElement(
-            "div"
+          localStorage.removeItem(
+            STORAGE.apiKey
           );
 
-        div.className =
-          "search-result";
+          closeModal();
 
-        div.innerHTML =
-          `
-            <div class="search-source">
-              ${escapeHTML(
-                result.source ||
-                "Indexed source"
-              )}
-            </div>
+          showToast(
+            "API key removed"
+          );
+        }
+      );
+  }
 
-            <div class="search-text">
-              ${escapeHTML(
-                result.text ||
-                ""
-              )}
-            </div>
-          `;
+  /* =======================================================
+     LOGIN
+     ======================================================= */
 
-        searchResults.appendChild(
-          div
-        );
+  function openLogin() {
 
-      }
+    showModal(
+      `
+      <div class="modal-header">
+        <div class="modal-title">
+          Sign in
+        </div>
+
+        <button
+          class="modal-close"
+          data-close-modal
+        >
+          ${iconClose()}
+        </button>
+      </div>
+
+      <button
+        class="google-button"
+        id="googleLoginButton"
+      >
+        ${googleIcon()}
+        Continue with Google
+      </button>
+
+      <div style="
+        margin:14px 0;
+        text-align:center;
+        color:#666d79;
+        font-size:10px;
+      ">
+        Google authentication is handled
+        by your Firebase setup.
+      </div>
+
+      <div class="settings-row">
+        <div class="settings-info">
+          <strong>Firebase</strong>
+          <span>logic-leaf</span>
+        </div>
+      </div>
+      `
     );
 
-  } catch (error) {
+    $("#googleLoginButton")
+      ?.addEventListener(
+        "click",
+        () => {
 
-    searchResults.innerHTML =
-      `
-        <div class="search-result">
-          Search failed:
-          ${escapeHTML(
-            error.message
-          )}
+          showToast(
+            "Connect Firebase Google Auth in your HTML configuration."
+          );
+        }
+      );
+  }
+
+  /* =======================================================
+     MODAL
+     ======================================================= */
+
+  function showModal(content) {
+
+    if (!dom.modalBackdrop) {
+
+      const backdrop =
+        document.createElement("div");
+
+      backdrop.id =
+        "modalBackdrop";
+
+      backdrop.className =
+        "modal-backdrop";
+
+      backdrop.innerHTML = `
+        <div class="modal">
+          ${content}
         </div>
       `;
 
-  }
-
-}
-
-
-/* ===================================================== */
-/* FILES */
-/* ===================================================== */
-
-function handleFiles(
-  event
-) {
-
-  const selected =
-    Array.from(
-      event.target.files || []
-    );
-
-  if (
-    selected.length === 0
-  ) {
-    return;
-  }
-
-  /*
-    Prevent huge uploads from
-    silently exhausting browser memory.
-  */
-
-  const maxSize =
-    20 * 1024 * 1024;
-
-  selected.forEach(
-    file => {
-
-      if (
-        file.size > maxSize
-      ) {
-
-        alert(
-          file.name +
-          " is larger than 20 MB."
-        );
-
-        return;
-
-      }
-
-      attachments.push(
-        file
+      document.body.appendChild(
+        backdrop
       );
 
+      dom.modalBackdrop =
+        backdrop;
+
+    } else {
+
+      dom.modalBackdrop.innerHTML = `
+        <div class="modal">
+          ${content}
+        </div>
+      `;
     }
-  );
 
-  renderAttachments();
-
-  event.target.value = "";
-
-}
-
-
-function renderAttachments() {
-
-  if (
-    attachments.length === 0
-  ) {
-
-    attachmentPreview
-      .classList
-      .add("hidden");
-
-    attachmentPreview.innerHTML =
-      "";
-
-    return;
-
-  }
-
-  attachmentPreview
-    .classList
-    .remove("hidden");
-
-  attachmentPreview.innerHTML =
-    "";
-
-  attachments.forEach(
-    (file, index) => {
-
-      const chip =
-        document.createElement(
-          "div"
-        );
-
-      chip.className =
-        "attachment-chip";
-
-      if (
-        file.type.startsWith(
-          "image/"
-        )
-      ) {
-
-        const img =
-          document.createElement(
-            "img"
-          );
-
-        img.src =
-          URL.createObjectURL(
-            file
-          );
-
-        chip.appendChild(
-          img
-        );
-
-      } else {
-
-        const icon =
-          document.createElement(
-            "div"
-          );
-
-        icon.textContent =
-          "FILE";
-
-        icon.style.fontSize =
-          "9px";
-
-        icon.style.color =
-          "#8e96a3";
-
-        chip.appendChild(
-          icon
-        );
-
-      }
-
-      const info =
-        document.createElement(
-          "div"
-        );
-
-      info.className =
-        "attachment-chip-info";
-
-      info.innerHTML =
-        `
-          <strong>
-            ${escapeHTML(
-              file.name
-            )}
-          </strong>
-
-          <span>
-            ${formatBytes(
-              file.size
-            )}
-          </span>
-        `;
-
-      chip.appendChild(
-        info
-      );
-
-      const remove =
-        document.createElement(
-          "button"
-        );
-
-      remove.className =
-        "remove-attachment";
-
-      remove.textContent =
-        "×";
-
-      remove.onclick =
-        () => {
-
-          attachments.splice(
-            index,
-            1
-          );
-
-          renderAttachments();
-
-        };
-
-      chip.appendChild(
-        remove
-      );
-
-      attachmentPreview.appendChild(
-        chip
-      );
-
-    }
-  );
-
-}
-
-
-/* ===================================================== */
-/* MESSAGE UI */
-/* ===================================================== */
-
-function hideWelcome() {
-
-  const welcome =
-    $("welcome");
-
-  if (welcome) {
-    welcome.remove();
-  }
-
-}
-
-
-function addUserMessage(
-  text,
-  files = []
-) {
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message user";
-
-  const bubble =
-    document.createElement(
-      "div"
-    );
-
-  bubble.className =
-    "message-bubble";
-
-  bubble.textContent =
-    text;
-
-  if (
-    files.length
-  ) {
-
-    const names =
-      document.createElement(
-        "div"
-      );
-
-    names.style.marginTop =
-      "8px";
-
-    names.style.color =
-      "#929aa7";
-
-    names.style.fontSize =
-      "11px";
-
-    names.textContent =
-      files
-        .map(
-          file =>
-            "📎 " + file.name
-        )
-        .join("\n");
-
-    bubble.appendChild(
-      names
-    );
-
-  }
-
-  wrapper.appendChild(
-    bubble
-  );
-
-  chat.appendChild(
-    wrapper
-  );
-
-  scrollToBottom();
-
-}
-
-
-function addAIMessage(
-  text,
-  error = false
-) {
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message ai";
-
-  if (error) {
-    wrapper.classList.add(
-      "error"
+    dom.modalBackdrop.classList.add(
+      "open"
     );
   }
 
-  const label =
-    document.createElement(
-      "div"
-    );
+  function closeModal() {
 
-  label.className =
-    "ai-label";
-
-  label.textContent =
-    "LOGIC-LEAF";
-
-  const bubble =
-    document.createElement(
-      "div"
-    );
-
-  bubble.className =
-    "message-bubble";
-
-  bubble.innerHTML =
-    renderMarkdown(
-      text
-    );
-
-  wrapper.appendChild(
-    label
-  );
-
-  wrapper.appendChild(
-    bubble
-  );
-
-  chat.appendChild(
-    wrapper
-  );
-
-  addCopyButtons(
-    wrapper
-  );
-
-  scrollToBottom();
-
-}
-
-
-/* ===================================================== */
-/* TYPING */
-/* ===================================================== */
-
-function addTyping() {
-
-  const wrapper =
-    document.createElement(
-      "div"
-    );
-
-  wrapper.className =
-    "message ai";
-
-  wrapper.innerHTML =
-    `
-      <div class="ai-label">
-        LOGIC-LEAF
-      </div>
-
-      <div class="typing">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-    `;
-
-  chat.appendChild(
-    wrapper
-  );
-
-  scrollToBottom();
-
-  return wrapper;
-
-}
-
-
-/* ===================================================== */
-/* MARKDOWN */
-/* ===================================================== */
-
-function renderMarkdown(
-  input
-) {
-
-  let text =
-    String(input || "");
-
-  /*
-    Escape HTML first.
-  */
-
-  text =
-    escapeHTML(
-      text
-    );
-
-  /*
-    Code blocks
-  */
-
-  text =
-    text.replace(
-      /```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g,
-      (_, language, code) => {
-
-        const lang =
-          language ||
-          "code";
-
-        return `
-          <div class="code-wrap">
-
-            <div class="code-head">
-
-              <span class="code-language">
-                ${lang}
-              </span>
-
-              <button
-                class="copy-code"
-                data-code="${encodeURIComponent(code)}"
-              >
-                Copy
-              </button>
-
-            </div>
-
-            <pre><code>${code}</code></pre>
-
-          </div>
-        `;
-
-      }
-    );
-
-  /*
-    Inline code
-  */
-
-  text =
-    text.replace(
-      /`([^`]+)`/g,
-      "<code>$1</code>"
-    );
-
-  /*
-    Bold
-  */
-
-  text =
-    text.replace(
-      /\*\*([^*]+)\*\*/g,
-      "<strong>$1</strong>"
-    );
-
-  /*
-    Italic
-  */
-
-  text =
-    text.replace(
-      /(?<!\*)\*([^*]+)\*(?!\*)/g,
-      "<em>$1</em>"
-    );
-
-  /*
-    Headings
-  */
-
-  text =
-    text.replace(
-      /^### (.+)$/gm,
-      "<h3>$1</h3>"
-    );
-
-  text =
-    text.replace(
-      /^## (.+)$/gm,
-      "<h2>$1</h2>"
-    );
-
-  text =
-    text.replace(
-      /^# (.+)$/gm,
-      "<h1>$1</h1>"
-    );
-
-  /*
-    Links
-  */
-
-  text =
-    text.replace(
-      /(https?:\/\/[^\s<]+)/g,
-      '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-    );
-
-  /*
-    Bullet lists
-  */
-
-  text =
-    text.replace(
-      /(?:^|\n)([-*] .+(?:\n[-*] .+)*)/g,
-      block => {
-
-        const items =
-          block
-            .trim()
-            .split("\n")
-            .map(
-              line =>
-                "<li>" +
-                line
-                  .replace(
-                    /^[-*]\s+/,
-                    ""
-                  ) +
-                "</li>"
-            )
-            .join("");
-
-        return (
-          "\n<ul>" +
-          items +
-          "</ul>"
-        );
-
-      }
-    );
-
-  /*
-    Numbered lists
-  */
-
-  text =
-    text.replace(
-      /(?:^|\n)((?:\d+\.\s.+)(?:\n\d+\.\s.+)*)/g,
-      block => {
-
-        const items =
-          block
-            .trim()
-            .split("\n")
-            .map(
-              line =>
-                "<li>" +
-                line
-                  .replace(
-                    /^\d+\.\s+/,
-                    ""
-                  ) +
-                "</li>"
-            )
-            .join("");
-
-        return (
-          "\n<ol>" +
-          items +
-          "</ol>"
-        );
-
-      }
-    );
-
-  /*
-    Paragraphs / line breaks
-  */
-
-  text =
-    text.replace(
-      /\n{2,}/g,
-      "</p><p>"
-    );
-
-  text =
-    text.replace(
-      /\n/g,
-      "<br>"
-    );
-
-  return (
-    "<p>" +
-    text +
-    "</p>"
-  );
-
-}
-
-
-/* ===================================================== */
-/* COPY CODE */
-/* ===================================================== */
-
-function addCopyButtons(
-  wrapper
-) {
-
-  wrapper
-    .querySelectorAll(
-      ".copy-code"
-    )
-    .forEach(
-      button => {
-
-        button.onclick =
-          async () => {
-
-            const code =
-              decodeURIComponent(
-                button.dataset.code
-              );
-
-            try {
-
-              await navigator.clipboard.writeText(
-                code
-              );
-
-              button.textContent =
-                "Copied";
-
-              setTimeout(
-                () => {
-                  button.textContent =
-                    "Copy";
-                },
-                1200
-              );
-
-            } catch {
-
-              button.textContent =
-                "Copy failed";
-
-            }
-
-          };
-
-      }
-    );
-
-}
-
-
-/* ===================================================== */
-/* AUTO RESIZE */
-/* ===================================================== */
-
-function autoResize() {
-
-  messageInput.style.height =
-    "auto";
-
-  messageInput.style.height =
-    Math.min(
-      messageInput.scrollHeight,
-      180
-    ) + "px";
-
-}
-
-
-/* ===================================================== */
-/* SCROLL */
-/* ===================================================== */
-
-function scrollToBottom() {
-
-  requestAnimationFrame(
-    () => {
-
-      chat.scrollTop =
-        chat.scrollHeight;
-
-    }
-  );
-
-}
-
-
-/* ===================================================== */
-/* UTILITIES */
-/* ===================================================== */
-
-function escapeHTML(
-  value
-) {
-
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
-}
-
-
-function formatBytes(
-  bytes
-) {
-
-  if (
-    bytes === 0
-  ) {
-    return "0 B";
+    dom.modalBackdrop
+      ?.classList.remove("open");
   }
 
-  const units =
-    [
-      "B",
-      "KB",
-      "MB",
-      "GB"
-    ];
+  /* =======================================================
+     CLICK HANDLER
+     ======================================================= */
 
-  const i =
-    Math.floor(
-      Math.log(bytes) /
-      Math.log(1024)
-    );
+  function handleDocumentClick(event) {
 
-  return (
-    (bytes /
-      Math.pow(
-        1024,
-        i
+    if (
+      event.target.closest(
+        "[data-close-modal]"
       )
-    ).toFixed(
-      i ? 1 : 0
-    ) +
-    " " +
-    units[i]
-  );
-
-}
-
-
-async function safeJSON(
-  response
-) {
-
-  try {
-    return await response.json();
-  } catch {
-    return {};
-  }
-
-}
-
-
-/* ===================================================== */
-/* KEYBOARD SHORTCUT */
-/* ===================================================== */
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.ctrlKey &&
-      event.key === "k"
     ) {
-
-      event.preventDefault();
-
-      toggleSearch();
-
+      closeModal();
     }
 
     if (
-      event.key === "Escape"
+      event.target ===
+      dom.modalBackdrop
     ) {
-
-      searchPanel
-        .classList
-        .remove("open");
-
-      settingsModal
-        .classList
-        .add("hidden");
-
+      closeModal();
     }
 
+    const codeButton =
+      event.target.closest(
+        "[data-code-index]"
+      );
+
+    if (codeButton) {
+
+      const index =
+        Number(
+          codeButton.dataset.codeIndex
+        );
+
+      const blocks =
+        $$(".code-block");
+
+      const block =
+        blocks[index];
+
+      const code =
+        block?.querySelector(
+          "code"
+        )?.innerText || "";
+
+      copyText(code);
+    }
   }
-);
+
+  /* =======================================================
+     UI
+     ======================================================= */
+
+  function updateSendState() {
+
+    if (!dom.sendButton) return;
+
+    dom.sendButton.disabled =
+      state.busy;
+  }
+
+  function autoResize() {
+
+    if (!dom.input) return;
+
+    dom.input.style.height =
+      "auto";
+
+    dom.input.style.height =
+      Math.min(
+        dom.input.scrollHeight,
+        180
+      ) + "px";
+  }
+
+  function scrollToBottom() {
+
+    if (!dom.messages) return;
+
+    const area =
+      dom.messages.closest(
+        ".chat-area"
+      );
+
+    if (area) {
+
+      requestAnimationFrame(
+        () => {
+          area.scrollTop =
+            area.scrollHeight;
+        }
+      );
+    }
+  }
+
+  /* =======================================================
+     UTILITIES
+     ======================================================= */
+
+  async function fileToBase64(file) {
+
+    const buffer =
+      await file.arrayBuffer();
+
+    let binary = "";
+
+    const bytes =
+      new Uint8Array(buffer);
+
+    const chunk =
+      0x8000;
+
+    for (
+      let i = 0;
+      i < bytes.length;
+      i += chunk
+    ) {
+
+      binary += String.fromCharCode(
+        ...bytes.subarray(
+          i,
+          i + chunk
+        )
+      );
+    }
+
+    return (
+      "data:" +
+      file.type +
+      ";base64," +
+      btoa(binary)
+    );
+  }
+
+  function copyText(text) {
+
+    navigator.clipboard
+      ?.writeText(text)
+      .then(
+        () =>
+          showToast(
+            "Copied"
+          )
+      )
+      .catch(
+        () =>
+          showToast(
+            "Copy failed"
+          )
+      );
+  }
+
+  function showToast(message) {
+
+    if (!dom.toast) {
+
+      const toast =
+        document.createElement("div");
+
+      toast.className =
+        "toast";
+
+      document.body.appendChild(
+        toast
+      );
+
+      dom.toast = toast;
+    }
+
+    dom.toast.textContent =
+      message;
+
+    dom.toast.classList.add(
+      "show"
+    );
+
+    clearTimeout(
+      showToast.timer
+    );
+
+    showToast.timer =
+      setTimeout(
+        () => {
+          dom.toast
+            ?.classList.remove(
+              "show"
+            );
+        },
+        2400
+      );
+  }
+
+  function loadJSON(
+    key,
+    fallback
+  ) {
+
+    try {
+
+      const value =
+        localStorage.getItem(key);
+
+      return value
+        ? JSON.parse(value)
+        : fallback;
+
+    } catch {
+
+      return fallback;
+    }
+  }
+
+  function escapeHTML(value) {
+
+    return String(value)
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      )
+      .replace(
+        /"/g,
+        "&quot;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      );
+  }
+
+  function escapeAttribute(value) {
+    return escapeHTML(value);
+  }
+
+  /* =======================================================
+     SVG ICONS
+     ======================================================= */
+
+  function iconClose() {
+
+    return `
+      <svg
+        width="17"
+        height="17"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+      >
+        <path d="M6 6l12 12"/>
+        <path d="M18 6L6 18"/>
+      </svg>
+    `;
+  }
+
+  function iconCopy() {
+
+    return `
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <rect
+          x="8"
+          y="8"
+          width="12"
+          height="12"
+          rx="2"
+        />
+        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>
+      </svg>
+    `;
+  }
+
+  function iconRefresh() {
+
+    return `
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M20 11a8.1 8.1 0 0 0-15.5-2"/>
+        <path d="M4 5v4h4"/>
+        <path d="M4 13a8.1 8.1 0 0 0 15.5 2"/>
+        <path d="M20 19v-4h-4"/>
+      </svg>
+    `;
+  }
+
+  function googleIcon() {
+
+    return `
+      <svg
+        width="17"
+        height="17"
+        viewBox="0 0 24 24"
+      >
+        <path
+          fill="#4285F4"
+          d="M21.35 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.24a4.48 4.48 0 0 1-1.94 2.94v2.45h3.14c1.84-1.7 2.91-4.21 2.91-7.22z"
+        />
+        <path
+          fill="#34A853"
+          d="M12 21.66c2.63 0 4.84-.87 6.45-2.36l-3.14-2.45c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.53A9.75 9.75 0 0 0 12 21.66z"
+        />
+        <path
+          fill="#FBBC05"
+          d="M6.54 13.74A5.86 5.86 0 0 1 6.23 12c0-.6.11-1.19.31-1.74V7.73H3.3A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.06 1.05 4.27l3.24-2.53z"
+        />
+        <path
+          fill="#EA4335"
+          d="M12 6.23c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.32 14.63 2.34 12 2.34a9.75 9.75 0 0 0-8.7 5.39l3.24 2.53C7.31 7.95 9.46 6.23 12 6.23z"
+        />
+      </svg>
+    `;
+  }
+
+})();
