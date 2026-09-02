@@ -2,847 +2,442 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta
+    name="theme-color"
+    content="#090b10"
+  >
 
   <title>LOGIC-LEAF</title>
-
-  <meta name="theme-color" content="#0b0d10">
-
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  >
 
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<!-- =====================================================
-     APP
-===================================================== -->
+  <div id="app">
 
-<div id="app">
+    <!-- ============================= -->
+    <!-- SIDEBAR -->
+    <!-- ============================= -->
 
-  <!-- ===================================================
-       SIDEBAR
-  ==================================================== -->
+    <aside id="sidebar" class="sidebar">
 
-  <aside id="sidebar" class="sidebar">
+      <div class="sidebar-top">
 
-    <div class="sidebar-top">
+        <button
+          id="closeSidebar"
+          class="icon-btn"
+          aria-label="Close sidebar"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
 
-      <div class="brand">
-        <div class="brand-mark">
-          <span></span>
-          <span></span>
-          <span></span>
+        <div class="brand">
+          <div class="brand-mark">
+            LL
+          </div>
+
+          <div>
+            <strong>LOGIC-LEAF</strong>
+            <span>AI Assistant</span>
+          </div>
         </div>
 
-        <div>
-          <div class="brand-name">LOGIC-LEAF</div>
-          <div class="brand-subtitle">AI Assistant</div>
+      </div>
+
+      <button id="newChatBtn" class="new-chat">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+
+        <span>New chat</span>
+      </button>
+
+      <div class="history-title">
+        Recent chats
+      </div>
+
+      <div id="historyList" class="history-list">
+        <div class="history-empty">
+          No conversations yet
         </div>
       </div>
 
-      <button
-        id="closeSidebar"
-        class="icon-button sidebar-close"
-        aria-label="Close sidebar"
-      >
-        <svg viewBox="0 0 24 24">
-          <path d="M6 6l12 12M18 6L6 18"/>
-        </svg>
-      </button>
+      <div class="sidebar-bottom">
 
-    </div>
+        <button id="settingsBtn" class="side-action">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.8 1.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5v.1h-2.5v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1-1.8-1.8.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H6.5v-2.5h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.8-1.8.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.5v-.1H15v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1 1.8 1.8-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.1V14h-.1a1.7 1.7 0 0 0-1.5 1Z"/>
+          </svg>
+          <span>Settings</span>
+        </button>
 
+        <div class="developer">
+          <span>LOGIC-LEAF</span>
+          <small>V.CHENCHUKIRAN</small>
+          <small>CLOUD SECURITY</small>
+        </div>
 
-    <!-- NEW CHAT -->
+      </div>
 
-    <button id="newChat" class="new-chat">
-
-      <svg viewBox="0 0 24 24">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-
-      <span>New chat</span>
-
-    </button>
+    </aside>
 
 
-    <!-- SEARCH CHATS -->
+    <!-- ============================= -->
+    <!-- MAIN -->
+    <!-- ============================= -->
 
-    <div class="chat-search-box">
+    <main class="main">
 
-      <svg viewBox="0 0 24 24">
-        <circle cx="11" cy="11" r="6.5"/>
-        <path d="m16 16 5 5"/>
-      </svg>
+      <header class="topbar">
 
-      <input
-        id="chatSearch"
-        type="text"
-        placeholder="Search chats"
-        autocomplete="off"
-      >
+        <button
+          id="openSidebar"
+          class="icon-btn"
+          aria-label="Open sidebar"
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
 
-    </div>
+        <div class="top-title">
+          LOGIC-LEAF
+        </div>
 
+        <div class="top-actions">
 
-    <!-- HISTORY -->
+          <button
+            id="searchToggle"
+            class="top-btn"
+            title="Search"
+          >
+            <svg viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="6.5"/>
+              <path d="m16 16 5 5"/>
+            </svg>
 
-    <div class="history-title">
-      <span>Recent</span>
-    </div>
+            <span>Search</span>
+          </button>
 
-    <div id="chatHistory" class="chat-history"></div>
+          <button
+            id="profileBtn"
+            class="profile-btn"
+            title="Profile"
+          >
+            <svg viewBox="0 0 24 24">
+              <circle cx="12" cy="8" r="3.5"/>
+              <path d="M5 20c.8-4 3-6 7-6s6.2 2 7 6"/>
+            </svg>
+          </button>
 
+        </div>
 
-    <div class="sidebar-bottom">
-
-      <button id="apiButton" class="sidebar-action">
-
-        <svg viewBox="0 0 24 24">
-          <path d="M8 9h8M8 13h5"/>
-          <rect x="3" y="4" width="18" height="16" rx="3"/>
-          <path d="M7 20v2M17 20v2"/>
-        </svg>
-
-        <span>API</span>
-
-      </button>
-
-
-      <button id="settingsButton" class="sidebar-action">
-
-        <svg viewBox="0 0 24 24">
-          <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/>
-          <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.99l.06.06-1.65 1.65-.06-.06a1.8 1.8 0 0 0-1.99-.36 1.8 1.8 0 0 0-1.08 1.65V20h-2.34v-.07a1.8 1.8 0 0 0-1.08-1.65 1.8 1.8 0 0 0-1.99.36l-.06.06-1.65-1.65.06-.06A1.8 1.8 0 0 0 8.36 15a1.8 1.8 0 0 0-1.65-1.08H6v-2.34h.71A1.8 1.8 0 0 0 8.36 10a1.8 1.8 0 0 0-.36-1.99l-.06-.06 1.65-1.65.06.06a1.8 1.8 0 0 0 1.99.36 1.8 1.8 0 0 0 1.08-1.65V5h2.34v.07a1.8 1.8 0 0 0 1.08 1.65 1.8 1.8 0 0 0 1.99-.36l.06-.06 1.65 1.65-.06.06A1.8 1.8 0 0 0 19.4 10c.25.61.85 1 1.51 1H21v2.34h-.09c-.66 0-1.26.39-1.51 1Z"/>
-        </svg>
-
-        <span>Settings</span>
-
-      </button>
+      </header>
 
 
-      <button id="profileButton" class="profile-button">
+      <!-- ============================= -->
+      <!-- SEARCH BAR -->
+      <!-- ============================= -->
 
-        <span id="avatar" class="avatar">?</span>
+      <div id="searchPanel" class="search-panel">
 
-        <span class="profile-info">
-          <strong id="accountName">Guest</strong>
-          <small id="accountEmail">Not signed in</small>
-        </span>
+        <div class="search-panel-inner">
 
-        <svg class="profile-arrow" viewBox="0 0 24 24">
-          <path d="m9 18 6-6-6-6"/>
-        </svg>
+          <svg viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="6.5"/>
+            <path d="m16 16 5 5"/>
+          </svg>
 
-      </button>
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Search indexed knowledge..."
+            autocomplete="off"
+          >
 
-    </div>
+          <button id="runSearchBtn">
+            Search
+          </button>
 
-  </aside>
+        </div>
 
+        <div id="searchResults"></div>
 
-  <!-- ===================================================
-       MAIN
-  ==================================================== -->
-
-  <main class="main">
-
-    <!-- HEADER -->
-
-    <header class="topbar">
-
-      <button
-        id="openSidebar"
-        class="icon-button menu-button"
-        aria-label="Open sidebar"
-      >
-        <svg viewBox="0 0 24 24">
-          <path d="M4 7h16M4 12h16M4 17h16"/>
-        </svg>
-      </button>
-
-
-      <div class="topbar-title">
-        <strong>LOGIC-LEAF</strong>
       </div>
 
 
-      <button
-        id="authButton"
-        class="account-top-button"
+      <!-- ============================= -->
+      <!-- CHAT -->
+      <!-- ============================= -->
+
+      <section
+        id="chat"
+        class="chat"
+        aria-live="polite"
       >
-        Sign in
-      </button>
-
-    </header>
-
-
-    <!-- CHAT -->
-
-    <section id="chat" class="chat">
-
-      <div id="messages" class="messages">
-
-
-        <!-- =================================================
-             WELCOME
-        ================================================== -->
 
         <div id="welcome" class="welcome">
 
-          <div class="welcome-symbol">
-
-            <div class="welcome-ring"></div>
-
-            <div class="welcome-core">
-              LL
-            </div>
-
+          <div class="welcome-logo">
+            LL
           </div>
-
 
           <h1>How can I help you?</h1>
 
           <p>
-            Ask anything, solve problems, write code,
-            analyze files, search information or create content.
+            Ask questions, solve problems, write code,
+            analyze files, search knowledge, create images
+            and generate documents.
           </p>
 
+          <div class="suggestions">
 
-          <!-- QUICK PROMPTS -->
-
-          <div class="quick-grid">
-
-            <button
-              data-prompt="Explain this topic clearly with examples."
-            >
-              <svg viewBox="0 0 24 24">
-                <path d="M12 3v18M3 12h18"/>
-              </svg>
-
-              <span>Explain something</span>
+            <button data-prompt="Explain quantum computing simply">
+              <span>Explain</span>
+              Quantum computing
             </button>
 
-
-            <button
-              data-prompt="Help me solve this problem step by step."
-            >
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="8"/>
-                <path d="m9 12 2 2 4-4"/>
-              </svg>
-
-              <span>Solve a problem</span>
+            <button data-prompt="Help me build a website">
+              <span>Build</span>
+              A website
             </button>
 
-
-            <button
-              data-prompt="Write clean and complete code for my project."
-            >
-              <svg viewBox="0 0 24 24">
-                <path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/>
-              </svg>
-
-              <span>Write code</span>
+            <button data-prompt="Create a study plan for JEE">
+              <span>Study</span>
+              Create a study plan
             </button>
 
-
-            <button
-              data-prompt="Help me study this topic for an exam."
-            >
-              <svg viewBox="0 0 24 24">
-                <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5Z"/>
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              </svg>
-
-              <span>Study with me</span>
+            <button data-prompt="Write a Python program to sort a list">
+              <span>Code</span>
+              Python program
             </button>
 
           </div>
 
         </div>
 
-      </div>
-
-    </section>
+      </section>
 
 
-    <!-- ===================================================
-         COMPOSER
-    ==================================================== -->
+      <!-- ============================= -->
+      <!-- ATTACHMENT PREVIEW -->
+      <!-- ============================= -->
 
-    <section class="composer-area">
-
-      <div id="filePreview" class="file-preview"></div>
-
-
-      <div class="composer">
-
-        <div class="composer-top">
-
-          <textarea
-            id="messageInput"
-            rows="1"
-            placeholder="Message LOGIC-LEAF..."
-            autocomplete="off"
-            spellcheck="true"
-          ></textarea>
-
-        </div>
+      <div
+        id="attachmentPreview"
+        class="attachment-preview hidden"
+      ></div>
 
 
-        <div class="composer-bottom">
+      <!-- ============================= -->
+      <!-- COMPOSER -->
+      <!-- ============================= -->
 
+      <div class="composer-area">
 
-          <!-- ATTACH -->
+        <div id="composer" class="composer">
 
-          <div class="composer-tools">
+          <div class="composer-row">
+
+            <!-- Attach -->
 
             <button
-              id="attachButton"
-              class="composer-tool"
+              id="attachBtn"
+              class="composer-btn"
               title="Attach file"
-              aria-label="Attach file"
             >
-
               <svg viewBox="0 0 24 24">
-                <path d="m20.5 11.5-8.2 8.2a5 5 0 0 1-7.1-7.1l8.4-8.4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-2.8-2.8l7.7-7.7"/>
+                <path d="M21 11.5 12.7 19.8a5 5 0 0 1-7.1-7.1l8.5-8.5a3.5 3.5 0 1 1 5 5l-8.5 8.5a2 2 0 0 1-2.8-2.8l7.8-7.8"/>
               </svg>
-
             </button>
 
 
-            <!-- CAMERA -->
+            <!-- Camera -->
 
             <button
-              id="cameraButton"
-              class="composer-tool"
+              id="cameraBtn"
+              class="composer-btn"
               title="Camera"
-              aria-label="Camera"
-              type="button"
             >
-
               <svg viewBox="0 0 24 24">
-
-                <path
-                  d="M4 7.5h3l1.5-2h7l1.5 2h3A2 2 0 0 1 22 9.5v9A2 2 0 0 1 20 20.5H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"
-                />
-
-                <circle cx="12" cy="14" r="4"/>
-
-                <path d="M17.5 10.5h.01"/>
-
+                <path d="M4 7.5h3l1.5-2h7l1.5 2h3v11H4z"/>
+                <circle cx="12" cy="13" r="3.5"/>
               </svg>
-
             </button>
 
 
-            <!-- IMAGE -->
+            <!-- Image -->
 
             <button
-              id="imageButton"
-              class="composer-tool"
-              title="Generate image"
-              aria-label="Generate image"
-              type="button"
+              id="imageBtn"
+              class="composer-btn"
+              title="Create image"
             >
-
               <svg viewBox="0 0 24 24">
-
-                <rect
-                  x="3"
-                  y="4"
-                  width="18"
-                  height="16"
-                  rx="2"
-                />
-
-                <circle cx="8.5" cy="9" r="1.5"/>
-
-                <path d="m5 17 4-4 3 3 3-4 4 5"/>
-
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <circle cx="9" cy="9" r="1.5"/>
+                <path d="m5 17 4.5-4.5 3 3 2.5-2.5 4 4"/>
               </svg>
-
             </button>
 
 
             <!-- PDF -->
 
             <button
-              id="pdfButton"
-              class="composer-tool"
-              title="Create PDF"
-              aria-label="Create PDF"
-              type="button"
+              id="pdfBtn"
+              class="composer-btn"
+              title="Create document"
             >
-
               <svg viewBox="0 0 24 24">
-
-                <path
-                  d="M6 3h8l4 4v14H6z"
-                />
-
-                <path d="M14 3v5h5"/>
-
-                <path d="M8.5 14h7M8.5 17h5"/>
-
+                <path d="M6 3h9l4 4v14H6z"/>
+                <path d="M15 3v5h4"/>
+                <path d="M9 13h6M9 16h6"/>
               </svg>
-
             </button>
 
 
-            <!-- SEARCH -->
+            <!-- Search -->
 
             <button
-              id="searchToggle"
-              class="composer-tool"
+              id="searchBtn"
+              class="composer-btn"
               title="Search"
-              aria-label="Search"
-              type="button"
             >
-
               <svg viewBox="0 0 24 24">
-
-                <circle
-                  cx="10.8"
-                  cy="10.8"
-                  r="6.8"
-                />
-
+                <circle cx="11" cy="11" r="6.5"/>
                 <path d="m16 16 5 5"/>
-
               </svg>
+            </button>
 
+
+            <textarea
+              id="messageInput"
+              rows="1"
+              placeholder="Message LOGIC-LEAF..."
+              autocomplete="off"
+              spellcheck="true"
+            ></textarea>
+
+
+            <button
+              id="sendBtn"
+              class="send-btn"
+              title="Send"
+            >
+              <svg viewBox="0 0 24 24">
+                <path d="M4 4.5 20 12 4 19.5l3-7.5z"/>
+              </svg>
             </button>
 
           </div>
 
+        </div>
 
-          <!-- SEARCH INDICATOR -->
-
-          <div
-            id="searchIndicator"
-            class="search-indicator hidden"
-          >
-            Search enabled
-          </div>
-
-
-          <!-- SEND -->
-
-          <button
-            id="sendButton"
-            class="send-button"
-            title="Send"
-            aria-label="Send"
-            type="button"
-          >
-
-            <svg viewBox="0 0 24 24">
-
-              <path d="M4 12 20 4l-4 16-4-7-8-1Z"/>
-
-              <path d="M12 13 20 4"/>
-
-            </svg>
-
-          </button>
-
+        <div class="composer-note">
+          LOGIC-LEAF can make mistakes. Check important information.
         </div>
 
       </div>
 
-
-      <div class="composer-note">
-        LOGIC-LEAF can make mistakes. Check important information.
-      </div>
-
-    </section>
-
-  </main>
-
-</div>
-
-
-<!-- =====================================================
-     HIDDEN FILE INPUT
-===================================================== -->
-
-<input
-  id="fileInput"
-  type="file"
-  hidden
-  accept="
-    image/*,
-    application/pdf,
-    text/plain,
-    text/html,
-    text/css,
-    text/javascript,
-    application/javascript,
-    application/json,
-    text/markdown,
-    .js,
-    .jsx,
-    .ts,
-    .tsx,
-    .py,
-    .java,
-    .c,
-    .cpp,
-    .h,
-    .hpp,
-    .css,
-    .html,
-    .json,
-    .md,
-    .txt,
-    .csv,
-    .pdf
-  "
->
-
-
-<!-- =====================================================
-     CAMERA INPUT
-===================================================== -->
-
-<input
-  id="cameraInput"
-  type="file"
-  hidden
-  accept="image/*"
-  capture="environment"
->
-
-
-<!-- =====================================================
-     AUTH MODAL
-===================================================== -->
-
-<div id="authModal" class="modal hidden">
-
-  <div class="modal-backdrop" data-close="authModal"></div>
-
-  <div class="modal-card">
-
-    <button
-      class="modal-close"
-      data-close="authModal"
-      aria-label="Close"
-    >
-      <svg viewBox="0 0 24 24">
-        <path d="M6 6l12 12M18 6L6 18"/>
-      </svg>
-    </button>
-
-
-    <div class="modal-logo">
-      LL
-    </div>
-
-
-    <h2 id="authTitle">
-      Welcome to LOGIC-LEAF
-    </h2>
-
-    <p id="authSubtitle">
-      Sign in to continue
-    </p>
-
-
-    <!-- GOOGLE -->
-
-    <button
-      id="googleAuth"
-      class="google-button"
-      type="button"
-    >
-
-      <svg viewBox="0 0 24 24">
-        <path d="M21.8 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.5a4.7 4.7 0 0 1-2 3.1v2.6h3.2c1.9-1.8 3.1-4.4 3.1-7.5Z"/>
-        <path d="M12 22c2.7 0 5-.9 6.7-2.5l-3.2-2.6c-.9.6-2 1-3.5 1-2.7 0-5-1.8-5.8-4.2H3v2.7A10 10 0 0 0 12 22Z"/>
-        <path d="M6.2 13.7a6 6 0 0 1 0-3.4V7.6H3a10 10 0 0 0 0 8.8l3.2-2.7Z"/>
-        <path d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.8-2.8C17 3.2 14.7 2 12 2a10 10 0 0 0-9 5.6l3.2 2.7C7 7.9 9.3 6.1 12 6.1Z"/>
-      </svg>
-
-      Continue with Google
-
-    </button>
-
-
-    <div class="divider">
-      <span>or</span>
-    </div>
-
-
-    <!-- EMAIL -->
-
-    <input
-      id="authEmail"
-      class="modal-input"
-      type="email"
-      placeholder="Email"
-      autocomplete="email"
-    >
-
-
-    <input
-      id="authPassword"
-      class="modal-input"
-      type="password"
-      placeholder="Password"
-      autocomplete="current-password"
-    >
-
-
-    <button
-      id="emailAuth"
-      class="primary-button"
-      type="button"
-    >
-      Sign in
-    </button>
-
-
-    <button
-      id="switchAuth"
-      class="switch-auth"
-      type="button"
-    >
-      Create an account
-    </button>
-
-
-    <div
-      id="authStatus"
-      class="auth-status"
-    ></div>
+    </main>
 
   </div>
 
-</div>
+
+  <!-- ============================= -->
+  <!-- HIDDEN INPUTS -->
+  <!-- ============================= -->
+
+  <input
+    id="fileInput"
+    type="file"
+    hidden
+    multiple
+    accept="image/*,.pdf,.txt,.csv,.json,.js,.html,.css,.py,.java,.cpp,.c,.md"
+  >
+
+  <input
+    id="cameraInput"
+    type="file"
+    hidden
+    accept="image/*"
+    capture="environment"
+  >
 
 
-<!-- =====================================================
-     API MODAL
-===================================================== -->
+  <!-- ============================= -->
+  <!-- SETTINGS MODAL -->
+  <!-- ============================= -->
 
-<div id="apiModal" class="modal hidden">
+  <div id="settingsModal" class="modal hidden">
 
-  <div class="modal-backdrop" data-close="apiModal"></div>
+    <div class="modal-card">
 
-  <div class="modal-card">
+      <button
+        id="closeSettings"
+        class="modal-close"
+      >
+        ×
+      </button>
 
-    <button
-      class="modal-close"
-      data-close="apiModal"
-    >
-      <svg viewBox="0 0 24 24">
-        <path d="M6 6l12 12M18 6L6 18"/>
-      </svg>
-    </button>
+      <h2>Settings</h2>
 
-    <h2>LOGIC-LEAF API</h2>
+      <div class="setting">
 
-    <p>
-      Create an API key for authenticated API requests.
-    </p>
+        <span>LOGIC-LEAF</span>
 
+        <small>
+          AI assistant powered by Cloudflare Workers AI
+        </small>
 
-    <button
-      id="createApiKey"
-      class="primary-button"
-      type="button"
-    >
-      Create API key
-    </button>
-
-
-    <pre
-      id="apiOutput"
-      class="api-output"
-    ></pre>
-
-  </div>
-
-</div>
-
-
-<!-- =====================================================
-     SETTINGS MODAL
-===================================================== -->
-
-<div id="settingsModal" class="modal hidden">
-
-  <div
-    class="modal-backdrop"
-    data-close="settingsModal"
-  ></div>
-
-  <div class="modal-card">
-
-    <button
-      class="modal-close"
-      data-close="settingsModal"
-    >
-      <svg viewBox="0 0 24 24">
-        <path d="M6 6l12 12M18 6L6 18"/>
-      </svg>
-    </button>
-
-
-    <div class="settings-avatar">
-      <span id="avatar">?</span>
-    </div>
-
-
-    <h2 id="settingsName">
-      Your account
-    </h2>
-
-    <p id="settingsEmail">
-      Manage your LOGIC-LEAF account
-    </p>
-
-
-    <div class="account-details">
-
-      <div>
-        <span>Name</span>
-        <strong id="accountName">Guest</strong>
       </div>
 
-      <div>
-        <span>Email</span>
-        <strong id="accountEmail">Not signed in</strong>
+      <div class="setting">
+
+        <span>API Status</span>
+
+        <strong id="apiStatus">
+          Checking...
+        </strong>
+
+      </div>
+
+      <div class="setting">
+
+        <span>Search</span>
+
+        <strong>
+          Available
+        </strong>
+
+      </div>
+
+      <div class="setting">
+
+        <span>Database</span>
+
+        <strong>
+          D1 enabled
+        </strong>
+
       </div>
 
     </div>
 
-
-    <button
-      id="logoutButton"
-      class="danger-button"
-      type="button"
-    >
-      Sign out
-    </button>
-
   </div>
 
-</div>
 
-
-<!-- =====================================================
-     FIREBASE
-===================================================== -->
-
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-
-
-<!-- =====================================================
-     APP
-===================================================== -->
-
-<script src="app.js"></script>
-
-
-<!-- =====================================================
-     CAMERA BRIDGE
-===================================================== -->
-
-<script>
-
-(function () {
-
-  const cameraButton =
-    document.getElementById("cameraButton");
-
-  const cameraInput =
-    document.getElementById("cameraInput");
-
-  const fileInput =
-    document.getElementById("fileInput");
-
-  const messageInput =
-    document.getElementById("messageInput");
-
-  const filePreview =
-    document.getElementById("filePreview");
-
-
-  if (!cameraButton || !cameraInput) return;
-
-
-  cameraButton.addEventListener(
-    "click",
-    function () {
-
-      cameraInput.click();
-
-    }
-  );
-
-
-  cameraInput.addEventListener(
-    "change",
-    function () {
-
-      const file =
-        cameraInput.files &&
-        cameraInput.files[0];
-
-      if (!file) return;
-
-
-      filePreview.textContent =
-        "Camera image: " + file.name;
-
-
-      /*
-       * Put the captured image into the
-       * normal file input flow so app.js
-       * can use the same attachment logic.
-       */
-
-      try {
-
-        const transfer =
-          new DataTransfer();
-
-        transfer.items.add(file);
-
-        fileInput.files =
-          transfer.files;
-
-        fileInput.dispatchEvent(
-          new Event("change")
-        );
-
-      } catch {
-
-        messageInput.value =
-          "Please analyze the camera image: " +
-          file.name;
-
-      }
-
-    }
-  );
-
-})();
-
-</script>
+  <script src="app.js"></script>
 
 </body>
   </html>
