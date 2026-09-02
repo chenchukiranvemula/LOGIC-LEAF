@@ -1,304 +1,199 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <meta name="theme-color" content="#09090b">
+  <title>LOGIC-LEAF AI</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width,initial-scale=1,viewport-fit=cover"
-  >
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <meta
-    name="theme-color"
-    content="#080a0e"
-  >
-
-  <title>LOGIC-LEAF</title>
-
-  <link
-    rel="stylesheet"
-    href="style.css"
-  >
-
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <div id="app">
 
-  <aside
-    id="sidebar"
-    class="sidebar"
-  >
+  <!-- MOBILE OVERLAY -->
+  <div id="sidebarOverlay"></div>
 
-    <div class="brand">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
 
-      <div class="brandMark">
-        LL
+    <div class="sidebarTop">
+
+      <div class="brand">
+        <div class="brandMark">L</div>
+        <div>
+          <div class="brandName">LOGIC-LEAF</div>
+          <div class="brandVersion">AI</div>
+        </div>
       </div>
 
-      <div class="brandText">
-        <b>LOGIC-LEAF</b>
-        <small>AI Assistant</small>
-      </div>
-
-      <button
-        id="closeSide"
-        class="iconBtn closeSide"
-        aria-label="Close sidebar"
-      >
+      <button id="closeSidebar" class="iconBtn" aria-label="Close sidebar">
         ×
       </button>
 
     </div>
 
-    <button
-      id="newChat"
-      class="newChat"
-    >
-      <span class="plus">＋</span>
+    <button id="newChatBtn" class="newChat">
+      <span class="plus">+</span>
       <span>New chat</span>
     </button>
 
-    <div class="sideTitle">
-      RECENT CHATS
+    <div class="sideSection">
+      <div class="sideTitle">CHATS</div>
+      <div id="historyList" class="historyList"></div>
     </div>
 
-    <div
-      id="history"
-      class="history"
-    ></div>
+    <div class="sidebarBottom">
 
-    <div class="sideBottom">
+      <button id="apiBtn" class="sideAction">
+        <span class="actionIcon">⌘</span>
+        <span>API & Keys</span>
+      </button>
 
-      <button
-        id="settingsBtn"
-        class="sideBtn"
-      >
-        <span>⚙</span>
+      <button id="settingsBtn" class="sideAction">
+        <span class="actionIcon">⚙</span>
         <span>Settings</span>
       </button>
 
-      <div class="developer">
-
-        <b>LOGIC-LEAF</b>
-
-        <span>
-          V.CHENCHUKIRAN
-        </span>
-
-        <span>
-          CLOUD SECURITY
-        </span>
-
+      <div class="developerBox">
+        <div class="developerLabel">DEVELOPER</div>
+        <div class="developerName">V.CHENCHUKIRAN</div>
+        <div class="developerSub">Cloud Security • LOGIC-LEAF</div>
       </div>
+
+      <button id="profileBtn" class="profile">
+        <div class="avatar">C</div>
+        <div class="profileText">
+          <strong>Guest</strong>
+          <small>Sign in with Google</small>
+        </div>
+        <span class="profileArrow">›</span>
+      </button>
 
     </div>
 
   </aside>
 
-  <main class="main">
 
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- TOP BAR -->
     <header class="topbar">
 
-      <button
-        id="menuBtn"
-        class="iconBtn menu"
-        aria-label="Open sidebar"
-      >
-        ☰
+      <button id="openSidebar" class="menuBtn" aria-label="Open sidebar">
+        <span></span>
+        <span></span>
+        <span></span>
       </button>
 
-      <div class="topTitle">
-        LOGIC-LEAF
+      <div class="mobileBrand">
+        <div class="miniMark">L</div>
+        <span>LOGIC-LEAF</span>
       </div>
 
       <div class="topActions">
-
-        <button
-          id="searchBtn"
-          class="toolBtn"
-        >
-          <span class="toolIcon">⌕</span>
-          <span>Search</span>
-        </button>
-
-        <button
-          id="accountBtn"
-          class="avatar"
-          aria-label="Account"
-        >
-          ◯
-        </button>
-
+        <button id="topSettings" class="topIcon">⚙</button>
       </div>
 
     </header>
 
-    <section
-      id="chat"
-      class="chat"
-    >
 
-      <div
-        id="welcome"
-        class="welcome"
-      >
+    <!-- CHAT -->
+    <section id="chatArea">
 
-        <div class="heroLogo">
-          LL
+      <div id="welcomeScreen">
+
+        <div class="welcomeLogo">
+          <div>L</div>
         </div>
 
-        <h1>
-          How can I help you today?
-        </h1>
+        <h1>How can I help you?</h1>
 
         <p>
-          Ask questions, study, code,
-          analyze files, understand images,
+          Ask anything, solve problems, study, code, analyze files,
           search the web, or create images.
         </p>
 
         <div class="suggestions">
 
-          <button
-            data-prompt="Explain quantum computing simply."
-          >
-            <strong>
-              Explain something
-            </strong>
-
-            <small>
-              Get a clear explanation
-            </small>
+          <button class="suggestion" data-prompt="Explain quantum mechanics simply">
+            <span>Explain</span>
+            <strong>Quantum mechanics simply</strong>
           </button>
 
-          <button
-            data-prompt="Teach me a topic step by step and quiz me at the end."
-          >
-            <strong>
-              Study with me
-            </strong>
-
-            <small>
-              Learn interactively
-            </small>
+          <button class="suggestion" data-prompt="Help me solve this problem step by step">
+            <span>Solve</span>
+            <strong>A difficult problem step by step</strong>
           </button>
 
-          <button
-            data-image="true"
-            data-prompt="Create a cinematic photorealistic image of a futuristic Indian city at sunset, advanced skyscrapers, autonomous vehicles, sustainable green technology, dramatic sky, highly detailed."
-          >
-            <strong>
-              Create an image
-            </strong>
-
-            <small>
-              Generate with AI
-            </small>
+          <button class="suggestion" data-prompt="Write a modern HTML CSS JavaScript website">
+            <span>Create</span>
+            <strong>A modern website</strong>
           </button>
 
-          <button
-            id="fileCard"
-          >
-            <strong>
-              Analyze a file
-            </strong>
-
-            <small>
-              Upload a document
-            </small>
+          <button class="suggestion" data-prompt="Give me a detailed JEE study plan">
+            <span>Study</span>
+            <strong>A JEE preparation plan</strong>
           </button>
 
         </div>
 
       </div>
 
+      <div id="messages" class="messages"></div>
+
     </section>
 
-    <div
-      id="typing"
-      class="typing hidden"
-    >
-      <span></span>
-      <span></span>
-      <span></span>
-      Thinking…
-    </div>
 
+    <!-- COMPOSER -->
     <div class="composerWrap">
 
-      <div
-        id="preview"
-        class="preview hidden"
-      ></div>
+      <div id="attachmentPreview" class="attachmentPreview"></div>
 
       <div class="composer">
 
-        <button
-          id="attachBtn"
-          class="composerBtn"
-          title="Attach file"
-        >
-          📎
+        <button id="attachBtn" class="composerBtn" title="Attach file">
+          +
         </button>
 
-        <button
-          id="cameraBtn"
-          class="composerBtn"
-          title="Camera"
+        <input
+          id="fileInput"
+          type="file"
+          hidden
+          accept="image/*,.pdf,.txt,.csv,.json,.js,.html,.css,.md,.doc,.docx"
         >
-          ◉
-        </button>
-
-        <button
-          id="imageBtn"
-          class="composerBtn"
-          title="Create image"
-        >
-          ▧
-        </button>
-
-        <button
-          id="pdfBtn"
-          class="composerBtn"
-          title="Create PDF"
-        >
-          ▤
-        </button>
-
-        <button
-          id="searchComposer"
-          class="composerBtn"
-          title="Web search"
-        >
-          ⌕
-        </button>
 
         <textarea
-          id="input"
+          id="messageInput"
           rows="1"
-          placeholder="Message LOGIC-LEAF…"
           autocomplete="off"
+          placeholder="Message LOGIC-LEAF..."
         ></textarea>
 
-        <button
-          id="sendBtn"
-          class="send"
-          aria-label="Send"
-        >
-          ➤
+        <button id="searchBtn" class="toolBtn" title="Web search">
+          Search
+        </button>
+
+        <button id="imageBtn" class="toolBtn" title="Generate image">
+          Image
+        </button>
+
+        <button id="sendBtn" class="sendBtn" title="Send">
+          ↑
         </button>
 
       </div>
 
-      <div class="disclaimer">
-        LOGIC-LEAF can make mistakes.
-        Check important information.
+      <div class="composerFooter">
+        <span>LOGIC-LEAF can make mistakes. Check important information.</span>
+        <span id="modeLabel">AI</span>
       </div>
 
     </div>
@@ -307,47 +202,125 @@
 
 </div>
 
-<input
-  id="fileInput"
-  type="file"
-  hidden
-  accept="image/*,.txt,.md,.csv,.json,.js,.html,.css,.py,.java,.c,.cpp,.pdf"
->
 
-<input
-  id="cameraInput"
-  type="file"
-  hidden
-  accept="image/*"
-  capture="environment"
->
+<!-- API MODAL -->
+<div id="apiModal" class="modal">
+  <div class="modalCard">
 
-<div
-  id="overlay"
-  class="overlay hidden"
->
+    <button class="modalClose" data-close="apiModal">×</button>
 
-  <div class="modal">
+    <div class="modalHeader">
+      <div class="modalIcon">⌘</div>
+      <div>
+        <h2>API & Keys</h2>
+        <p>Manage your LOGIC-LEAF API access.</p>
+      </div>
+    </div>
 
-    <button
-      id="modalClose"
-      class="modalClose"
-      aria-label="Close"
-    >
-      ×
-    </button>
+    <label>API Key</label>
 
-    <h2 id="modalTitle">
-      Settings
-    </h2>
+    <div class="keyRow">
+      <input id="apiKeyDisplay" type="password" readonly placeholder="No API key">
+      <button id="showKeyBtn">Show</button>
+    </div>
 
-    <div id="modalBody"></div>
+    <div class="modalButtons">
+      <button id="createKeyBtn" class="primaryBtn">Create API key</button>
+      <button id="revokeKeyBtn" class="dangerBtn">Revoke</button>
+    </div>
+
+    <div id="apiStatus" class="statusText"></div>
+
+    <div class="endpointBox">
+      <span>API endpoint</span>
+      <code>/v1/api/chat</code>
+    </div>
 
   </div>
-
 </div>
+
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" class="modal">
+  <div class="modalCard">
+
+    <button class="modalClose" data-close="settingsModal">×</button>
+
+    <div class="modalHeader">
+      <div class="modalIcon">⚙</div>
+      <div>
+        <h2>Settings</h2>
+        <p>Customize your LOGIC-LEAF experience.</p>
+      </div>
+    </div>
+
+    <div class="settingItem">
+      <div>
+        <strong>Enter to send</strong>
+        <small>Press Enter to send messages.</small>
+      </div>
+      <input id="enterSendToggle" type="checkbox" checked>
+    </div>
+
+    <div class="settingItem">
+      <div>
+        <strong>Save conversations</strong>
+        <small>Keep chats available in the sidebar.</small>
+      </div>
+      <input id="saveHistoryToggle" type="checkbox" checked>
+    </div>
+
+    <button id="clearChatsBtn" class="dangerFull">
+      Clear local chats
+    </button>
+
+    <div class="aboutBox">
+      <strong>LOGIC-LEAF AI</strong>
+      <p>
+        AI chat • Vision • Files • PDF • Image generation • Search
+      </p>
+      <small>Developer: V.CHENCHUKIRAN</small>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="modal">
+  <div class="modalCard loginCard">
+
+    <button class="modalClose" data-close="loginModal">×</button>
+
+    <div class="loginLogo">L</div>
+
+    <h2>Welcome to LOGIC-LEAF</h2>
+
+    <p>
+      Sign in to keep your conversations synchronized.
+    </p>
+
+    <button id="googleLoginBtn" class="googleBtn">
+      <span class="googleG">G</span>
+      Continue with Google
+    </button>
+
+    <div class="loginNote">
+      Google authentication must be configured in your Firebase project.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- IMAGE VIEWER -->
+<div id="imageModal" class="imageModal">
+  <button id="closeImage" class="imageClose">×</button>
+  <img id="generatedImage" alt="Generated image">
+</div>
+
 
 <script src="app.js"></script>
 
 </body>
-        </html>
+                </html>
